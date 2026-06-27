@@ -1,0 +1,101 @@
+"use client";
+
+import { useRef, useState } from "react";
+import { Dialog } from "@/components/ui/Dialog";
+import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
+
+type Props = {
+  open: boolean;
+  phone: string;
+  resendIn: number;
+  attemptsLeft: number;
+  verifying: boolean;
+  onVerify: (code: string) => Promise<{ ok: boolean; attemptsLeft?: number }>;
+  onResend: () => void;
+  onClose: () => void;
+};
+
+export function OtpModal({ open, phone, resendIn, attemptsLeft, verifying, onVerify, onResend, onClose }: Props) {
+  const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
+  const [error, setError] = useState<string | null>(null);
+  const [shake, setShake] = useState(false);
+  const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
+
+  async function attemptVerify(code: string) {
+    setError(null);
+    const res = await onVerify(code);
+    if (!res.ok) {
+      setError(`Incorrect code. ${res.attemptsLeft ?? attemptsLeft} attempts left.`);
+      setShake(true);
+      setDigits(Array(6).fill(""));
+      inputsRef.current[0]?.focus();
+      setTimeout(() => setShake(false), 350);
+    }
+  }
+
+  function handleChange(i: number, v: string) {
+    if (!/^\d?$/.test(v)) return;
+    const next = [...digits];
+    next[i] = v;
+    setDigits(next);
+    if (v && i < 5) inputsRef.current[i + 1]?.focus();
+    if (next.every((d) => d !== "") && next.join("").length === 6) {
+      attemptVerify(next.join(""));
+    }
+  }
+
+  function handlePaste(e: React.ClipboardEvent) {
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (pasted.length === 6) {
+      setDigits(pasted.split(""));
+      attemptVerify(pasted);
+    }
+  }
+
+  return (
+    <Dialog open={open} onClose={onClose} title="Verify your number">
+      <p className="mb-4 text-fluid--1 text-text-muted">
+        Enter the 6-digit code sent to <span className="text-text">{phone}</span>. (Demo code: 123456)
+      </p>
+      <div className={cn("flex gap-2", shake && "animate-shake")} onPaste={handlePaste}>
+        {digits.map((d, i) => (
+          <input
+            key={i}
+            ref={(el) => {
+              inputsRef.current[i] = el;
+            }}
+            value={d}
+            onChange={(e) => handleChange(i, e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Backspace" && !d && i > 0) inputsRef.current[i - 1]?.focus();
+            }}
+            inputMode="numeric"
+            maxLength={1}
+            className="h-12 w-full rounded-card border border-border bg-surface-2 text-center text-fluid-1 text-text outline-none focus:gold-glow focus:border-gold"
+            aria-label={`Digit ${i + 1}`}
+          />
+        ))}
+      </div>
+      {error && (
+        <p className="mt-3 text-fluid--1 text-danger" role="alert" aria-live="assertive">
+          {error}
+        </p>
+      )}
+      {verifying && <p className="mt-3 text-fluid--1 text-text-muted">Verifying…</p>}
+      <div className="mt-5 flex items-center justify-between">
+        <button
+          type="button"
+          disabled={resendIn > 0}
+          onClick={onResend}
+          className="text-fluid--1 text-gold disabled:text-text-faint"
+        >
+          {resendIn > 0 ? `Resend code in ${resendIn}s` : "Resend code"}
+        </button>
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          Cancel
+        </Button>
+      </div>
+    </Dialog>
+  );
+}
