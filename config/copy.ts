@@ -2,41 +2,72 @@ export const copy = {
   nav: ["Home", "Valuation", "How It Works", "Contact"],
   hero: {
     eyebrow: "CarVibeDubai",
-    headline: "Dubai's Luxury Car Valuation",
-    sub: "Sell your luxury car in Dubai with confidence. Get a fast, no-obligation valuation from a trusted local buyer — no listings, no haggling, no waiting.",
-    cta: "Get Valuation",
+    headline: "Get Your Free Valuation",
+    sub: "Sell your car in Dubai with a quick request, home inspection support, and direct WhatsApp follow-up from the CarVibeDubai team.",
+    cta: "Get Your Free Valuation",
+    secondaryCta: "Chat on WhatsApp",
+    modes: [
+      { label: "Sell a Car", state: "Active" },
+      { label: "Buy a Car", state: "Coming Soon" },
+    ],
+    stats: [
+      { value: "15 min", label: "initial response" },
+      { value: "Home", label: "inspection support" },
+      { value: "UAE", label: "area filtering" },
+    ],
+    assurances: ["Free valuation request", "WhatsApp follow-up", "No instant price shown"],
+  },
+  valuation: {
+    eyebrow: "Free Valuation Request",
+    title: "Start with your contact details so the team can follow up before the lead goes cold.",
+    sub: "Share your name, WhatsApp number, car details, and inspection area. The team reviews the request and contacts you on WhatsApp.",
+    highlights: [
+      {
+        title: "Luxury market review",
+        body: "We compare your model, mileage, condition, and current demand before making contact.",
+      },
+      {
+        title: "Private inspection",
+        body: "Choose a convenient time and place for a specialist walkaround.",
+      },
+      {
+        title: "Fast, clear offer",
+        body: "If the offer works for you, we arrange secure payment and handover.",
+      },
+    ],
+    note: "Location helps the team plan home inspections before confirming the next step.",
   },
   howItWorks: {
     title: "How It Works",
-    sub: "From submission to cash in hand — four simple steps.",
+    sub: "A simple selling process approved for CarVibeDubai customers.",
     steps: [
       {
         icon: "ClipboardCheck",
-        title: "Valuation",
-        body: "Tell us about your car and we'll send a fair, no-obligation estimate.",
+        title: "Get a Valuation",
+        body: "Fill out the quick form online with your contact details, car information, and inspection area.",
       },
       {
         icon: "CalendarCheck",
-        title: "Appointment",
-        body: "Book a convenient time for a quick in-person inspection.",
+        title: "Book an Appointment",
+        body: "Our team contacts you on WhatsApp and confirms the next step.",
       },
       {
         icon: "Search",
-        title: "Inspection",
-        body: "Our specialist inspects the car and confirms the final offer.",
+        title: "Car Inspection",
+        body: "We inspect your car in person and review the condition properly.",
       },
       {
         icon: "Banknote",
-        title: "Cash",
-        body: "Accept the offer and get paid — same day, no delays.",
+        title: "Get Paid",
+        body: "Accept the offer and complete the payment and handover steps.",
       },
     ],
   },
   contact: {
-    title: "Get in Touch",
-    sub: "Reach us directly — we typically reply within minutes on WhatsApp.",
+    title: "Talk To CarVibeDubai",
+    sub: "For car valuation requests, home inspection questions, or quick follow-up, message the team directly on WhatsApp.",
   },
   footer: {
-    tagline: "Dubai's trusted luxury car valuation service.",
+    tagline: "Free car valuation requests, WhatsApp follow-up, and home inspection coordination for Dubai sellers.",
   },
 };

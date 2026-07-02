@@ -2,13 +2,17 @@ export const brand = {
   name: "CarVibeDubai",
   monogram: "CVD",
   tagline: "DUBAI'S LUXURY CAR VALUATION",
-  whatsappNumber: "+971501234567",
-  callNumber: "+971501234567",
+  whatsappNumber: "+971564145781",
+  callNumber: "+971564145781",
   notifyEmail: "owner@carvibedubai.com",
   goldHex: "#D4AF37",
-  address: "Sheikh Zayed Road, Dubai, UAE",
-  hours: "Sat–Thu, 9:00 AM – 9:00 PM",
+  address: "Dubai, UAE",
+  hours: "Sat-Thu, 9:00 AM - 9:00 PM",
   credit: "Developed by CREServices Beyond Strategy FZE LLC",
+  socials: {
+    facebook: "https://www.facebook.com/carvibedubai",
+    instagram: "https://www.instagram.com/carvibedubai",
+  },
 };
 
 export function whatsappLink(message: string, number = brand.whatsappNumber) {

@@ -10,8 +10,8 @@ export default function PrivacyPage() {
         <h1 className="font-display text-fluid-3 text-text">Privacy Policy</h1>
         <div className="mt-6 max-w-2xl space-y-4 text-fluid-0 text-text-muted">
           <p>
-            {brand.name} collects only the information you provide through our valuation form — your name, WhatsApp
-            number, and car details — so our team can prepare your valuation and contact you.
+            {brand.name} collects only the information you provide through our valuation form - your name, WhatsApp
+            number, car details, and inspection area - so our team can prepare your valuation and contact you.
           </p>
           <p>
             We do not use third-party trackers. Basic visit counts are recorded first-party to understand site usage.

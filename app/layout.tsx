@@ -3,9 +3,9 @@ import { fontDisplay, fontSans } from "./fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CarVibeDubai — Dubai's Luxury Car Valuation",
+  title: "CarVibeDubai - Get Your Free Valuation",
   description:
-    "Get a fast, no-obligation luxury car valuation in Dubai. Submit your car details and our team will reach you on WhatsApp.",
+    "Get your free car valuation in Dubai. Share your contact details, car information, and inspection area so the CarVibeDubai team can follow up on WhatsApp.",
 };
 
 export default function RootLayout({
@@ -15,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${fontDisplay.variable} ${fontSans.variable} antialiased`}>{children}</body>
+      <body className={`${fontSans.variable} ${fontDisplay.variable} antialiased`}>{children}</body>
     </html>
   );
 }

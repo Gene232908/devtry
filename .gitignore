@@ -24,6 +24,7 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+dev-*.log
 
 # local env files
 .env*.local
@@ -34,3 +35,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local-only meeting/setup artifacts
+/*.exe
+/CarVibe_Meeting_Transcript_Pack.zip

@@ -1,6 +1,6 @@
 import { Navbar } from "@/components/public/Navbar";
 import { Footer } from "@/components/public/Footer";
-import { WhatsAppFab } from "@/components/public/WhatsAppFab";
+import { ValuationModal } from "@/components/public/ValuationModal";
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -8,7 +8,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <Navbar />
       <main>{children}</main>
       <Footer />
-      <WhatsAppFab />
+      <ValuationModal />
     </>
   );
 }

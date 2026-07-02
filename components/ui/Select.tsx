@@ -32,7 +32,7 @@ export function Select({ label, placeholder = "Select", options, value, onChange
 
   return (
     <div className="flex flex-col gap-1.5" ref={rootRef}>
-      {label && <span className="text-fluid--1 text-text-muted">{label}</span>}
+      {label && <span className="text-fluid--1 font-medium uppercase tracking-[0.14em] text-text-faint">{label}</span>}
       <div className="relative">
         <button
           type="button"
@@ -42,19 +42,19 @@ export function Select({ label, placeholder = "Select", options, value, onChange
           aria-haspopup="listbox"
           aria-expanded={open}
           className={cn(
-            "flex h-11 w-full items-center justify-between rounded-card border border-border bg-surface-2 px-4 text-fluid-0 text-text outline-none transition-shadow duration-150",
-            open && "gold-glow border-gold",
+            "flex h-12 w-full items-center justify-between gap-3 rounded-card border border-border-gold/45 bg-bg/45 px-4 text-fluid-0 text-text outline-none transition-all duration-150",
+            open && "border-gold bg-surface-2/80 shadow-[0_0_0_3px_rgba(212,175,55,.16)]",
             disabled && "opacity-50 cursor-not-allowed",
             error && "border-danger",
           )}
         >
-          <span className={cn(!selected && "text-text-faint")}>{selected ? selected.label : placeholder}</span>
-          <ChevronDown className={cn("h-4 w-4 text-text-muted transition-transform duration-150", open && "rotate-180 text-gold")} />
+          <span className={cn("truncate", !selected && "text-text-faint")}>{selected ? selected.label : placeholder}</span>
+          <ChevronDown className={cn("h-4 w-4 shrink-0 text-text-muted transition-transform duration-150", open && "rotate-180 text-gold")} />
         </button>
         {open && (
           <ul
             role="listbox"
-            className="absolute z-30 mt-1.5 max-h-64 w-full overflow-auto rounded-card border border-border-gold bg-surface-2 py-1 shadow-[0_10px_30px_-8px_rgba(0,0,0,.7)] animate-fade-in"
+            className="absolute z-30 mt-1.5 max-h-64 w-full overflow-auto rounded-card border border-border-gold/80 bg-surface-2 py-1 shadow-[0_18px_42px_-18px_rgba(0,0,0,.9)] animate-fade-in"
           >
             {options.length === 0 && (
               <li className="px-4 py-2 text-fluid--1 text-text-faint">No options</li>

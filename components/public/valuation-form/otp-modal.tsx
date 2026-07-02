@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { type ClipboardEvent, useRef, useState } from "react";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -45,7 +45,7 @@ export function OtpModal({ open, phone, resendIn, attemptsLeft, verifying, onVer
     }
   }
 
-  function handlePaste(e: React.ClipboardEvent) {
+  function handlePaste(e: ClipboardEvent) {
     const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
     if (pasted.length === 6) {
       setDigits(pasted.split(""));
@@ -55,8 +55,8 @@ export function OtpModal({ open, phone, resendIn, attemptsLeft, verifying, onVer
 
   return (
     <Dialog open={open} onClose={onClose} title="Verify your number">
-      <p className="mb-4 text-fluid--1 text-text-muted">
-        Enter the 6-digit code sent to <span className="text-text">{phone}</span>. (Demo code: 123456)
+      <p className="mb-4 text-fluid--1 leading-6 text-text-muted">
+        Enter the 6-digit code sent to <span className="text-text">{phone}</span>. Demo code: 123456.
       </p>
       <div className={cn("flex gap-2", shake && "animate-shake")} onPaste={handlePaste}>
         {digits.map((d, i) => (
@@ -72,7 +72,7 @@ export function OtpModal({ open, phone, resendIn, attemptsLeft, verifying, onVer
             }}
             inputMode="numeric"
             maxLength={1}
-            className="h-12 w-full rounded-card border border-border bg-surface-2 text-center text-fluid-1 text-text outline-none focus:gold-glow focus:border-gold"
+            className="h-12 w-full rounded-card border border-border-gold/45 bg-bg/45 text-center text-fluid-1 text-text outline-none transition-all focus:border-gold focus:bg-surface-2/80 focus:shadow-[0_0_0_3px_rgba(212,175,55,.16)]"
             aria-label={`Digit ${i + 1}`}
           />
         ))}
@@ -82,17 +82,17 @@ export function OtpModal({ open, phone, resendIn, attemptsLeft, verifying, onVer
           {error}
         </p>
       )}
-      {verifying && <p className="mt-3 text-fluid--1 text-text-muted">Verifying…</p>}
-      <div className="mt-5 flex items-center justify-between">
+      {verifying && <p className="mt-3 text-fluid--1 text-text-muted">Verifying...</p>}
+      <div className="mt-5 flex items-center justify-between gap-4">
         <button
           type="button"
           disabled={resendIn > 0}
           onClick={onResend}
-          className="text-fluid--1 text-gold disabled:text-text-faint"
+          className="text-left text-fluid--1 text-gold disabled:text-text-faint"
         >
           {resendIn > 0 ? `Resend code in ${resendIn}s` : "Resend code"}
         </button>
-        <Button variant="ghost" size="sm" onClick={onClose}>
+        <Button type="button" variant="ghost" size="sm" onClick={onClose}>
           Cancel
         </Button>
       </div>

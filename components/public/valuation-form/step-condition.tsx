@@ -1,4 +1,6 @@
 import { RadioGroup } from "@/components/ui/Radio";
+import { Select } from "@/components/ui/Select";
+import { EMIRATES } from "@/config/vehicles";
 import { ValuationFormValues, FormErrors } from "./form.types";
 
 type Props = {
@@ -9,8 +11,7 @@ type Props = {
 
 export function StepCondition({ values, errors, setField }: Props) {
   return (
-    <div className="flex flex-col gap-4">
-      <h3 className="font-display text-fluid-2 text-text">Step 2: Vehicle Condition</h3>
+    <div className="flex flex-col gap-4 border-b border-border pb-7">
       <RadioGroup
         name="condition"
         value={values.condition}
@@ -21,6 +22,14 @@ export function StepCondition({ values, errors, setField }: Props) {
           { label: "Good", value: "good" },
           { label: "Fair", value: "fair" },
         ]}
+      />
+      <Select
+        label="Inspection Area"
+        placeholder="Select emirate"
+        options={EMIRATES.map((emirate) => ({ label: emirate, value: emirate }))}
+        value={values.emirate}
+        onChange={(v) => setField("emirate", v)}
+        error={errors.emirate}
       />
     </div>
   );
