@@ -30,7 +30,7 @@ export function Dialog({ open, onClose, title, children, className }: DialogProp
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm animate-fade-in"
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -38,7 +38,7 @@ export function Dialog({ open, onClose, title, children, className }: DialogProp
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className={cn("w-full max-w-md rounded-card border border-border-gold bg-surface p-6 card-shadow", className)}>
+      <div className={cn("w-full max-w-md rounded-card border border-border-gold/70 bg-bg-elev/95 p-6 card-shadow", className)}>
         <div className="mb-4 flex items-center justify-between">
           {title && <h3 className="font-display text-fluid-2 text-text">{title}</h3>}
           <button

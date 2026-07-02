@@ -10,7 +10,9 @@ type Props = {
 export function StepContact({ values, errors, setField }: Props) {
   return (
     <div className="flex flex-col gap-4">
-      <h3 className="font-display text-fluid-2 text-text">Step 3: Contact Info</h3>
+      <p className="rounded-card border border-border-gold/45 bg-bg/35 p-3 text-fluid--1 leading-6 text-text-muted">
+        Start here so the CarVibeDubai team can reach you on WhatsApp before you leave the form.
+      </p>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input
           label="Name"
@@ -21,21 +23,21 @@ export function StepContact({ values, errors, setField }: Props) {
         />
         <Input
           label="WhatsApp Number"
-          placeholder="+971 5X XXX XXXX"
+          placeholder="056 414 5781 or +971 56 414 5781"
           inputMode="tel"
           value={values.whatsapp}
           onChange={(e) => setField("whatsapp", e.target.value)}
           error={errors.whatsapp}
         />
       </div>
-      <label className="flex items-start gap-2.5 text-fluid--1 text-text-muted">
+      <label className="flex items-start gap-2.5 rounded-card border border-border bg-bg/35 p-3 text-fluid--1 leading-6 text-text-muted">
         <input
           type="checkbox"
           checked={values.consent}
           onChange={(e) => setField("consent", e.target.checked)}
-          className="mt-0.5 h-4 w-4 rounded border-border-gold bg-surface-2 accent-[--gold]"
+          className="mt-1 h-4 w-4 rounded border-border-gold bg-surface-2 accent-[--gold]"
         />
-        I agree to be contacted about my valuation.
+        I agree to be contacted by CarVibeDubai about my valuation and inspection request.
       </label>
       {errors.consent && <span className="text-fluid--1 text-danger">{errors.consent}</span>}
       <input

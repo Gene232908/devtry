@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { type FormEvent, useState } from "react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { useValuationForm } from "./use-valuation-form";
@@ -10,59 +10,70 @@ import { StepCondition } from "./step-condition";
 import { StepContact } from "./step-contact";
 import { OtpModal } from "./otp-modal";
 import { ThankYouModal } from "./thank-you-modal";
+import { ValuationFormValues } from "./form.types";
 
-const STEPS = [
-  { n: 1, label: "Step 1" },
-  { n: 2, label: "Step 2" },
-  { n: 3, label: "Step 3" },
+const STEPS: Array<{
+  n: 1 | 2 | 3;
+  label: string;
+  fields: Array<keyof ValuationFormValues>;
+}> = [
+  { n: 1, label: "Contact Info", fields: ["fullName", "whatsapp", "consent"] },
+  { n: 2, label: "Car Details", fields: ["year", "make", "model", "mileageKm"] },
+  { n: 3, label: "Condition & Location", fields: ["condition", "emirate"] },
 ];
 
 export function ValuationForm() {
   const form = useValuationForm();
-  const [mobileStep, setMobileStep] = useState(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
 
   const isBusy = form.state === "validating" || form.state === "sending_otp" || form.state === "submitting";
+  const current = STEPS[step - 1];
 
-  function goNextMobile() {
-    setMobileStep((s) => Math.min(3, s + 1));
-  }
-  function goBackMobile() {
-    setMobileStep((s) => Math.max(1, s - 1));
+  function goNext() {
+    if (!form.validateStep(current.fields)) return;
+    setStep((s) => Math.min(3, s + 1) as 1 | 2 | 3);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  function goBack() {
+    setStep((s) => Math.max(1, s - 1) as 1 | 2 | 3);
+  }
+
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!form.validateStep(current.fields)) return;
     await form.submit();
   }
 
   return (
-    <div id="valuation" className="relative">
-      {/* mobile step tabs */}
-      <div className="mb-5 flex gap-6 lg:hidden">
-        {STEPS.map((s) => (
-          <button
-            key={s.n}
-            type="button"
-            onClick={() => setMobileStep(s.n)}
-            className={cn(
-              "border-b-2 pb-2 text-fluid--1 uppercase tracking-wider transition-colors",
-              mobileStep === s.n ? "border-gold text-gold" : "border-transparent text-text-faint",
-            )}
-          >
-            {s.label}
-          </button>
-        ))}
+    <div className="relative">
+      <div className="mb-6">
+        <h2 className="mb-5 font-display text-fluid-2 leading-tight text-text">
+          Step {step}: {current.label}
+        </h2>
+        <div className="mb-3 flex items-center justify-between gap-4">
+          <p className="text-fluid--1 uppercase tracking-[0.22em] text-gold">
+            Step {step} of {STEPS.length}
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {STEPS.map((item) => (
+            <div key={item.n} className="h-1.5 overflow-hidden rounded-full bg-border">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all duration-300",
+                  step >= item.n ? "w-full bg-gold" : "w-0 bg-gold",
+                )}
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-8">
-        <div className={cn(mobileStep !== 1 && "hidden", "lg:!block")}>
-          <StepCarDetails values={form.values} errors={form.errors} setField={form.setField} />
-        </div>
-        <div className={cn(mobileStep !== 2 && "hidden", "lg:!block")}>
-          <StepCondition values={form.values} errors={form.errors} setField={form.setField} />
-        </div>
-        <div className={cn(mobileStep !== 3 && "hidden", "lg:!block")}>
-          <StepContact values={form.values} errors={form.errors} setField={form.setField} />
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <div className="min-h-[250px] animate-fade-in">
+          {step === 1 && <StepContact values={form.values} errors={form.errors} setField={form.setField} />}
+          {step === 2 && <StepCarDetails values={form.values} errors={form.errors} setField={form.setField} />}
+          {step === 3 && <StepCondition values={form.values} errors={form.errors} setField={form.setField} />}
         </div>
 
         {form.submitError && (
@@ -71,29 +82,25 @@ export function ValuationForm() {
           </p>
         )}
 
-        {/* mobile nav */}
-        <div className="flex gap-3 lg:hidden">
-          {mobileStep > 1 && (
-            <Button type="button" variant="outline" className="flex-1" onClick={goBackMobile}>
+        <div className="flex gap-3">
+          {step > 1 && (
+            <Button type="button" variant="outline" className="min-w-28" onClick={goBack}>
+              <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
           )}
-          {mobileStep < 3 ? (
-            <Button type="button" className="flex-1" onClick={goNextMobile}>
+
+          {step < 3 ? (
+            <Button type="button" className="flex-1" onClick={goNext}>
               Next
+              <ArrowRight className="h-4 w-4" />
             </Button>
           ) : (
-            <Button type="submit" className="flex-1" loading={isBusy}>
-              {isBusy ? "Submitting" : "Get Valuation"}
+            <Button type="submit" className="flex-1 uppercase" loading={isBusy} disabled={isBusy}>
+              {form.state === "sending_otp" ? "Sending code..." : isBusy ? "Submitting" : "Get Your Free Valuation"}
             </Button>
           )}
         </div>
-
-        {/* desktop submit */}
-        <Button type="submit" size="lg" className="hidden w-full lg:flex" loading={isBusy} disabled={isBusy}>
-          {isBusy && <Loader2 className="h-4 w-4 animate-spin" />}
-          {form.state === "sending_otp" ? "Sending code…" : "Get Valuation"}
-        </Button>
       </form>
 
       <OtpModal
@@ -111,7 +118,7 @@ export function ValuationForm() {
         open={form.state === "success"}
         onClose={() => {
           form.reset();
-          setMobileStep(1);
+          setStep(1);
         }}
       />
     </div>

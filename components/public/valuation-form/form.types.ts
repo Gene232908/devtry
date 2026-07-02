@@ -6,6 +6,7 @@ export type ValuationFormValues = {
   year: string;
   mileageKm: string;
   condition: Condition | "";
+  emirate: string;
   fullName: string;
   whatsapp: string;
   email: string;
@@ -30,6 +31,7 @@ export const emptyValues: ValuationFormValues = {
   year: "",
   mileageKm: "",
   condition: "",
+  emirate: "",
   fullName: "",
   whatsapp: "",
   email: "",

@@ -12,9 +12,16 @@ export function StepCarDetails({ values, errors, setField }: Props) {
   const modelOptions = (MODELS[values.make] ?? []).map((m) => ({ label: m, value: m }));
 
   return (
-    <div className="flex flex-col gap-4">
-      <h3 className="font-display text-fluid-2 text-text">Step 1: Car Details</h3>
+    <div className="flex flex-col gap-4 border-b border-border pb-7">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Select
+          label="Year"
+          placeholder="Select year"
+          options={YEARS.map((y) => ({ label: String(y), value: String(y) }))}
+          value={values.year}
+          onChange={(v) => setField("year", v)}
+          error={errors.year}
+        />
         <Select
           label="Make"
           placeholder="Select make"
@@ -31,14 +38,6 @@ export function StepCarDetails({ values, errors, setField }: Props) {
           onChange={(v) => setField("model", v)}
           disabled={!values.make}
           error={errors.model}
-        />
-        <Select
-          label="Year"
-          placeholder="Select year"
-          options={YEARS.map((y) => ({ label: String(y), value: String(y) }))}
-          value={values.year}
-          onChange={(v) => setField("year", v)}
-          error={errors.year}
         />
       </div>
       <Select

@@ -36,6 +36,35 @@ export function useValuationForm() {
     return false;
   }, [values]);
 
+  const validateStep = useCallback(
+    (fields: Array<keyof ValuationFormValues>) => {
+      const result = leadSchema.safeParse(values);
+      const stepIssues = result.success
+        ? []
+        : result.error.issues.filter((issue) => fields.includes(issue.path[0] as keyof ValuationFormValues));
+
+      if (stepIssues.length === 0) {
+        setErrors((current) => {
+          const next = { ...current };
+          fields.forEach((field) => {
+            next[field] = undefined;
+          });
+          return next;
+        });
+        return true;
+      }
+
+      const fieldErrors: FormErrors = {};
+      for (const issue of stepIssues) {
+        const key = issue.path[0] as keyof ValuationFormValues;
+        if (!fieldErrors[key]) fieldErrors[key] = issue.message;
+      }
+      setErrors((current) => ({ ...current, ...fieldErrors }));
+      return false;
+    },
+    [values],
+  );
+
   const submit = useCallback(async () => {
     setState("validating");
     setSubmitError(null);
@@ -94,6 +123,7 @@ export function useValuationForm() {
     submitError,
     setField,
     submit,
+    validateStep,
     verifyOtp,
     reset,
     cancelOtp,

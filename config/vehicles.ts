@@ -32,3 +32,13 @@ export const MILEAGE_BRACKETS = [
   { label: "100,000 – 150,000 km", value: 125000 },
   { label: "150,000+ km", value: 175000 },
 ];
+
+export const EMIRATES = [
+  "Abu Dhabi",
+  "Dubai",
+  "Sharjah",
+  "Ajman",
+  "Fujairah",
+  "Ras Al Khaimah",
+  "Umm Al Quwain",
+] as const;
