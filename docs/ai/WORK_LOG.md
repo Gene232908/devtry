@@ -4,6 +4,31 @@ This is the factual source for reports.
 
 Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
+## 2026-07-03
+
+### Completed
+
+- Task: Editorial-minimal visual redesign of the public landing page.
+- What changed: Flattened the design system to one canvas color plus a single elevated panel tone, introduced a strict gold usage budget, replaced gold card borders with white hairlines, and rebuilt every section below the hero (Vehicle Discovery, Brand Browse, Featured Vehicles, Body Types, Sell Experience, Why Choose Us, Financing, Reviews, Final CTA, Contact, Navbar, Footer) as borderless numbered/divided editorial lists and hairline grids. Hero kept its layout, photo, and copy with polish-only styling changes. Added `components/public/Section.tsx`, `components/public/SectionHeader.tsx`, and a `buttonClasses()` export in `components/ui/Button.tsx`. Deleted unused `HowItWorks.tsx` and `CarSkylineArt.tsx`.
+- Why it matters: The prior design repeated gold borders and boxed cards on every section, making the page feel busy rather than premium. Modern luxury automotive sites (Porsche, Polestar, Bugatti) use restraint and whitespace instead of decoration; this brings CarVibeDubai's Milestone 1 landing page in line with that standard while keeping the black-and-gold identity and all honesty disclaimers verbatim.
+
+### Status
+
+- Completed: Full section-by-section redesign, dead code removal, lint + build verification, Playwright visual/interaction check.
+- In progress: None.
+- Blocked: None (visual-only change, no backend dependency).
+- Next: Client review of the new landing page design.
+
+### Non-technical explanation
+
+> We redesigned the homepage to look cleaner and more premium — less clutter, more breathing room, and the gold color now stands out more because it's used sparingly instead of everywhere.
+
+### Verification
+
+- Lint: `npm run lint` — no warnings or errors.
+- Build: `npm run build` — compiled successfully, all routes generated.
+- Manual: Playwright screenshots at 1440px and 375px viewports (no horizontal overflow), mobile menu toggle, valuation modal open flow, and console-error check (zero errors) all passed.
+
 ## Daily template
 
 ## YYYY-MM-DD

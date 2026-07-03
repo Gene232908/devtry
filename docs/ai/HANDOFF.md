@@ -13,11 +13,11 @@
 
 ## Last completed work
 
-Refined the public homepage into a premium Milestone 1 sell-side valuation experience: dark glass header, evaluation showcase instead of the redundant vehicle finder, accepted-brand badge tiles, generated local vehicle/valuation imagery, valuation profile cards, passive body-type guidance, fewer repeated WhatsApp actions, and no floating WhatsApp button. Financing and reviews remain UI-only previews until approved.
+Refactored the public landing page's visual design to an editorial-minimal black-and-gold style: one flat canvas background, a strict gold usage budget (eyebrows, primary CTA, stats/step numbers, hover, two bookend dividers only), hairline dividers instead of gold card borders, and borderless numbered/divided lists instead of boxed cards across every section below the hero. Hero kept its layout, photo, and copy with polish-only styling. Added shared `Section`/`SectionHeader` components and a `buttonClasses()` helper. Removed unused `HowItWorks.tsx` and `CarSkylineArt.tsx`. This is a styling-only change — no copy, data, or behavior changed.
 
 ## Current task
 
-Review the Milestone 1 public landing and premium sell-side homepage preview with the client, then collect exact Gmail, final logo file, final make/model list, official brand/logo asset preferences if any, and confirmation on financing/review scope.
+Review the redesigned Milestone 1 public landing page with the client, then collect exact Gmail, final logo file, final make/model list, official brand/logo asset preferences if any, and confirmation on financing/review scope.
 
 ## Important decisions
 

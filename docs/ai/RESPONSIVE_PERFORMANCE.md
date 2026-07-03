@@ -38,6 +38,10 @@ Check approximately:
 - Optimize vehicle images and thumbnails.
 - Avoid heavy dependencies for simple behavior.
 - Avoid loading all records at once.
+
+## Design system changelog
+
+- 2026-07-03 editorial-minimal landing refactor: inverted the design thesis from "premium by decoration" to "premium by restraint." Flattened the body background and removed the ~10 hardcoded per-section near-black backgrounds in favor of one canvas (`--bg`) plus a single elevated panel tone (`--bg-panel`, used only by Financing and the Contact concierge card). Introduced a gold usage budget: gold is now reserved for eyebrow labels + `.gold-rule`, the primary CTA (`.btn-gold`), stat/step numbers, hover/focus, and two `.divider-gold-fade` bookends (final CTA band, footer). Resting borders became white hairlines (`hairline-t`/`hairline-b`, `divide-white/5`) instead of `border-border-gold/*`. Added `tracking-caps` letter-spacing token, `py-section` fluid rhythm, and shared `Section`/`SectionHeader` components (`components/public/Section.tsx`, `SectionHeader.tsx`) plus a `buttonClasses()` export from `components/ui/Button.tsx` to remove ~8 duplicated header layouts and 6 duplicated CTA class strings. Card grids (Brands, Body Types) became hairline-divided grids; repeated content (evaluation profiles, selling steps, trust points, reviews) became borderless numbered/divided lists. Hero kept its layout, photo, and copy — only its eyebrow, stats strip, and assurance chips were restyled to match the new system. Deleted unused `components/public/HowItWorks.tsx` and `CarSkylineArt.tsx` (verified unimported). Verified with `npm run lint`, `npm run build`, and a Playwright pass at 1440px/375px viewports plus modal/mobile-menu interaction checks — zero console errors, zero horizontal overflow.
 - Show useful loading, empty, error, and retry states.
 - Do not cache private user data publicly.
 

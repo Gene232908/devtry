@@ -17,6 +17,7 @@ const config: Config = {
       colors: {
         bg: "rgb(var(--bg-rgb) / <alpha-value>)",
         "bg-elev": "rgb(var(--bg-elev-rgb) / <alpha-value>)",
+        panel: "rgb(var(--bg-panel-rgb) / <alpha-value>)",
         surface: "rgb(var(--surface-rgb) / <alpha-value>)",
         "surface-2": "rgb(var(--surface-2-rgb) / <alpha-value>)",
         border: "rgb(var(--border-rgb) / <alpha-value>)",
@@ -53,6 +54,13 @@ const config: Config = {
       borderRadius: {
         card: "8px",
         btn: "999px",
+      },
+      letterSpacing: {
+        caps: "0.22em",
+        "caps-wide": "0.3em",
+      },
+      spacing: {
+        section: "clamp(5rem, 4rem + 5vw, 8rem)",
       },
       keyframes: {
         "pulse-glow": {

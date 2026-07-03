@@ -13,6 +13,7 @@ Use reverse chronological order.
 
 ### Changed
 
+- Refactored the entire public landing page to an "editorial minimal" black-and-gold design: one flat canvas background, a strict gold usage budget (eyebrows, primary CTA, stats/step numbers, hover, two bookend dividers only), hairline dividers replacing gold card borders, and borderless numbered/divided lists replacing boxed cards across Vehicle Discovery, Brand Browse, Featured Vehicles, Body Types, Sell Experience, Why Choose Us, Financing, Reviews, Final CTA, and Contact. Hero kept its layout and copy with only styling polish (de-boxed stats, de-pilled assurance chips, standardized eyebrow). Added shared `Section`/`SectionHeader` components and a `buttonClasses()` helper to remove duplicated section-header and CTA markup. Removed unused `HowItWorks.tsx` and `CarSkylineArt.tsx`.
 - Refined the post-hero homepage around Milestone 1 sell-side valuation: the vehicle finder became an evaluation showcase, brand browse became accepted-brand badges, vehicle cards became valuation profiles, and body-type cards became passive guidance.
 - Updated the public header to a darker glass-style navigation treatment with a valuation-first main action.
 - Reduced repeated WhatsApp CTAs across the navbar, vehicle profile cards, financing preview, final CTA, and footer.
