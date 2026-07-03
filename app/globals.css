@@ -12,6 +12,8 @@
   --surface-rgb: 22 22 22;
   --surface-2: #1e1c19;
   --surface-2-rgb: 30 28 25;
+  --bg-panel: #111110;
+  --bg-panel-rgb: 17 17 16;
   --border: #2a2620;
   --border-rgb: 42 38 32;
   --border-gold: #4a3d1f;
@@ -59,8 +61,7 @@ html {
 
 body {
   color: var(--text);
-  background:
-    linear-gradient(180deg, #090909 0%, #0d0c0a 42%, #090909 100%);
+  background: var(--bg);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   font-feature-settings: "kern" 1, "liga" 1;
 }
@@ -71,10 +72,12 @@ body {
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-
+  /*
+    Gold budget — gold appears only as: eyebrow labels + .gold-rule, primary CTA
+    fill (.btn-gold), key stat/step numbers, hover/focus accents, and the two
+    .divider-gold-fade bookends (final CTA band, footer). Resting borders and
+    dividers use white hairlines (.hairline-*, divide-white/5) instead.
+  */
   .font-display {
     font-family: var(--font-display), var(--font-sans), Arial, Helvetica, sans-serif;
     font-feature-settings: "kern" 1, "liga" 1;
@@ -86,13 +89,6 @@ body {
       0 0 18px -2px rgba(212, 175, 55, 0.55);
   }
 
-  .gold-gradient-text {
-    background: linear-gradient(180deg, var(--gold-hi), var(--gold) 60%, var(--gold-deep));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
   .btn-gold {
     background: linear-gradient(135deg, #f0d77b 0%, #d4af37 48%, #b98d25 100%);
     border: 1px solid rgba(186, 140, 32, 0.85);
@@ -102,14 +98,30 @@ body {
     color: #18130a;
   }
 
-  .border-gold-hairline {
-    border: 1px solid var(--border-gold);
-  }
-
   .card-shadow {
     box-shadow:
       0 18px 58px -42px rgba(212, 175, 55, 0.55),
       0 10px 34px -26px rgba(0, 0, 0, 0.9);
+  }
+
+  .hairline-t {
+    border-top: 1px solid rgb(255 255 255 / 0.06);
+  }
+
+  .hairline-b {
+    border-bottom: 1px solid rgb(255 255 255 / 0.06);
+  }
+
+  .gold-rule {
+    display: inline-block;
+    width: 2rem;
+    height: 2px;
+    background: var(--gold);
+  }
+
+  .divider-gold-fade {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(243, 222, 138, 0.6), transparent);
   }
 }
 

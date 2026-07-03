@@ -1,8 +1,9 @@
 import { popularBrands, type BrandMark } from "@/config/homepage";
-import { cn } from "@/lib/utils";
+import { Section } from "./Section";
+import { SectionHeader } from "./SectionHeader";
 
 function BrandMarkGraphic({ mark }: { mark: BrandMark }) {
-  const common = "h-16 w-24 text-gold";
+  const common = "h-16 w-24 text-text-muted transition-colors duration-300 group-hover:text-gold";
 
   switch (mark) {
     case "mercedes":
@@ -73,7 +74,7 @@ function BrandMarkGraphic({ mark }: { mark: BrandMark }) {
       return (
         <svg viewBox="0 0 96 64" aria-hidden="true" className={common}>
           <circle cx="48" cy="32" r="24" fill="none" stroke="currentColor" strokeWidth="2.2" />
-          <rect x="18" y="25" width="60" height="14" rx="2" fill="#090908" stroke="currentColor" strokeWidth="2" />
+          <rect x="18" y="25" width="60" height="14" rx="2" fill="var(--bg)" stroke="currentColor" strokeWidth="2" />
           <text x="48" y="36" textAnchor="middle" className="fill-current text-[10px] font-extrabold">
             NISSAN
           </text>
@@ -100,49 +101,28 @@ function BrandMarkGraphic({ mark }: { mark: BrandMark }) {
 
 export function BrandBrowse() {
   return (
-    <section id="brands" className="relative overflow-hidden bg-[#0d0c0a] py-14 sm:py-20">
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,.025),transparent_45%),linear-gradient(120deg,transparent,rgba(212,175,55,.08)_70%,transparent)]"
+    <Section id="brands">
+      <SectionHeader
+        align="split"
+        eyebrow="Brands Customers Can Sell To Us"
+        title="Recognizable badges, handled with a more premium intake."
+        intro="These marques are shown as sell-side references. They help visitors understand the kind of vehicles CarVibeDubai can review after the free valuation form."
       />
-      <div className="container relative">
-        <div className="flex flex-col gap-5 border-y border-border-gold/35 py-8 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-fluid--1 font-bold uppercase text-gold">Brands Customers Can Sell To Us</p>
-            <h2 className="mt-3 max-w-xl font-display text-fluid-3 font-extrabold leading-tight text-text">
-              Recognizable badges, handled with a more premium intake.
-            </h2>
-          </div>
-          <p className="max-w-xl text-fluid--1 leading-7 text-text-muted">
-            These marques are shown as sell-side references. They help visitors understand the kind of vehicles CarVibeDubai can review after the free valuation form.
-          </p>
-        </div>
 
-        <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          {popularBrands.map((brand, index) => (
+      <div className="mt-12 overflow-hidden rounded-card border border-white/5 bg-white/5 lg:mt-16">
+        <div className="grid grid-cols-2 gap-px lg:grid-cols-5">
+          {popularBrands.map((brand) => (
             <article
               key={brand.name}
-              className={cn(
-                "group relative min-h-[190px] overflow-hidden rounded-card border border-border-gold/45 bg-[linear-gradient(145deg,rgba(20,20,20,.92),rgba(8,8,8,.78))] p-4 transition-all duration-300 hover:-translate-y-1 hover:border-gold/75",
-                index === 0 && "lg:col-span-2",
-                index === 1 && "lg:col-span-2",
-              )}
+              className="group flex min-h-[170px] flex-col items-center justify-center bg-bg px-4 py-8 text-center sm:px-6"
             >
-              <div className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100 bg-[radial-gradient(circle_at_50%_0%,rgba(243,222,138,.14),transparent_55%)]" />
-              <div className="relative flex h-full flex-col justify-between">
-                <div className="flex min-h-20 items-center justify-center rounded-card border border-white/10 bg-white/[.035] backdrop-blur-sm">
-                  <BrandMarkGraphic mark={brand.mark} />
-                </div>
-                <div className="mt-5">
-                  <p className="font-display text-fluid-0 font-extrabold text-text">{brand.name}</p>
-                  <p className="mt-2 text-fluid--1 font-semibold text-gold">{brand.segment}</p>
-                  <p className="mt-1 text-[0.76rem] leading-5 text-text-muted">{brand.note}</p>
-                </div>
-              </div>
+              <BrandMarkGraphic mark={brand.mark} />
+              <p className="mt-4 font-display text-fluid--1 font-semibold text-text">{brand.name}</p>
+              <p className="mt-1 text-[0.7rem] text-text-faint">{brand.segment}</p>
             </article>
           ))}
         </div>
       </div>
-    </section>
+    </Section>
   );
 }

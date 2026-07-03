@@ -7,6 +7,7 @@ import { Logo } from "./Logo";
 import { brand } from "@/config/brand";
 import { copy } from "@/config/copy";
 import { cn } from "@/lib/utils";
+import { buttonClasses } from "@/components/ui/Button";
 import { openValuationModal } from "./open-valuation-modal";
 
 const LINKS = [
@@ -18,7 +19,7 @@ const LINKS = [
 ];
 
 const UTILITY_LINK_CLASS =
-  "inline-flex min-h-8 items-center gap-1.5 text-[0.72rem] font-semibold text-white/80 transition-colors hover:text-gold";
+  "inline-flex min-h-8 items-center gap-1.5 text-[0.72rem] font-semibold text-white/55 transition-colors hover:text-gold";
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -51,13 +52,13 @@ export function Navbar() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 w-full border-b border-white/10 bg-[#080807]/82 text-text backdrop-blur-2xl transition-shadow duration-200",
+        "sticky top-0 z-40 w-full border-b border-white/10 bg-bg/80 text-text backdrop-blur-2xl transition-shadow duration-200",
         scrolled && "shadow-[0_24px_54px_-36px_rgba(0,0,0,.95)]",
       )}
     >
-      <div className="border-b border-white/10 bg-black/35">
+      <div className="hairline-b">
         <div className="container flex min-h-9 items-center justify-between gap-4 py-1">
-          <div className="hidden items-center gap-2 text-[0.72rem] font-semibold uppercase text-white/80 sm:flex">
+          <div className="hidden items-center gap-2 text-[0.72rem] font-semibold uppercase text-white/55 sm:flex">
             <MapPin className="h-3.5 w-3.5 text-gold" />
             <span>{brand.address}</span>
           </div>
@@ -81,7 +82,7 @@ export function Navbar() {
               href={brand.socials.facebook}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden min-h-8 items-center text-[0.72rem] font-semibold text-white/70 transition-colors hover:text-white sm:inline-flex"
+              className="hidden min-h-8 items-center text-[0.72rem] font-semibold text-white/55 transition-colors hover:text-white sm:inline-flex"
               aria-label="Open CarVibeDubai Facebook"
             >
               Facebook
@@ -102,9 +103,9 @@ export function Navbar() {
                 <a
                   href={link.href}
                   className={cn(
-                    "relative inline-flex h-10 items-center text-[0.78rem] font-bold uppercase text-text-muted transition-colors hover:text-text",
+                    "relative inline-flex h-10 items-center text-[0.72rem] font-semibold uppercase tracking-caps text-text-muted transition-colors hover:text-text",
                     active === link.href &&
-                      "text-text after:absolute after:bottom-1 after:left-0 after:h-0.5 after:w-full after:bg-gold",
+                      "text-text after:absolute after:bottom-1 after:left-0 after:h-px after:w-5 after:bg-gold",
                   )}
                 >
                   {link.label}
@@ -118,7 +119,7 @@ export function Navbar() {
           <button
             type="button"
             onClick={openValuationModal}
-            className="btn-gold inline-flex h-10 items-center justify-center rounded-full px-5 text-[0.78rem] font-extrabold uppercase transition-all hover:brightness-110"
+            className={buttonClasses({ size: "sm", className: "uppercase tracking-caps text-[0.72rem]" })}
           >
             Free Valuation
           </button>
@@ -126,7 +127,7 @@ export function Navbar() {
 
         <button
           type="button"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border-gold/65 bg-bg/60 text-text backdrop-blur-md lg:hidden"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-bg/60 text-text backdrop-blur-md lg:hidden"
           aria-label="Toggle menu"
           onClick={() => setOpen((o) => !o)}
         >
@@ -135,7 +136,7 @@ export function Navbar() {
       </nav>
 
       {open && (
-        <div className="animate-fade-in border-t border-white/10 bg-[#080807]/95 text-text backdrop-blur-2xl lg:hidden">
+        <div className="animate-fade-in border-t border-white/10 bg-bg/95 text-text backdrop-blur-2xl lg:hidden">
           <ul className="container flex flex-col gap-1 py-4">
             {LINKS.map((link) => (
               <li key={link.href}>
@@ -151,14 +152,14 @@ export function Navbar() {
             <li className="pt-2">
               <a
                 href={`tel:${brand.callNumber}`}
-                className="mb-2 flex h-11 w-full items-center justify-center gap-2 rounded-btn border border-border-gold/65 bg-bg/55 px-5 text-fluid-0 font-bold text-text transition-colors hover:border-gold"
+                className="mb-2 flex h-11 w-full items-center justify-center gap-2 rounded-btn border border-white/15 bg-bg/55 px-5 text-fluid-0 font-bold text-text transition-colors hover:border-gold"
               >
                 <Phone className="h-4 w-4 text-gold" />
                 Call {brand.callNumber}
               </a>
               <button
                 type="button"
-                className="btn-gold flex h-11 w-full items-center justify-center rounded-btn px-5 text-fluid-0 font-bold"
+                className={buttonClasses({ className: "w-full" })}
                 onClick={() => {
                   setOpen(false);
                   openValuationModal();
