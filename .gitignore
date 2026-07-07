@@ -41,3 +41,26 @@ next-env.d.ts
 /*.exe
 /CarVibe_Meeting_Transcript_Pack.zip
 ~$*.docx
+*.docx
+
+# local planning, prompt, and private meeting docs
+*.md
+!README.md
+!AGENTS.md
+!RULES.md
+!AI_DOCS_GUIDE.md
+!CARVIBE_BUILD_PLAN.md
+!docs/ai/*.md
+/docs/client/
+/docs/meetings/
+/_OLD_AI_DOCS_BACKUP/
+/Microsoft/
+/CarVibe_Calling_Commands.txt
+/ETO YUNG CALLING MO.txt
+/MEETING_EXTRACTION_PROMPT.txt
+/MEETING_WORKFLOW.md
+/promptmonato.txt
+
+# raw local image dumps/backups
+/public/images/WhatsApp Image *.jpeg
+/public/images/old/
