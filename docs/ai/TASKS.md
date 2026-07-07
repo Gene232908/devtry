@@ -6,11 +6,6 @@ Prepare Milestone 1 public landing work for GitHub/Vercel review and collect rem
 
 ## In progress
 
-- [ ] Commit and push the current Milestone 1 landing package.
-  - Related feature: Release preparation
-  - Acceptance criteria: Git is available, changes are committed, and the branch is pushed to `https://github.com/Gene232908/carvibe`.
-  - Risks: Git is installed but the current shell PATH has not refreshed, so commands use the full Git executable path.
-  - Next action: Commit and push the staged Milestone 1 package.
 - [ ] Client review of Milestone 1 public landing revisions.
   - Related feature: Public landing page
   - Acceptance criteria: Premium dark glass header, private valuation hero, full-width real-photo sell-side evaluation sections, accepted brand badges, contact-first valuation form, and inspection area field are accepted.
@@ -35,6 +30,7 @@ Prepare Milestone 1 public landing work for GitHub/Vercel review and collect rem
 
 ## Completed
 
+- [x] 2026-07-07 Committed and pushed the Milestone 1 landing package to `origin/main` for GitHub/Vercel review.
 - [x] 2026-07-07 Prepared Milestone 1 meeting report in Markdown and Word `.docx`, including a non-technical script, live-demo walkthrough, and client question scenarios.
 - [x] 2026-07-07 Finalized public landing polish: approved hero kept, hero focus-in animation added, full-page blur replaced with a lighter fade for performance, client `dubaii.jpeg` used in How It Works, How It Works seam blended, and the video band/footer merged into one compact footer.
 - [x] 2026-07-05 Tightened "Why Choose Us" sizing (smaller statement/tagline text, compact fixed min-height, tighter spacing) after it was taking up more than a full screen's height, with lint/build verification.
