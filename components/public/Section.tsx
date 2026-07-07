@@ -5,6 +5,7 @@ type SectionProps = {
   id?: string;
   tone?: "default" | "panel";
   divider?: "none" | "hairline" | "gold";
+  bleed?: boolean;
   className?: string;
   containerClassName?: string;
   children: ReactNode;
@@ -14,6 +15,7 @@ export function Section({
   id,
   tone = "default",
   divider = "none",
+  bleed = false,
   className,
   containerClassName,
   children,
@@ -29,7 +31,7 @@ export function Section({
       )}
     >
       {divider === "gold" && <div aria-hidden="true" className="divider-gold-fade absolute inset-x-0 top-0" />}
-      <div className={cn("container", containerClassName)}>{children}</div>
+      <div className={cn(!bleed && "container", containerClassName)}>{children}</div>
     </section>
   );
 }

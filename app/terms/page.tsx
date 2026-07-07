@@ -1,3 +1,4 @@
+import { UtilityBar } from "@/components/public/UtilityBar";
 import { Navbar } from "@/components/public/Navbar";
 import { Footer } from "@/components/public/Footer";
 import { brand } from "@/config/brand";
@@ -5,8 +6,9 @@ import { brand } from "@/config/brand";
 export default function TermsPage() {
   return (
     <>
+      <UtilityBar />
       <Navbar />
-      <main className="container py-16">
+      <main className="container pb-16 pt-36 sm:pt-40">
         <h1 className="font-display text-fluid-3 text-text">Terms of Service</h1>
         <div className="mt-6 max-w-2xl space-y-4 text-fluid-0 text-text-muted">
           <p>

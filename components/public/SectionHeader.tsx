@@ -12,23 +12,23 @@ export function SectionHeader({ eyebrow, title, intro, align = "start", classNam
   return (
     <div
       className={cn(
-        align === "split" && "lg:grid lg:grid-cols-[1fr_auto] lg:items-end lg:gap-x-12",
+        align === "split" && "lg:grid lg:grid-cols-[minmax(0,0.95fr)_minmax(18rem,0.45fr)] lg:items-end lg:gap-x-16",
         className,
       )}
     >
       <div>
-        <p className="flex items-center gap-3 text-[0.72rem] font-semibold uppercase tracking-caps text-gold">
+        <p className="flex items-center gap-3 text-[0.72rem] font-medium uppercase text-gold">
           <span aria-hidden="true" className="gold-rule" />
           {eyebrow}
         </p>
-        <h2 className="mt-5 max-w-2xl font-display text-fluid-4 font-bold leading-[1.05] tracking-tight text-text text-balance">
+        <h2 className="mt-5 max-w-2xl font-display text-fluid-4 font-light leading-[1.08] text-text text-balance">
           {title}
         </h2>
       </div>
       {intro ? (
         <p
           className={cn(
-            "mt-5 max-w-xl text-fluid-0 leading-8 text-text-muted",
+            "mt-5 max-w-xl text-fluid-0 font-light leading-8 text-text-muted",
             align === "split" && "lg:mb-1.5 lg:max-w-md lg:justify-self-end",
           )}
         >

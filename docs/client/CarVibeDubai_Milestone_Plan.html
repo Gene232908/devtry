@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CarVibeDubai Development Milestone Plan</title>
+    <style>
+      :root {
+        --black: #0b0b0b;
+        --soft-black: #171717;
+        --gold: #d4af37;
+        --gold-soft: #f2dc8a;
+        --ink: #202020;
+        --muted: #666666;
+        --paper: #ffffff;
+        --line: #dedede;
+        --cream: #fbf7ea;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: #efefef;
+        color: var(--ink);
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 14px;
+        line-height: 1.55;
+      }
+      .page {
+        width: min(920px, 100%);
+        margin: 0 auto;
+        background: var(--paper);
+        min-height: 100vh;
+      }
+      .cover {
+        background: linear-gradient(135deg, var(--black), var(--soft-black));
+        color: #fff;
+        padding: 44px 52px 38px;
+        border-bottom: 6px solid var(--gold);
+      }
+      .eyebrow {
+        color: var(--gold-soft);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+      }
+      .cover h1 {
+        margin: 16px 0 12px;
+        color: #fff;
+        border: 0;
+        padding: 0;
+        font-size: 34px;
+        line-height: 1.15;
+      }
+      .cover p {
+        max-width: 720px;
+        color: #e9e9e9;
+        font-size: 15px;
+        margin: 0;
+      }
+      main { padding: 34px 52px 56px; }
+      h1 { display: none; }
+      h2 {
+        margin: 30px 0 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--line);
+        color: var(--black);
+        font-size: 21px;
+        line-height: 1.25;
+      }
+      p { margin: 8px 0 12px; }
+      ul, ol { margin: 8px 0 16px 22px; padding: 0; }
+      li { margin: 5px 0; }
+      code {
+        padding: 1px 4px;
+        border-radius: 4px;
+        background: #f1f1f1;
+        color: #111;
+        font-family: Consolas, monospace;
+        font-size: 12px;
+      }
+      main h2:nth-of-type(1) + p,
+      main h2:nth-of-type(2) + p,
+      main h2:nth-of-type(3) + p {
+        border-left: 4px solid var(--gold);
+        background: var(--cream);
+        padding: 12px 14px;
+        border-radius: 0 6px 6px 0;
+      }
+      @media print {
+        body { background: #fff; }
+        .page { width: 100%; }
+        .cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        main { padding-bottom: 24px; }
+        h2 { break-after: avoid; }
+        ul, ol { break-inside: avoid; }
+      }
+      @media (max-width: 640px) {
+        .cover, main { padding-left: 24px; padding-right: 24px; }
+        .cover h1 { font-size: 28px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="cover">
+        <div class="eyebrow">CarVibeDubai</div>
+        <h1>Development Milestone Plan</h1>
+        <p>Prepared for CarVibeDubai Management / Owner. Aligned with the signed proposal and the technical build plan.</p>
+      </header>
+      <main>
+<h1>CarVibeDubai Development Milestone Plan</h1>
+<p>Prepared for: CarVibeDubai Management / Owner</p>
+<p>Project: Car lead capture system, private admin dashboard, and CRM pipeline</p>
+<p>Source basis: Signed CarVibeDubai proposal and <code>CARVIBE_BUILD_PLAN.md</code></p>
+<p>Timeline estimate: Up to 45 days / around 1.5 months from confirmed start date</p>
+<p>Status: Milestone schedule prepared after the Developer Requirements Form</p>
+<h2>Short Message For Sir Nyash</h2>
+<p>Hi Sir Nyash,</p>
+<p>Thank you for completing the requirements form. I reviewed it together with our signed proposal, and I can now organize the project into clear development milestones.</p>
+<p>Based on the full approved scope, this is not just a basic landing page. The work includes the public CarVibeDubai website, the car valuation form, phone OTP verification, database setup, private admin dashboard, CRM pipeline, Gmail lead notifications, completed-sale tracking, profit calculation, and launch testing.</p>
+<p>For that reason, the safe timeline is around 1 and a half months, or up to 45 days from the confirmed start date. Some parts may be completed earlier, especially the public website design, but I do not want to rush the database, CRM, and admin logic because those parts need proper setup and testing.</p>
+<p>I will handle the project in 4 milestones:</p>
+<ol>
+<li>Public website and landing page.</li>
+<li>Valuation form, OTP, and database foundation.</li>
+<li>Private admin dashboard and CRM pipeline.</li>
+<li>Notifications, settings, testing, launch preparation, and handover.</li>
+</ol>
+<p>The &quot;Buy a Car&quot; button will be prepared as agreed, but it will stay disabled by default until CarVibeDubai is ready to activate that future feature.</p>
+<p>The timeline can move faster if the logo, final contact details, Gmail, domain details, and feedback are provided early. But as a realistic expectation, please allow up to 45 days so the full system can be built properly.</p>
+<p>I will send progress updates as each milestone is completed.</p>
+<p>Thank you,</p>
+<p>CarVibeDubai Development Team</p>
+<h2>Alignment With The Signed Proposal</h2>
+<p>This milestone plan follows the signed CarVibeDubai proposal and the technical build plan. It does not replace the signed proposal, change the agreed PHP 67,000 professional development fee, or expand the signed scope.</p>
+<p>The approved project focus is:</p>
+<ul>
+<li>Public CarVibeDubai website for car-seller lead capture.</li>
+<li>Car submission form with Make, Model, Year, Mileage, and Condition.</li>
+<li>Phone OTP verification through Twilio before submission.</li>
+<li>Thank-you confirmation with no automatic price shown to the customer.</li>
+<li>Private admin dashboard for authorized CarVibeDubai Management users.</li>
+<li>CRM pipeline for tracking leads through sale or not-purchased stages.</li>
+<li>Gmail notification when a new lead is submitted.</li>
+<li>Completed-sale record with purchase price, final selling price, profit, and completion date.</li>
+<li>Automatic 2% developer partnership-share calculation from completed-sale profit records.</li>
+<li>Settings for contact details, Gmail address, pipeline stages, and future team member accounts.</li>
+<li>Disabled &quot;Buy a Car&quot; button prepared for future activation.</li>
+<li>Launch preparation, testing, handover, and 30-day technical warranty for original build defects.</li>
+</ul>
+<h2>Timeline Note</h2>
+<p>The 45-day timeline is a realistic estimate. Some parts may finish earlier if all details, assets, access, and feedback are ready on time. If the project is waiting for client information, approval, payment, domain access, Supabase access, Twilio setup, Gmail access, Meta Pixel details, or other required accounts, the timeline may extend accordingly.</p>
+<p>The plan should begin after:</p>
+<ul>
+<li>The finalized schedule is confirmed through the agreed written communication channel.</li>
+<li>Required information and access are provided.</li>
+<li>The first scheduled payment is received, based on the finalized payment milestone arrangement.</li>
+</ul>
+<h2>Milestone 1 - Public Website And Landing Page</h2>
+<p>Estimated schedule: Days 1 to 15</p>
+<p>Main goal: Prepare the customer-facing CarVibeDubai website so it looks premium, works well on mobile, and clearly leads visitors toward submitting their car details.</p>
+<p>Planned work:</p>
+<ul>
+<li>Build the public website using original code, not a pre-made template.</li>
+<li>Prepare the premium black and gold landing page direction.</li>
+<li>Add the main headline, supporting message, and call-to-action.</li>
+<li>Prepare the navigation for the main sections.</li>
+<li>Add the How It Works section.</li>
+<li>Add the valuation entry area for customers.</li>
+<li>Add the floating WhatsApp chat and call access.</li>
+<li>Prepare the disabled &quot;Buy a Car&quot; button as agreed.</li>
+<li>Add the contact section and footer, including the approved developer credit line.</li>
+<li>Make the page responsive for phones, tablets, and desktop screens.</li>
+<li>Review and adjust wording, spacing, and layout based on feedback.</li>
+</ul>
+<p>Expected result by the end of this milestone:</p>
+<ul>
+<li>A premium public website direction is ready for review.</li>
+<li>Customers can understand what CarVibeDubai offers and where to submit their car details.</li>
+<li>The public page is mobile-friendly and aligned with the signed black/gold direction.</li>
+<li>Remaining revisions should mostly be wording, images, spacing, or brand-detail adjustments.</li>
+</ul>
+<p>Client input needed:</p>
+<ul>
+<li>Final logo file.</li>
+<li>Final brand name spelling.</li>
+<li>Preferred headline and short message.</li>
+<li>WhatsApp number, call number, and public contact details.</li>
+<li>Approval of footer credit wording.</li>
+<li>Any final design reference or Canva notes.</li>
+</ul>
+<h2>Milestone 2 - Valuation Form, OTP, And Database Foundation</h2>
+<p>Estimated schedule: Days 16 to 25</p>
+<p>Main goal: Prepare the customer submission flow so real leads can be validated, verified, and stored properly.</p>
+<p>Planned work:</p>
+<ul>
+<li>Build the car submission form.</li>
+<li>Add dropdowns for Make, Model, Year, Mileage, and Condition.</li>
+<li>Add customer name and phone number fields.</li>
+<li>Add validation for required fields and incorrect entries.</li>
+<li>Prepare phone OTP verification through Twilio.</li>
+<li>Ensure only confirmed phone numbers can submit.</li>
+<li>Add the thank-you confirmation message after submission.</li>
+<li>Keep the customer flow clear that no automatic price or valuation is shown at this stage.</li>
+<li>Set up the Supabase database foundation under the CarVibeDubai Management account.</li>
+<li>Prepare lead records, customer contact data, car details, CRM activity, and completed-sale data structure.</li>
+<li>Prepare basic security rules so public visitors cannot access private lead data.</li>
+<li>Prepare the data flow for the admin dashboard and CRM pipeline.</li>
+</ul>
+<p>Expected result by the end of this milestone:</p>
+<ul>
+<li>The public form is ready to collect customer details.</li>
+<li>Phone verification and lead capture are prepared according to the signed scope.</li>
+<li>The database structure is ready for the private dashboard and CRM tracking.</li>
+</ul>
+<p>Client input needed:</p>
+<ul>
+<li>Final car dropdown lists.</li>
+<li>Final form field order.</li>
+<li>Final thank-you message.</li>
+<li>Twilio setup or access details.</li>
+<li>Supabase account ownership/access details.</li>
+<li>Confirmation of any optional fields such as location, preferred contact time, or car photos.</li>
+</ul>
+<h2>Milestone 3 - Private Admin Dashboard And CRM Pipeline</h2>
+<p>Estimated schedule: Days 26 to 35</p>
+<p>Main goal: Build the private admin area where CarVibeDubai Management can receive, review, follow up, and track leads through the sales process.</p>
+<p>Planned work:</p>
+<ul>
+<li>Build the private admin dashboard.</li>
+<li>Add secure OTP login for authorized accounts.</li>
+<li>Add dashboard summary cards for total submissions, new leads, visitor count, pipeline status, and completed transactions.</li>
+<li>Build the leads directory with customer name, phone number, car details, submission date, current stage, and notes.</li>
+<li>Build the lead detail view with complete information.</li>
+<li>Add one-click WhatsApp contact from lead records.</li>
+<li>Add follow-up notes.</li>
+<li>Add status history so authorized users can see how a lead moved through the pipeline.</li>
+<li>Add the CRM stages from the signed proposal:</li>
+<li>New Lead.</li>
+<li>Contacted.</li>
+<li>Inspection Scheduled.</li>
+<li>Inspected.</li>
+<li>Under Negotiation.</li>
+<li>Completed Sale.</li>
+<li>Not Purchased.</li>
+<li>Add completed-sale fields:</li>
+<li>Vehicle purchase price.</li>
+<li>Final selling price.</li>
+<li>Calculated profit.</li>
+<li>Transaction completion date.</li>
+<li>Add automatic 2% partnership-share calculation based on completed-sale profit records.</li>
+<li>Prepare monthly partnership-share records and quarterly settlement summary.</li>
+</ul>
+<p>Expected result by the end of this milestone:</p>
+<ul>
+<li>CarVibeDubai Management has a private working dashboard.</li>
+<li>Leads can be reviewed, contacted, updated, and tracked through the approved CRM pipeline.</li>
+<li>Completed sales can be recorded with profit and partnership-share calculation.</li>
+</ul>
+<p>Client input needed:</p>
+<ul>
+<li>Authorized admin email or login details.</li>
+<li>Confirmation of who can access the dashboard.</li>
+<li>Final pipeline stage wording if any labels need adjustment.</li>
+<li>Confirmation of completed-sale data entry responsibilities.</li>
+</ul>
+<h2>Milestone 4 - Notifications, Settings, Testing, Launch Preparation, And Handover</h2>
+<p>Estimated schedule: Days 36 to 45</p>
+<p>Main goal: Connect the final business settings, test the full system, prepare launch, and hand over the working flow to CarVibeDubai Management / Owner.</p>
+<p>Planned work:</p>
+<ul>
+<li>Set up Gmail notifications for new lead submissions.</li>
+<li>Add settings for contact details, Gmail address, pipeline stages, and future team member accounts.</li>
+<li>Connect the approved WhatsApp and call numbers.</li>
+<li>Prepare visitor and lead counts for the dashboard.</li>
+<li>Test the full customer journey from website visit to form submission.</li>
+<li>Test the OTP flow.</li>
+<li>Test the private admin login flow.</li>
+<li>Test dashboard lead viewing, notes, WhatsApp follow-up, CRM stage changes, completed-sale records, and settlement summary.</li>
+<li>Review mobile layout on phones, tablets, and desktop screens.</li>
+<li>Prepare launch setup using the approved domain, Vercel, Supabase, Twilio, and Gmail accounts.</li>
+<li>Prepare HTTPS/security setup for the public website address.</li>
+<li>Prepare the limited website-side Meta Pixel integration if the Pixel ID, domain access, permissions, and event requirements are provided.</li>
+<li>Confirm that Meta ad management, campaign strategy, analytics reporting, and creative production are outside this development scope unless separately agreed.</li>
+<li>Prepare handover notes and walkthrough.</li>
+<li>Begin the 30-day technical warranty after the approved system goes live.</li>
+</ul>
+<p>Expected result by the end of this milestone:</p>
+<ul>
+<li>The website and admin system are ready for final review and launch preparation.</li>
+<li>The lead process is tested from customer submission to admin follow-up.</li>
+<li>CarVibeDubai Management / Owner can understand the main website, dashboard, and CRM workflow.</li>
+</ul>
+<p>Client input needed:</p>
+<ul>
+<li>Final Gmail address for notifications.</li>
+<li>Final WhatsApp and call numbers.</li>
+<li>Domain details.</li>
+<li>Vercel, Supabase, Twilio, Gmail, and Meta Pixel access if needed.</li>
+<li>Final approval before publishing.</li>
+</ul>
+<h2>Out-Of-Scope Reminder</h2>
+<p>The signed proposal excludes the following unless separately agreed in writing:</p>
+<ul>
+<li>Full buy-and-sell marketplace.</li>
+<li>Arabic or bilingual language work.</li>
+<li>Identity verification / KYC.</li>
+<li>Payment gateway.</li>
+<li>Advanced SEO package.</li>
+<li>Mobile app.</li>
+<li>Complete redesigns after approval.</li>
+<li>Major system enhancements or new modules.</li>
+<li>Social media posting.</li>
+<li>Ad account or campaign management.</li>
+<li>Routine ad analytics checking or reporting.</li>
+<li>Google Ads handling.</li>
+<li>Original artwork, poster, photo, video, voiceover, or promotional creative production.</li>
+<li>On-site work, relocation, travel, or physical presence in the UAE.</li>
+</ul>
+<p>The &quot;Buy a Car&quot; button is included only as a disabled feature that can be enabled later when CarVibeDubai is ready. A full marketplace remains a separate future phase.</p>
+<h2>Third-Party Cost Reminder</h2>
+<p>The project is planned around free-plan usage where possible, but third-party accounts and usage costs remain owned and paid directly by CarVibeDubai Management:</p>
+<ul>
+<li>Domain registration and renewal.</li>
+<li>Vercel hosting, initially intended on the free plan unless an upgrade becomes required.</li>
+<li>Supabase database, initially intended on the free plan unless usage requires an upgrade.</li>
+<li>Twilio OTP usage-based top-up.</li>
+<li>Gmail account used for notifications, subject to Gmail limits.</li>
+<li>Meta Business Manager and Meta Pixel account access, if tracking is used.</li>
+</ul>
+<h2>Simple Client Summary</h2>
+<p>Milestone 1 focuses on the public website.</p>
+<p>Milestone 2 focuses on the customer form, OTP, and database.</p>
+<p>Milestone 3 focuses on the private dashboard and CRM pipeline.</p>
+<p>Milestone 4 focuses on notifications, settings, testing, launch preparation, and handover.</p>
+<p>The timeline may be faster if everything is provided early, but the safe expectation is up to 45 days because the database, CRM, OTP, and completed-sale tracking need proper setup and testing.</p>
+      </main>
+    </div>
+  </body>
+</html>

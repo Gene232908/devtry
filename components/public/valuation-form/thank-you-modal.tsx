@@ -18,7 +18,7 @@ export function ThankYouModal({ open, onClose }: { open: boolean; onClose: () =>
             href={whatsappLink("Hi, I just submitted my car valuation request.")}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-gold inline-flex h-11 flex-1 items-center justify-center rounded-btn px-5 text-fluid-0 font-semibold transition-all hover:brightness-110"
+            className="btn-gold inline-flex h-11 flex-1 items-center justify-center rounded-btn px-5 text-fluid-0 font-medium transition-all hover:brightness-110"
           >
             Chat on WhatsApp now
           </a>

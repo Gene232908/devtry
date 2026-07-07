@@ -2,173 +2,259 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { MapPin, Menu, Phone, X } from "lucide-react";
+import { Menu, MessageCircle, Phone, X } from "lucide-react";
 import { Logo } from "./Logo";
-import { brand } from "@/config/brand";
-import { copy } from "@/config/copy";
 import { cn } from "@/lib/utils";
-import { buttonClasses } from "@/components/ui/Button";
 import { openValuationModal } from "./open-valuation-modal";
 
-const LINKS = [
-  { label: "Home", href: "#home" },
-  { label: "We Buy", href: "#vehicle-discovery" },
+const COMING_SOON_LABELS = ["Buy"];
+
+const NAV_ITEMS = [
+  { label: "Sell", href: "#why-sell-to-us" },
+  { label: "How It Works", href: "#sell-your-car" },
   { label: "Brands", href: "#brands" },
-  { label: "Process", href: "#sell-your-car" },
-  { label: "Contact", href: "#contact" },
+  { label: "Buy", badge: "Coming soon" },
+  { label: "Contact Us", href: "#contact" },
 ];
 
-const UTILITY_LINK_CLASS =
-  "inline-flex min-h-8 items-center gap-1.5 text-[0.72rem] font-semibold text-white/55 transition-colors hover:text-gold";
+const SECTION_IDS = NAV_ITEMS.filter((item) => item.href).map((item) => item.href!.slice(1));
 
 export function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-  const [active, setActive] = useState("#home");
+  const [comingSoonOpen, setComingSoonOpen] = useState(false);
+  const [activeId, setActiveId] = useState<string>("");
 
   useEffect(() => {
-    function onScroll() {
-      setScrolled(window.scrollY > 8);
-    }
-    onScroll();
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    const sections = SECTION_IDS.map((id) => document.getElementById(id)).filter(
+      (el): el is HTMLElement => Boolean(el),
+    );
+    if (sections.length === 0) return;
 
-  useEffect(() => {
-    const sections = LINKS.map((l) => document.querySelector(l.href)).filter(Boolean) as Element[];
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) setActive(`#${entry.target.id}`);
-        });
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible[0]) setActiveId(visible[0].target.id);
       },
-      { rootMargin: "-40% 0px -50% 0px" },
+      { rootMargin: "-45% 0px -50% 0px", threshold: [0, 0.25, 0.5, 1] },
     );
-    sections.forEach((s) => observer.observe(s));
+
+    sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
   }, []);
 
+  function handleNavClick(href: string) {
+    setActiveId(href.slice(1));
+  }
+
+  useEffect(() => {
+    if (!comingSoonOpen) return;
+
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setComingSoonOpen(false);
+    }
+
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [comingSoonOpen]);
+
   return (
-    <header
-      className={cn(
-        "sticky top-0 z-40 w-full border-b border-white/10 bg-bg/80 text-text backdrop-blur-2xl transition-shadow duration-200",
-        scrolled && "shadow-[0_24px_54px_-36px_rgba(0,0,0,.95)]",
-      )}
-    >
-      <div className="hairline-b">
-        <div className="container flex min-h-9 items-center justify-between gap-4 py-1">
-          <div className="hidden items-center gap-2 text-[0.72rem] font-semibold uppercase text-white/55 sm:flex">
-            <MapPin className="h-3.5 w-3.5 text-gold" />
-            <span>{brand.address}</span>
-          </div>
-
-          <div className="flex min-w-0 flex-1 items-center justify-between gap-3 sm:flex-none sm:justify-end">
-            <a href={`tel:${brand.callNumber}`} className={UTILITY_LINK_CLASS}>
-              <Phone className="h-3.5 w-3.5 text-gold" />
-              <span>{brand.callNumber}</span>
-            </a>
-            <span className="hidden h-3 w-px bg-white/20 sm:block" />
-            <a
-              href={brand.socials.instagram}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={UTILITY_LINK_CLASS}
-              aria-label="Open CarVibeDubai Instagram"
-            >
-              Instagram
-            </a>
-            <a
-              href={brand.socials.facebook}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden min-h-8 items-center text-[0.72rem] font-semibold text-white/55 transition-colors hover:text-white sm:inline-flex"
-              aria-label="Open CarVibeDubai Facebook"
-            >
-              Facebook
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <nav className="container flex h-[4.5rem] items-center justify-between gap-5">
+    <header className="fixed inset-x-0 top-8 z-50 px-4 pt-4 text-text sm:px-6 lg:px-8">
+      <nav className="mx-auto flex max-w-[1180px] items-center justify-between gap-4">
         <Link href="#home" className="min-w-0">
-          <Logo tone="dark" />
+          <Logo compact className="[&>span:nth-child(2)>span:last-child]:hidden" />
         </Link>
 
-        <div className="hidden items-center gap-7 lg:flex">
-          <ul className="flex items-center gap-6">
-            {LINKS.map((link) => (
-              <li key={link.href}>
-                <a
-                  href={link.href}
-                  className={cn(
-                    "relative inline-flex h-10 items-center text-[0.72rem] font-semibold uppercase tracking-caps text-text-muted transition-colors hover:text-text",
-                    active === link.href &&
-                      "text-text after:absolute after:bottom-1 after:left-0 after:h-px after:w-5 after:bg-gold",
-                  )}
-                >
-                  {link.label}
-                </a>
-              </li>
-            ))}
-          </ul>
+        <div className="hidden items-center rounded-full border border-white/15 bg-white/15 px-2 py-1 text-[0.74rem] font-medium text-white/85 shadow-[0_18px_45px_-30px_rgba(0,0,0,.95)] backdrop-blur-xl lg:flex">
+          {NAV_ITEMS.map((item, index) => {
+            const isActive = Boolean(item.href) && activeId === item.href!.slice(1);
+            const itemClassName = cn(
+              "group relative flex min-h-8 items-center gap-1.5 px-4 transition-colors hover:text-white",
+              index > 0 && "border-l border-white/18",
+              isActive ? "text-gold" : "text-white/85",
+            );
+
+            const underline = (
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "absolute -bottom-[5px] left-1/2 h-[2px] -translate-x-1/2 rounded-full bg-gold transition-all duration-300",
+                  isActive ? "w-5 opacity-100" : "w-0 opacity-0 group-hover:w-4 group-hover:opacity-60",
+                )}
+              />
+            );
+
+            if (COMING_SOON_LABELS.includes(item.label)) {
+              return (
+                <button key={item.label} type="button" onClick={() => setComingSoonOpen(true)} className={itemClassName}>
+                  <span>{item.label}</span>
+                  {item.badge ? (
+                    <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-[0.56rem] font-medium uppercase text-gold">
+                      {item.badge}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            }
+
+            return (
+              <a
+                key={item.label}
+                href={item.href}
+                onClick={() => handleNavClick(item.href!)}
+                aria-current={isActive ? "true" : undefined}
+                className={itemClassName}
+              >
+                <span>{item.label}</span>
+                {underline}
+                {item.badge ? (
+                  <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-[0.56rem] font-medium uppercase text-gold">
+                    {item.badge}
+                  </span>
+                ) : null}
+              </a>
+            );
+          })}
         </div>
 
-        <div className="hidden items-center gap-2 lg:flex">
+        <div className="hidden items-center gap-3 lg:flex">
           <button
             type="button"
             onClick={openValuationModal}
-            className={buttonClasses({ size: "sm", className: "uppercase tracking-caps text-[0.72rem]" })}
+            className="inline-flex h-9 items-center gap-2 rounded-full border border-gold bg-black/35 px-4 text-[0.72rem] font-medium text-gold transition-colors hover:bg-gold hover:text-black"
           >
-            Free Valuation
+            Call Now
+            <Phone className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={openValuationModal}
+            className="inline-flex h-9 items-center gap-2 rounded-full bg-gold px-4 text-[0.72rem] font-semibold text-black transition-colors hover:bg-gold-hi"
+          >
+            Message Us
+            <MessageCircle className="h-3.5 w-3.5" />
           </button>
         </div>
 
         <button
           type="button"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-bg/60 text-text backdrop-blur-md lg:hidden"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/35 text-text backdrop-blur-md lg:hidden"
           aria-label="Toggle menu"
           onClick={() => setOpen((o) => !o)}
         >
-          {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </nav>
 
       {open && (
-        <div className="animate-fade-in border-t border-white/10 bg-bg/95 text-text backdrop-blur-2xl lg:hidden">
-          <ul className="container flex flex-col gap-1 py-4">
-            {LINKS.map((link) => (
-              <li key={link.href}>
+        <div className="mx-auto mt-3 max-w-[1180px] animate-fade-in rounded-[24px] border border-white/12 bg-black/80 p-3 text-text shadow-[0_24px_70px_-40px_rgba(0,0,0,.95)] backdrop-blur-2xl lg:hidden">
+          <div className="grid gap-1">
+            {NAV_ITEMS.map((item) => {
+              if (COMING_SOON_LABELS.includes(item.label)) {
+                return (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      setComingSoonOpen(true);
+                    }}
+                    className="flex min-h-11 items-center justify-between rounded-full px-4 text-fluid--1 font-medium text-text-muted hover:bg-white/8 hover:text-text"
+                  >
+                    <span>{item.label}</span>
+                    {item.badge ? <span className="text-[0.62rem] uppercase text-gold">{item.badge}</span> : null}
+                  </button>
+                );
+              }
+
+              const isActive = Boolean(item.href) && activeId === item.href!.slice(1);
+
+              return (
                 <a
-                  href={link.href}
-                  onClick={() => setOpen(false)}
-                  className="block rounded-card px-2 py-3 text-fluid-0 font-semibold text-text-muted hover:bg-white/5 hover:text-text"
+                  key={item.label}
+                  href={item.href}
+                  onClick={() => {
+                    setOpen(false);
+                    handleNavClick(item.href!);
+                  }}
+                  aria-current={isActive ? "true" : undefined}
+                  className={cn(
+                    "flex min-h-11 items-center justify-between rounded-full px-4 text-fluid--1 font-medium hover:bg-white/8 hover:text-text",
+                    isActive ? "bg-white/5 text-gold" : "text-text-muted",
+                  )}
                 >
-                  {link.label}
+                  <span>{item.label}</span>
+                  {item.badge ? <span className="text-[0.62rem] uppercase text-gold">{item.badge}</span> : null}
                 </a>
-              </li>
-            ))}
-            <li className="pt-2">
-              <a
-                href={`tel:${brand.callNumber}`}
-                className="mb-2 flex h-11 w-full items-center justify-center gap-2 rounded-btn border border-white/15 bg-bg/55 px-5 text-fluid-0 font-bold text-text transition-colors hover:border-gold"
-              >
-                <Phone className="h-4 w-4 text-gold" />
-                Call {brand.callNumber}
-              </a>
-              <button
-                type="button"
-                className={buttonClasses({ className: "w-full" })}
-                onClick={() => {
-                  setOpen(false);
-                  openValuationModal();
-                }}
-              >
-                {copy.hero.cta}
-              </button>
-            </li>
-          </ul>
+              );
+            })}
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                openValuationModal();
+              }}
+              className="inline-flex h-11 items-center justify-center rounded-full border border-gold text-fluid--1 font-medium text-gold"
+            >
+              Call Now
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                openValuationModal();
+              }}
+              className="inline-flex h-11 items-center justify-center rounded-full bg-gold text-fluid--1 font-semibold text-black"
+            >
+              Message Us
+            </button>
+          </div>
+        </div>
+      )}
+
+      {comingSoonOpen && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/78 p-4 backdrop-blur-md animate-fade-in"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Buy a car, coming soon"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setComingSoonOpen(false);
+          }}
+        >
+          <div className="relative w-full max-w-sm rounded-card border border-border-gold/75 bg-[#10100f] p-7 text-center shadow-[0_0_0_1px_rgba(243,222,138,.12),0_28px_90px_-38px_rgba(243,222,138,.7)]">
+            <button
+              type="button"
+              onClick={() => setComingSoonOpen(false)}
+              aria-label="Close"
+              className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border border-border-gold/60 bg-bg/70 text-text-muted transition-colors hover:border-gold hover:text-text"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-gold">Buy A Car</p>
+            <h2 className="mt-3 font-display text-fluid-2 font-semibold text-text">Coming Soon</h2>
+            <p className="mt-3 text-fluid--1 font-light leading-6 text-text-muted">
+              Our buy-a-car marketplace is launching soon. For now, get a free
+              valuation and sell your car with CarVibeDubai today.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setComingSoonOpen(false);
+                openValuationModal();
+              }}
+              className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-full bg-gold text-fluid--1 font-semibold text-black transition-colors hover:bg-gold-hi"
+            >
+              Get Free Valuation Instead
+            </button>
+          </div>
         </div>
       )}
     </header>

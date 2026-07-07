@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ShieldCheck, X } from "lucide-react";
 import { copy } from "@/config/copy";
+import { landingImages } from "@/config/homepage";
 import { ValuationForm } from "./valuation-form";
 import { VALUATION_MODAL_EVENT } from "./open-valuation-modal";
 
@@ -62,9 +63,9 @@ export function ValuationModal() {
           <div className="p-5 sm:p-7 lg:p-8">
             <div className="mb-5 flex items-center justify-between gap-4 pr-12">
               <div>
-                <p className="text-fluid--1 uppercase tracking-[0.24em] text-gold">{copy.valuation.eyebrow}</p>
+                <p className="text-fluid--1 font-medium uppercase text-gold">{copy.valuation.eyebrow}</p>
               </div>
-              <span className="hidden items-center gap-2 rounded-full border border-border-gold/60 bg-surface-2/70 px-3 py-2 text-fluid--1 text-text-muted sm:inline-flex">
+              <span className="hidden items-center gap-2 rounded-full border border-border-gold/60 bg-surface-2/70 px-3 py-2 text-fluid--1 font-light text-text-muted sm:inline-flex">
                 <ShieldCheck className="h-4 w-4 text-gold" />
                 No instant price shown
               </span>
@@ -78,8 +79,8 @@ export function ValuationModal() {
               aria-hidden="true"
               className="absolute inset-0 bg-cover opacity-30"
               style={{
-                backgroundImage: "url('/images/carvibe-showroom-hero.jpg')",
-                backgroundPosition: "69% center",
+                backgroundImage: `url('${landingImages.modal}')`,
+                backgroundPosition: "50% 58%",
               }}
             />
             <div className="relative flex h-full items-center">
@@ -87,7 +88,7 @@ export function ValuationModal() {
                 role="img"
                 aria-label="Luxury car in a Dubai showroom"
                 className="aspect-[1.08/1] w-full overflow-hidden rounded-card border border-border-gold/75 bg-cover bg-[64%_center] shadow-[0_24px_60px_-38px_rgba(243,222,138,.75)] backdrop-blur-sm"
-                style={{ backgroundImage: "url('/images/carvibe-showroom-hero.jpg')" }}
+                style={{ backgroundImage: `url('${landingImages.modal}')` }}
               />
             </div>
           </div>
