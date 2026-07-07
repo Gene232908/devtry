@@ -4,6 +4,489 @@ This is the factual source for reports.
 
 Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
+## 2026-07-07
+
+### Completed
+
+- Task: Final Milestone 1 landing polish, meeting pack, and release-readiness check.
+- What changed: Preserved the approved hero design while adding a blur-to-sharp hero focus animation; reduced the page-level intro to a lightweight opacity fade so the hero animation is not stacked with a second full-screen blur; removed the loading screen; used the client `dubaii.jpeg` Defender photo as the How It Works background; blended the How It Works top seam into the preceding section; merged the former footer video band into a single compact footer; replaced the old footer lines/dividers with a minimal line-free layout; and created the July 12 Milestone 1 meeting pack in Markdown and Word `.docx` formats.
+- Why it matters: The public website is ready for Milestone 1 review with a smoother first-load animation, cleaner footer, client-approved imagery placement, and a non-technical client meeting script/demo guide.
+
+### Status
+
+- Completed: Code polish, documentation synchronization, meeting report generation, and Vercel-style local checks.
+- In progress: Commit/push to GitHub.
+- Blocked: None currently; Git for Windows was installed via `winget`, but the current shell still uses the full Git executable path because PATH has not refreshed.
+- Next: Commit the Milestone 1 package and push to `https://github.com/Gene232908/carvibe`.
+
+### Non-technical explanation
+
+> The landing page has been polished for the July 12 meeting: the hero now loads with a clean focus-in effect, the lower sections blend more smoothly, the client car photo is used in the right place, the footer is more compact, and the meeting document includes a natural script plus question scenarios.
+
+### Verification
+
+- Lint: `npm run lint` passed.
+- Type check: covered by `npm run build`.
+- Tests: not run; no test script is configured.
+- Build: `npm run build` passed.
+- Git: Git for Windows installed via `winget`; repository checks run with the full Git executable path.
+
+## 2026-07-06
+
+### Completed
+
+- Task: Removed the navbar language label, made the nav tabs accurate/active, elevated the generic post-hero sections, and swapped the hero background to `heroo.svg`.
+- What changed: (1) `UtilityBar.tsx` - removed the `Globe` icon + "English" label (no i18n exists) and replaced the empty left slot with the brand tagline. (2) `Navbar.tsx` - added an `IntersectionObserver` scroll-spy that highlights the current section's tab in gold with an animated underline (desktop) and active highlight (mobile); verified every tab's anchor id matches a real section. (3) New shared `components/public/Reveal.tsx` (`IntersectionObserver` fade/slide-up, respects reduced motion) applied across section headers. (4) `SellerAssurance.tsx` and `FlexibleInspection.tsx` redesigned from flat hairline cells into bordered gradient cards with gold icon chips, index numbers, hover lift + gold glow; Inspection gained a 7-Emirates coverage strip. (5) `SellExperience.tsx` step numbers became circular gold-bordered chips; `Contact.tsx` detail rows became bordered hover cards. (6) `config/homepage.ts` `landingImages.hero` changed from `/images/hero.jpeg` to `/images/heroo.svg`.
+- Why it matters: The client asked to drop the unused language switcher, make the nav tabs clearly jump to and reflect the right section, and make the sections from Why-Sell down to the footer feel less generic and more professional/modern, plus use the new `heroo.svg` as the hero background.
+
+### Status
+
+- Completed: Code changes, lint (no linter errors on the edited files), and a running-dev-server check confirming `/images/heroo.svg` serves 200 (`image/svg+xml`) and the homepage references it.
+- In progress: Client visual review.
+- Blocked: None.
+- Next: Client to reload `http://localhost:3000/` and confirm the new hero background, active nav highlighting, and redesigned sections look right on desktop and mobile.
+
+### Non-technical explanation
+
+> Cleaned up the top bar (removed the unused "English" language label), made the menu tabs light up as you scroll to show where you are on the page, gave the sections below the hero a more modern, premium look with subtle animations, and switched the big hero image to your new `heroo.svg` artwork.
+
+### Verification
+
+- Lint: no linter errors reported on the edited files.
+- Type check: not separately run this pass; changes are typed and lint-clean.
+- Tests: not run; visual/UI-only change.
+- Manual: dev server (already running) recompiled cleanly; `http://localhost:3000/images/heroo.svg` returned HTTP 200 `image/svg+xml`, and the homepage HTML references `heroo.svg`.
+- Note: `heroo.svg` is ~8 MB (embedded raster), heavier than the old JPEG - possible LCP/performance impact to watch.
+
+## 2026-07-05
+
+### Completed
+
+- Task: Tightened "Why Choose Us" sizing - it was taking up too much vertical space.
+- What changed: The previous pass used `py-section` (a fluid `clamp(5rem,4rem+5vw,8rem)` token meant for spacious rhythm between page sections, up to 128px on each side), a 270-320px reserved content height, and `text-fluid-4`/`text-fluid-5` statement text (up to ~76px) - together these pushed the section past 700px tall, more than a full mobile viewport. Replaced with an explicit `min-h-[540px] lg:min-h-[580px]` on the section itself (with `flex items-center` to vertically balance the now-shorter content within it), reduced padding to `py-14 sm:py-16`, dropped the statement text to `text-fluid-2 sm:text-fluid-3` (roughly half the previous max size), reduced the reserved content-height buffer to `190px`/`170px`, tightened the vertical gaps between the eyebrow/statement/tagline/arrows (`mt-10`/`mt-14` down to `mt-7`/`mt-9`), shrank the tagline to `text-fluid-1`, the CTA button to the default (medium) size, and the arrow buttons from `h-12 w-12` to `h-10 w-10`.
+- Why it matters: The client said the section didn't fit the screen and felt oversized, especially the font and text layout; the goal was a genuinely minimalist, modern proportion rather than an oversized hero-scale statement repeated mid-page.
+
+### Status
+
+- Completed: Sizing/typography pass, lint, build, and clean dev-server verification.
+- In progress: Client visual review.
+- Blocked: None.
+- Next: Client to reload `http://localhost:3000/` and confirm the section now reads as compact and well-proportioned rather than oversized, on both desktop and mobile.
+
+### Non-technical explanation
+
+> Shrunk the "Why Choose Us" section so it fits comfortably on screen instead of taking up more than a full screen's height - smaller (but still readable) statement text, tighter spacing, and smaller buttons/arrows for a cleaner, more minimalist feel.
+
+### Verification
+
+- Lint: `npm run lint` passed.
+- Type check: Covered by `npm run build`.
+- Tests: Not run; no test script was run for this visual-only change.
+- Build: `npm run build` passed.
+- Manual check: Stale Node processes stopped, `.next` cleared, `npm run dev` restarted clean. The served HTML on `http://localhost:3000/` was checked and confirms the new compact `min-h-[540px]` sizing and the section's content are present.
+
+### Completed
+
+- Task: Upgraded "Why Choose Us" to a premium full-bleed photo carousel and added missing navbar links.
+- What changed: The client felt the flat-black carousel from the prior pass looked too plain and asked for a genuinely premium, modern treatment. `WhyChooseUs.tsx` was rebuilt as a full-bleed section with a real background photo (`carvibe-real-range-rover.jpeg`, re-added to `landingImages.trust`) under a dark left-to-right and top-to-bottom gradient (matching Hero's gradient technique), a small "01 / 04" slide-position counter next to the eyebrow, glass-style circular arrow buttons (`border-white/15 bg-white/5 backdrop-blur-md`), and an Instagram-Stories-style segmented progress bar under the arrows - each of the 4 thin bars fills with a new `progress-fill` animation (`tailwind.config.ts`, hardcoded to 7000ms to match the `AUTO_ADVANCE_MS` JS constant) while its slide is active, shows fully filled once passed, and empty when upcoming, so visitors can see exactly how long until the next auto-advance. The section's `scroll-mt-28 sm:scroll-mt-32` (normally provided by the shared `Section` wrapper) was added manually since this component now uses a bespoke `<section>` tag for the full-bleed image treatment, preventing the fixed header from covering the section when the "About Us" nav link jumps to it.
+- Separately, the client asked for the navbar tabs to include the page's necessary sections - auditing `app/(public)/page.tsx` found `SellExperience` (`#sell-your-car`) and `BrandBrowse` (`#brands`) had no nav entry pointing to them at all. Added "How It Works" and "Brands" to `NAV_ITEMS` in `Navbar.tsx`.
+- Why it matters: A flat black carousel didn't feel premium enough for a luxury car-buying brand; a real photo with a considered gradient, glass controls, and a visible progress indicator reads as much more polished. The missing nav links meant two real page sections were only reachable by scrolling, not by direct navigation.
+
+### Status
+
+- Completed: WhyChooseUs visual rebuild, progress-bar animation, navbar section links added, lint, build, and clean dev-server verification.
+- In progress: Client visual review.
+- Blocked: None.
+- Next: Client to reload `http://localhost:3000/`, review the new photo-backed "Why Choose Us" carousel and its progress bars, and confirm the navbar's "How It Works" and "Brands" links jump to the right sections.
+
+### Non-technical explanation
+
+> Gave "Why Choose Us" a real premium makeover - a moody car photo behind the text, glass-style arrow buttons, a small slide counter, and a thin progress bar (like Instagram Stories) showing how long until the next statement appears automatically. Also added "How It Works" and "Brands" to the top menu since those sections existed on the page but weren't reachable from the navigation before.
+
+### Verification
+
+- Lint: `npm run lint` passed.
+- Type check: Covered by `npm run build`.
+- Tests: Not run; no test script was run for this visual-only change.
+- Build: `npm run build` passed.
+- Manual check: Stale Node processes stopped, `.next` cleared, `npm run dev` restarted clean. The served HTML on `http://localhost:3000/` was checked and confirms "How It Works" and "Brands" now appear in the nav markup, and the Range Rover background image is referenced in the Why Choose Us section. The progress-bar fill animation and slide-in transition are CSS/JS-driven and should be confirmed visually in the browser.
+
+### Completed
+
+- Task: Rebuilt "Why Choose Us" as an auto-advancing trust-statement carousel, styled after a client-supplied reference.
+- What changed: The client shared a 21st.dev "about section" reference (a big bold statement with highlighted key words, a secondary tagline, a CTA button, and prev/next arrow navigation) and asked for the "Why Choose Us" section to be rebuilt in that style - black background, animated, and specifically focused on trust/assurance/engagement copy for someone deciding whether to sell their car, auto-advancing through paragraphs with manual arrow override. The previous image + stats + numbered trust-points layout in `WhyChooseUs.tsx` was fully replaced with a 4-slide carousel: each slide is a large statement sentence (key phrases highlighted in gold, matching the site's existing gold-accent convention rather than the reference's multi-color highlights) plus a short bold tagline ("Earn Your Trust", "Move Fast, Stay Clear", "Keep It Fair", "Meet You Halfway") and a "Get Your Free Valuation" CTA. The carousel auto-advances every 7 seconds, has previous/next arrow buttons and clickable dot indicators, and resets its auto-advance timer whenever the visitor manually navigates (so a manual click doesn't get immediately overridden by an in-progress auto-advance). A new `slide-in` keyframe/animation (fade + rightward slide, 550ms) was added to `tailwind.config.ts` for the per-slide transition, remounted via a React `key` on the active slide. The section kept its `bg-bg` background (matching the section-blending normalization from earlier) and its `id="why-us"` (still targeted by the navbar's "About Us" link). The now-unused `trustPoints`/`businessStats`/`TrustPoint` config and the orphaned `ShieldCheck` icon import and `landingImages.trust` image key were removed from `config/homepage.ts`.
+- Why it matters: The client wanted this section to actively build confidence and encourage sellers, not just describe features - reframing it as a slow-rotating set of direct trust statements (fairness, speed/clarity, negotiation balance, UAE-wide convenience) with a repeated valuation CTA keeps the section persuasive rather than purely informational.
+
+### Status
+
+- Completed: Carousel component build, config cleanup, `tailwind.config.ts` animation addition, lint, build, and clean dev-server verification.
+- In progress: Client visual review.
+- Blocked: None.
+- Next: Client to reload `http://localhost:3000/`, watch the section auto-advance through its 4 statements, and try the arrow/dot navigation to confirm the timer resets correctly and the tone reads as trustworthy rather than salesy.
+
+### Non-technical explanation
+
+> Rebuilt the "Why Choose Us" section to match the animated style you shared - it now shows one confidence-building statement at a time (about fairness, speed, honest negotiation, and coming to you anywhere in the UAE), fading in as it auto-advances every few seconds, with arrows and dots so visitors can browse manually too.
+
+### Verification
+
+- Lint: `npm run lint` passed.
+- Type check: Covered by `npm run build`.
+- Tests: Not run; no test script was run for this visual-only change.
+- Build: `npm run build` passed.
+- Manual check: Stale Node processes stopped, `.next` cleared, `npm run dev` restarted clean. The served HTML on `http://localhost:3000/` was checked and confirms the new eyebrow, first slide's statement text, and first slide's tagline are present. The auto-advance timing, arrow/dot interactions, and slide-in animation are JavaScript/CSS-transition-driven and should be confirmed visually in the browser.
+
+### Completed
+
+- Task: Footer scroll-reveal animation and subtle top glow, styled after a client-supplied reference component.
+- What changed: The client shared a generic shadcn-style footer component (using the `motion` package for scroll-triggered fade-in-blur reveals per column, plus a rounded-top bordered "floating card" treatment and placeholder Product/Company/Resources/Social Links content) and asked for "a footer like this" minus its demo scroll page, with real CarVibeDubai content. Rather than install the `motion` dependency or the demo's generic/fake link categories (Blog, Changelog, Brand, Help, FAQs - none of which exist as routes in this app), the same visual effect was replicated with a small local `RevealOnScroll` component in `Footer.tsx` using `IntersectionObserver` + CSS transitions (`blur-sm`→`blur-none`, `translate-y-2`→`translate-y-0`, `opacity-0`→`opacity-100`, staggered per column via `transitionDelay`), matching the pattern already established by `FooterVideoBand.tsx` rather than adding a new npm dependency. `Footer.tsx` became a `"use client"` component to support this. A subtle gold-tinted radial glow (`radial-gradient(45%_100%_at_50%_0%,rgba(212,175,55,0.07),transparent)`) was added at the top of the footer for a touch of premium polish. The reference's rounded-top/bordered "floating card" treatment was deliberately not used, since it would reintroduce a visible seam exactly where the footer was just fixed (previous entry) to blend seamlessly with `FooterVideoBand` above it; the footer's real content (logo, tagline, valuation CTA, contact facts, Privacy/Terms/Admin links, social icons, copyright) was kept unchanged.
+- Why it matters: The client wanted the polished, modern feel of the reference (elevated, animated columns) without losing the honesty of only linking to pages that actually exist, and without contradicting the section-blending fix from the prior task.
+
+### Status
+
+- Completed: Reveal-on-scroll implementation, top glow accent, lint, build, and clean dev-server verification.
+- In progress: Client visual review.
+- Blocked: None.
+- Next: Client to reload `http://localhost:3000/`, scroll to the footer, and confirm each column fades/blurs into view with a staggered timing, and that the subtle top glow reads as a nice touch rather than a visible seam.
+
+### Non-technical explanation
+
+> Made the footer's three columns gently fade and sharpen into view one after another as you scroll down to it, like the reference you shared - added without a new plugin, using the same technique already used for your homepage video. Kept your real footer content (no fake links to pages that don't exist) and skipped the reference's rounded-card border look since it would have reintroduced the seam we just smoothed out between the video and the footer.
+
+### Verification
+
+- Lint: `npm run lint` passed.
+- Type check: Covered by `npm run build`.
+- Tests: Not run; no test script was run for this visual-only change.
+- Build: `npm run build` passed.
+- Manual check: Stale Node processes stopped, `.next` cleared, `npm run dev` restarted clean. The served HTML on `http://localhost:3000/` was checked and confirms the footer content and the new radial-glow gradient are present. The scroll-triggered reveal animation itself is JavaScript/CSS-transition-driven and should be confirmed visually in the browser.
+
+### Completed
+
+- Task: Removed the "Rent" nav item and normalized section background colors for consistent blending.
+- What changed: The navbar's "Rent" tab was removed entirely (it had no live section and shared the "Coming Soon" modal with "Buy" only since the last change); the modal reverted to Buy-only copy ("Buy A Car... Our buy-a-car marketplace is launching soon"), and `Hero.tsx`'s subcopy dropped its "renting" mention ("Buying a car with CarVibeDubai is launching soon.") so the page no longer references a renting feature that has no corresponding UI anywhere. Separately, the client asked whether some sections were "really just plain" with no background, and asked for smoother blending between sections - auditing every section's background color found that `Hero.tsx`, `BrandBrowse.tsx`, and `WhyChooseUs.tsx` used ad-hoc hex shades (`bg-[#070808]`, `bg-[#080807]`) that drifted slightly from the site's documented two-tone canvas system (`bg-bg` / `bg-panel`, per the 2026-07-03 editorial-minimal redesign note in `RESPONSIVE_PERFORMANCE.md`), while `SellExperience.tsx`, `Contact.tsx`, `Footer.tsx`, and the transparent-by-default `Section` components (`SellerAssurance`, `FlexibleInspection`) already correctly used `bg-bg`. All three drifted sections were normalized to `bg-bg` so every section-to-section seam now transitions between the exact same canvas color instead of three near-identical but technically different near-blacks.
+- Why it matters: The client noticed the site didn't feel fully cohesive when scrolling and asked directly whether the plain sections were intentional; the real, verifiable cause was color drift (different hex values that are visually close but not identical), not a missing-background problem - the sections without photos (Seller Assurance, Flexible Inspection, Brand Browse, Footer) are an intentional editorial rhythm (breathing room between photo-rich moments), and now blend seamlessly with their neighbors because they share one exact canvas color.
+
+### Status
+
+- Completed: Rent removal, Hero copy fix, coming-soon modal reversion, background color audit and normalization, lint, build, and clean dev-server verification.
+- In progress: Client visual review.
+- Blocked: None.
+- Next: Client to reload `http://localhost:3000/`, confirm "Rent" is gone from the nav, and scroll through the full page to confirm sections now blend without visible seams. If the client wants photography added to the currently-plain sections (Seller Assurance, Flexible Inspection, Brand Browse, Footer) rather than just color-matched, that's a separate follow-up (needs image selection).
+
+### Non-technical explanation
+
+> Removed the "Rent" menu item since it didn't lead anywhere yet, and fixed a subtle issue where a few sections were using slightly different shades of black instead of the exact same one - so scrolling through the page now feels like one continuous background instead of faint seams between sections. The sections without photos are intentional (breathing room between the photo-heavy ones), not missing content.
+
+### Verification
+
+- Lint: `npm run lint` passed.
+- Type check: Covered by `npm run build`.
+- Tests: Not run; no test script was run for this visual-only change.
+- Build: `npm run build` passed.
+- Manual check: Stale Node processes stopped, `.next` cleared, `npm run dev` restarted clean. The served HTML on `http://localhost:3000/` was checked and confirms "Rent" is gone from the nav, the old "renting a car" copy is gone, and none of the three ad-hoc hex background classes remain.
+
+### Completed
+
+- Task: Removed the Financing and Reviews sections, split the Final CTA into its own component, and refactored the footer to align with the new video section.
+- What changed: `components/public/FinancingSection.tsx` and `components/public/ReviewsAndFinalCta.tsx` were deleted (the client pointed at both, shown mid-page and pre-footer, as unnecessary/placeholder content - financing was an advisor-preview stub and reviews were explicitly marked "pending real reviews"). The real, non-placeholder closing CTA ("Your next car decision is closer than you think" with Sell your car / WhatsApp buttons) was preserved as a new standalone `components/public/FinalCta.tsx`. Now-orphaned config (`financingHighlights`, `customerReviews`, and the `financing`/`reviews` `landingImages` keys) was removed from `config/homepage.ts`. The navbar's "Rent" link, which pointed at the now-deleted `#financing` anchor, was fixed: since neither Buy nor Rent has a live section, both now open the same "Coming Soon" modal (previously only Buy did), with the modal copy generalized to "Buy & Rent... Coming Soon."
+- `components/public/Footer.tsx` was refactored per the client's request to "align it with my video" and be modern/professional: the 12%-opacity background photo and the old 17vw near-invisible watermark text were removed (both duplicated the new `FooterVideoBand` section's own visual impact right above it). The footer now sits flat on `bg-bg` with a single `divider-gold-fade` seam at the top (the same sanctioned pattern already used by `FinalCta.tsx`), a 12-column grid (brand+CTA / contact facts as semantic `dl`/`dt`/`dd` rows including a new "Hours" row from `brand.hours` / social+links), and bordered circular Facebook/Instagram icon buttons (reusing the exact inline SVG icons already built for `UtilityBar.tsx`, since `lucide-react` no longer ships brand icons). This redesign was produced by a 3-draft-plus-judge workflow (independent "minimal/editorial", "structured/grid", and "bold typographic" directions, then an adversarial judge pass that re-verified each draft against the actual codebase conventions before selecting/synthesizing), and I independently re-verified the chosen result (`brand.hours` field exists, lint, build) before shipping it.
+- Why it matters: The client wanted the page trimmed of placeholder-feeling sections and wanted the footer to feel like a deliberate, cohesive continuation of the new video moment rather than a second, competing background treatment.
+
+### Status
+
+- Completed: Section/component removal, config cleanup, navbar fix, footer redesign (drafted+judged, then independently verified), lint, build, and clean dev-server verification.
+- In progress: Client visual review.
+- Blocked: None.
+- Next: Client to reload `http://localhost:3000/`, confirm the Financing/Reviews sections are gone, the closing CTA still works, "Rent" in the nav also opens the Coming Soon modal, and the footer reads as a clean, modern continuation of the video section above it.
+
+### Non-technical explanation
+
+> Removed the financing preview and fake-reviews sections you pointed out, kept the real "sell your car now" closing call-to-action, and rebuilt the footer to feel like a clean continuation of your new video instead of competing with it - no more background photo or giant faded logo text, just a clear, modern layout with your contact details, hours, links, and social icons.
+
+### Verification
+
+- Lint: `npm run lint` passed.
+- Type check: Covered by `npm run build`.
+- Tests: Not run; no test script was run for this visual-only change.
+- Build: `npm run build` passed.
+- Manual check: Stale Node processes stopped, `.next` cleared, `npm run dev` restarted clean. The served HTML on `http://localhost:3000/` was checked and confirms the Financing/Reviews sections are gone, the Final CTA is present, and the new footer's "Get in Touch"/"Showroom Area"/hours content renders with the old giant watermark text absent.
+
+### Completed
+
+- Task: New scroll-triggered background-video section before the footer.
+- What changed: The client provided `footer.mp4`, initially placed at `components/ui/footer.mp4` (not servable by Next.js, since only `public/` is exposed as static assets) - it was moved to `public/videos/footer.mp4`, matching the existing `public/images/` asset convention. Added a new `components/public/FooterVideoBand.tsx` section, rendered as the last element of the homepage (`app/(public)/page.tsx`) so it sits immediately before the layout's `<Footer />`. The video is muted, has no `controls` (no play button or progress bar), and does not use the `loop` attribute (plays through once and stops on its last frame). It only starts via an `IntersectionObserver` calling `video.play()` once the section is at least 35% visible, and calls `video.pause()` when scrolled out of view - it never autoplays on initial page load. A large `{brand.name}` ("CarVibeDubai") wordmark is centered over the video using `mix-blend-overlay` so it visually blends into the footage instead of sitting as a flat opaque label, with a dark gradient overlay (`from-black/55 via-black/50 to-bg`) both for legibility and to transition smoothly into the footer's background color.
+- Why it matters: The client wanted a cinematic, professional moment right before the footer using their own supplied video, without it behaving like a normal embedded video player (no visible controls) and without draining resources by autoplaying/looping outside of view.
+
+### Status
+
+- Completed: Asset relocation, new component build, homepage wiring, lint, build, and clean dev-server verification (including confirming the video file itself is served with a 200 status, not just the page markup).
+- In progress: Client visual review.
+- Blocked: None.
+- Next: Client to reload `http://localhost:3000/`, scroll to the very bottom before the footer, and confirm the video plays once it comes into view, has no visible controls, does not loop, and the "CarVibeDubai" text blends well against their specific footage.
+
+### Non-technical explanation
+
+> Added your video right before the footer - it only starts playing once you scroll down to it, has no play button or progress bar showing, and plays once through without repeating. Your CarVibeDubai name is shown big and blended into the video for a cinematic look.
+
+### Verification
+
+- Lint: `npm run lint` passed.
+- Type check: Covered by `npm run build`.
+- Tests: Not run; no test script was run for this visual-only change.
+- Build: `npm run build` passed.
+- Manual check: Stale Node processes stopped, `.next` cleared, `npm run dev` restarted clean. Confirmed via direct request that `http://localhost:3000/videos/footer.mp4` returns HTTP 200 (the file is actually servable, not just referenced), and that the homepage HTML contains the video source and the blended heading markup. The scroll-triggered play/pause behavior is JavaScript/IntersectionObserver-driven and should be confirmed visually in the browser.
+
+### Completed
+
+- Task: Simplified the Brand Browse section (removed the left backdrop photo, rewrote the copy to be reassuring and inclusive) and added a hover-grow animation to each brand logo card.
+- What changed: `BrandBrowse.tsx` no longer shows the left-side Lamborghini backdrop image/text column ("Luxury and daily demand / From clean family SUVs to exotic interest") - the marquee of brand logos now spans the full section width. The section copy changed from "Recognizable badges, handled with a more premium intake." (with a formal "sell-side references" explanation) to "Here are the brands we buy - and many more." with a short, natural reassurance: "Don't see your exact brand below? No problem. We review almost every make and model, so reach out and let's talk." - so the ten shown logos read as examples, not an exhaustive/exclusive list. The now-unused `landingImages.brandBackdrop` image key was removed from `config/homepage.ts`. Each brand card in the marquee now scales up (`hover:scale-[1.15]`) with a soft gold glow and a brightened background on hover, referencing a supplied design (an automotive marketplace's "Popular Makes" grid where the hovered logo grows larger than its neighbors); the marquee wrapper's vertical padding increased slightly (`py-10` to `py-12`) to give the enlarged card room without being clipped.
+- Why it matters: The client was worried the fixed ten-brand list could read as exclusive if a customer's brand isn't shown, and wanted the section to feel more inviting and simple. The hover animation was requested directly, referencing a Dribbble automotive landing page as the visual target.
+
+### Status
+
+- Completed: Backdrop image removal, copy rewrite, config cleanup, hover-grow animation, lint, build, and clean dev-server verification.
+- In progress: Client visual review.
+- Blocked: None.
+- Next: Client to reload `http://localhost:3000/`, scroll to the Brand Browse section, and hover a logo card to confirm the grow animation feels right.
+
+### Non-technical explanation
+
+> Removed the car photo on the left of the brands section, changed the wording so it's clear these are just examples of brands we buy (not the only ones), and made each brand logo grow slightly with a soft gold glow when you hover over it, like the reference design you shared.
+
+### Verification
+
+- Lint: `npm run lint` passed.
+- Type check: Covered by `npm run build`.
+- Tests: Not run; no test script was run for this visual-only change.
+- Build: `npm run build` passed.
+- Manual check: Stale Node processes stopped, `.next` cleared, `npm run dev` restarted clean. The served HTML on `http://localhost:3000/` was checked and confirms the new "Here are the brands we buy - and many more." copy is present and the old backdrop text is gone. The hover-scale animation is CSS-only (`:hover` + `transition-transform`) and cannot be verified from raw HTML; it should be checked visually in the browser.
+
+### Completed
+
+- Task: Removed the redundant Vehicle Discovery and Featured Vehicles sections; added a new Seller Assurance section.
+- What changed: The client pointed at the "What CarVibeDubai Evaluates" section (`components/public/VehicleDiscovery.tsx`) as unnecessary and flagged the following "Vehicle Profiles" section (`components/public/FeaturedVehicles.tsx`) as redundant with it - both showed overlapping vehicle-type/profile content. Both files were deleted along with their now-unused `evaluationProfiles`/`EvaluationProfile` and `featuredVehicles`/`FeaturedVehicle` config exports and orphaned icon imports (`Truck`, `Crown`, `Gauge`, `Car`) in `config/homepage.ts`. In their place (right after the hero), a new `components/public/SellerAssurance.tsx` section was added: "Why Sell To CarVibeDubai" with three short assurance points - Fair, Market-Based Offers; Transparent From Day One; A Deal We Both Agree On - backed by a new `sellerAssurances` config array, plus a "Get Your Free Valuation" CTA button. The navbar's "Sell" link, which pointed at the now-removed `#vehicle-discovery` anchor, was repointed to the new section's `#why-sell-to-us` id; the "Buy" nav item's unused `href` (`#featured-vehicles`, dead since it already opens the Coming Soon modal instead of navigating) was removed.
+- Why it matters: The client wanted the page to lead with assurance and encouragement to sell to CarVibeDubai - fairness, transparency, and balanced negotiation - rather than another vehicle-type showcase, directly after the hero.
+
+### Status
+
+- Completed: Section removal, config cleanup, new Seller Assurance section build, navbar anchor fix, lint, build, and clean dev-server verification.
+- In progress: Client visual review.
+- Blocked: None.
+- Next: Client to reload `http://localhost:3000/` and confirm the new assurance section reads well right after the hero, and that "Sell" in the nav scrolls to it correctly.
+
+### Non-technical explanation
+
+> Removed the two vehicle-type sections you flagged as unnecessary/redundant, and replaced them with a new section right after the hero that reassures sellers: fair offers based on the market, full transparency with no hidden fees, and a deal that's only final when both sides agree - with a "Get Your Free Valuation" button.
+
+### Verification
+
+- Lint: `npm run lint` passed.
+- Type check: Covered by `npm run build`.
+- Tests: Not run; no test script was run for this visual-only change.
+- Build: `npm run build` passed.
+- Manual check: Stale Node processes stopped, `.next` cleared, `npm run dev` restarted clean. The served HTML on `http://localhost:3000/` was checked and confirms the old "What CarVibeDubai Evaluates" and "Vehicle Profiles" sections are gone and the new "A fair, transparent process built to earn your trust." section is present.
+
+### Completed
+
+- Task: Hero polish (single-line tagline, identity block removed, UAE-wide copy), navbar "Buy" coming-soon modal, and Body Type Browse swapped for a new Flexible Inspection section.
+- What changed: In `Hero.tsx`, "Fast, Fair & Hassle-Free." now has its own smaller font size and `whitespace-nowrap` so it can never wrap into a broken multi-line shape at any screen width; the "Introducing / CarVibeDubai / Car Buying & Valuation Specialists" identity block was removed per client feedback; the headline changed from "We Buy Your Car in Dubai" to "We Buy Your Car Across the UAE" (footer tagline in `config/copy.ts` updated the same way, since it also said "Dubai sellers" only); and the assurance line's "no instant price shown" was replaced with "Fair, transparent negotiation". `Navbar.tsx`'s "Buy" nav item (desktop pill nav and mobile menu) now opens a real "Coming Soon" modal (blurred backdrop, gold-bordered card, Escape/background-click to close, a "Get Free Valuation Instead" button) instead of just anchor-scrolling. The client asked to remove one homepage section that's no longer needed and was offered three candidates (Financing preview, Body Type Browse, Reviews & Final CTA) via a clarifying question; they chose Body Type Browse. `components/public/BodyTypeBrowse.tsx` was deleted, along with the now-unused `bodyTypes` array/`BodyType` type and the `Route`/`BatteryCharging`/`Sparkles` icon imports in `config/homepage.ts`. In its place, a new `components/public/FlexibleInspection.tsx` section was added (reusing the shared `Section`/`SectionHeader` pattern) explaining that CarVibeDubai can inspect the car at the seller's location or meet halfway, whichever both sides agree on, backed by a new `inspectionOptions` config array.
+- Why it matters: The client flagged the hero tagline wrapping awkwardly on their screen, found the new identity block unnecessary, wanted the service area to read as UAE-wide (not Dubai-only) since that's already the underlying business reality, wanted the "Buy" nav item to give real feedback instead of silently scrolling to a section, and wanted the inspection-location flexibility (home visit or meet halfway) called out as its own section instead of buried in the valuation modal's copy.
+
+### Status
+
+- Completed: Hero tagline/copy fixes, identity-block removal, Buy coming-soon modal, Body Type Browse removal, Flexible Inspection section build, lint, build, and clean dev-server verification.
+- In progress: Client visual review.
+- Blocked: None.
+- Next: Client to reload `http://localhost:3000/`, confirm the hero reads cleanly at their screen width, click "Buy" in the nav to confirm the coming-soon modal, and review the new Flexible Inspection section placement/copy.
+
+### Non-technical explanation
+
+> Fixed the hero text so "Fast, Fair & Hassle-Free" always sits on one line, removed the big brand-name block you didn't like, changed the wording to say we buy cars across the whole UAE (not just Dubai), swapped "no instant price shown" for a short line about fair, transparent negotiation, made the "Buy" menu item pop up a real "Coming Soon" window with a blurred background, removed the body-type browsing section, and added a new section explaining we'll either come to your location or meet halfway for the inspection.
+
+### Verification
+
+- Lint: `npm run lint` passed.
+- Type check: Covered by `npm run build`.
+- Tests: Not run; no test script was run for this visual-only change.
+- Build: `npm run build` passed.
+- Manual check: Stale Node processes stopped, `.next` cleared, `npm run dev` restarted clean. The served HTML on `http://localhost:3000/` was checked and confirms the identity block is gone, the new assurance-line copy is present, the coming-soon modal markup renders, the old "Vehicle Types We Evaluate" section is gone, and the new "We come to you, or we meet halfway." section is present.
+
+### Completed
+
+- Task: Reference-style hero identity block, thin utility contact bar, and animated brand-logo marquee.
+- What changed: Added a new thin `UtilityBar` (`components/public/UtilityBar.tsx`) fixed above the main navbar: a static "English" label (left, hidden on mobile, no dropdown functionality since no i18n exists), and a `tel:` link plus Facebook/Instagram icon links (right, from `config/brand.ts`) on a black bar with a gold hairline border. `Navbar` shifted from `top-0` to `top-8` so it now sits directly under the utility bar. `Hero.tsx` gained a Mitsubishi-reference-style identity block above the existing (unchanged) headline/paragraph: a small "Introducing" eyebrow, a large bold `{brand.name}` wordmark, and a "Car Buying & Valuation Specialists" subtitle, answering the client's ask to show who CarVibeDubai is. The search-bar CTA was replaced with an outlined uppercase-tracked button (still opens the valuation modal) matching the reference's bordered CTA style. The hero background image now points at the client-provided `public/images/hero.jpeg` (Land Rover Defender) instead of the Lamborghini photo. `BrandBrowse.tsx`'s "what we buy" logo grid was converted into a seamless infinite-scrolling marquee (new `marquee` keyframe/animation in `tailwind.config.ts`, edge fade via `mask-image`, pause-on-hover) so the accepted-brand logos now animate instead of sitting static. `app/privacy/page.tsx` and `app/terms/page.tsx` were updated to render the same `UtilityBar` and their top padding was increased (`pt-36 sm:pt-40`) to clear the taller fixed header stack.
+- Why it matters: The client asked for the hero to visually follow a supplied premium reference image while keeping our existing font family and paragraph copy, wanted other sections (starting with the accepted-brands section) to feel more alive with animation, and wanted a persistent thin contact/social strip above the main navigation, matching a second reference screenshot.
+
+### Status
+
+- Completed: UtilityBar build, Navbar offset, Hero identity-block rebuild, BrandBrowse marquee conversion, privacy/terms padding fix, lint, build, and clean dev-server content verification (home, `/privacy`, `/terms` all returned 200 with the expected new markup).
+- In progress: Client visual review of the new hero composition, utility bar, and animated brand strip.
+- Blocked: None.
+- Next: Client to reload `http://localhost:3000/` and confirm the hero identity block, outlined CTA, utility bar placement/colors, and the animated brand-logo strip read well, especially on mobile widths.
+
+### Non-technical explanation
+
+> Added a slim contact strip above the main menu with our Facebook/Instagram and phone number, redesigned the hero to introduce the CarVibeDubai name in a bold way (like the reference photo you sent) while keeping our existing wording, swapped in the new hero photo you provided, and made the accepted car brand logos scroll by in an animated strip instead of sitting still.
+
+### Verification
+
+- Lint: `npm run lint` passed.
+- Type check: Covered by `npm run build`.
+- Tests: Not run; no test script was run for this visual-only change.
+- Build: `npm run build` passed (after switching the utility bar's Facebook/Instagram icons from `lucide-react`, which no longer ships those brand glyphs, to small inline SVGs).
+- Manual check: All stale Node processes were stopped and `.next` cleared before a clean `npm run dev` restart (ready in ~2s, no port conflicts). The served HTML on `http://localhost:3000/` was checked and contains the brand wordmark, the outlined CTA, the `/images/hero.jpeg` reference, and the utility bar's "English" label. `/privacy` and `/terms` both returned 200 after adding the utility bar and adjusting their top padding. Full cross-device visual confirmation (animation smoothness, exact hero image crop) is pending client review.
+
+### Completed
+
+- Task: Hero reverted to search-bar CTA layout after client feedback, with sizing and copy polish.
+- What changed: The client reviewed the buying-desk hero (two-button CTA, trust row, larger fixed layout) and preferred the original single search-bar-style `Get Free Valuation` CTA. `Hero.tsx` was reverted to that layout (headline, subcopy, one search-bar CTA, assurance line) while keeping the Dubai Lamborghini hero image. The headline font was enlarged from the original `clamp(2.05rem,...,3.2rem)` to `clamp(2.15rem,...,3.65rem)` to fix the earlier "font too small" feedback, and the hero no longer forces a full `100svh`/`88svh` height (`min-h-[85svh]`) to avoid feeling oversized. Headline/subcopy copy was rewritten to lead with the active "we buy your car" service and note that buying/renting are launching soon, addressing the client's earlier request to highlight the live service first. The search-bar CTA button was hardened for narrow screens (responsive padding, `shrink-0` on the icon/pill, `truncate` on the label) so it cannot overflow at 320px width. All Node dev-server processes were stopped, `.next` was cleared, and the server was restarted clean.
+- Why it matters: The client explicitly said the previous redesign looked worse than the earlier version and asked for a revert with better text and guaranteed full-width fit; this restores the preferred layout while keeping the sizing and messaging fixes still valid.
+
+### Status
+
+- Completed: Hero revert, copy rewrite, mobile overflow hardening, stale dev-server cleanup, lint, build, and dev-server content verification.
+- In progress: Client visual review.
+- Blocked: None.
+- Next: Client to reload `http://localhost:3000/` and confirm the reverted hero look, sizing, and new copy read well on their device.
+
+### Non-technical explanation
+
+> Brought back the search-bar-style call-to-action you preferred, kept the new Dubai Lamborghini photo, made the headline bigger and easier to read, tightened the wording to lead with "we buy your car" since buying/renting are still coming soon, and restarted the local preview cleanly so it loads without errors.
+
+### Verification
+
+- Lint: `npm run lint` passed.
+- Type check: Covered by `npm run build`.
+- Tests: Not run; no test script was run for this visual-only change.
+- Build: `npm run build` passed.
+- Manual check: All stale Node processes were stopped and `.next` cleared before restarting `npm run dev`. Dev server booted in ~2s on `http://localhost:3000/` with no port conflicts; the served HTML was checked and contains the reverted headline, the `Get Free Valuation` search-bar CTA, and the Lamborghini hero image reference. Full cross-device visual confirmation is pending client review.
+
+### Completed
+
+- Task: Buying-desk hero redesign and navbar action rename.
+- What changed: Navbar desktop/mobile actions changed from `Book Now`/`Log in` to `Call Now`/`Message Us` (both open the valuation modal). Hero image switched from the parking-lot Nissan Patrol to the Dubai Lamborghini skyline photo. Hero copy now leads with the active car-buying service ("We buy your car in Dubai. Fast. Fair. Hassle-free."), a natural lead-focused paragraph, and a small "Buy & rent marketplace — coming soon" note. The fake search-bar CTA was replaced with a gold `Get My Free Valuation` button (opens the existing valuation modal) plus a glass `Chat on WhatsApp` secondary link, followed by a three-point trust row. Headline size was increased and the hero height reduced from forced 100svh to 88svh. The navbar `Coming soon` badge moved from `Sell` to `Buy` so navigation matches the buying-desk message; the unused chevron was removed.
+- Why it matters: The first viewport now honestly highlights the live lead funnel (CarVibeDubai buys cars) instead of implying buy/rent are live, with a clearer premium CTA pair replacing the misleading search bar.
+
+### Status
+
+- Completed: Hero redesign, CTA replacement, navbar action rename, badge consistency fix, lint, build, and dev-server content check.
+- In progress: Client visual review.
+- Blocked: None.
+- Next: Review desktop/mobile on `http://localhost:3000/` (dev port moved from 3011) and tune the Lamborghini crop if preferred.
+
+### Non-technical explanation
+
+> The top of the website now clearly says we buy cars today (with buying/renting marketplace coming soon), uses the striking Dubai Lamborghini photo, bigger headlines, and two clear buttons — one for the free valuation form and one for WhatsApp.
+
+### Verification
+
+- Lint: `npm run lint` passed.
+- Type check: Covered by `npm run build`.
+- Tests: Not run; no test script was run for this visual-only change.
+- Build: `npm run build` passed.
+- Manual check: Dev server on `http://localhost:3000/` returned 200 and the served HTML contains the new hero copy and Lamborghini image reference. Full desktop/mobile visual pass is pending client review.
+
+### Completed
+
+- Task: Reference-style hero and navbar refactor.
+- What changed: Reworked the public hero/header to closely follow the supplied car-rental reference: left logo, centered glass pill navigation, `Sell` with a small `Coming soon` label, right-side `Book Now` and `Log in` actions, and a search-bar-style `Get Free Valuation` CTA in the hero. The valuation form and modal content/process were left unchanged.
+- Why it matters: The first viewport now feels closer to a polished premium automotive landing page while preserving the existing black/gold identity and current valuation flow.
+
+### Status
+
+- Completed: Hero/header refactor, selected real hero image mapping, headline sizing tune, local preview page-load check, lint, and build.
+- In progress: Client visual review.
+- Blocked: None for the implementation; browser click automation timed out during the modal trigger check, so the trigger was confirmed by code inspection.
+- Next: Review the updated first viewport on `http://localhost:3011/` and tune the chosen hero crop if the client prefers another car image.
+
+### Non-technical explanation
+
+> The top of the website now follows the attached premium car-site reference more closely, with a cleaner navigation bar and a valuation search-style call to action.
+
+### Verification
+
+- Lint: `npm.cmd run lint` passed.
+- Type check: Covered by `npm.cmd run build`.
+- Tests: Not run; no test script was run for this visual-only change.
+- Build: `npm.cmd run build` passed.
+- Manual check: Local preview on `http://localhost:3011/` returned 200. Desktop layout metrics showed the hero headline, navbar, `Coming soon` label, and `Get Free Valuation` CTA visible with no horizontal overflow at the current browser width. The hero CTA still calls the existing valuation modal function; the form itself was not edited.
+
+### Completed
+
+- Task: Real-photo full-width landing redesign.
+- What changed: Selected the strongest photos from `public/images/`, copied the chosen assets into clean `carvibe-real-*` filenames, and refactored the public landing from hero through footer into full-width black/gold visual bands. Hero keeps its current text/CTA positioning while using the Dubai Lamborghini image; Vehicle Discovery, Featured Vehicles, Sell Experience, Brands, Body Types, Why Choose Us, Financing, Reviews, Final CTA, Contact, Footer, and Valuation Modal now use the selected real car photos.
+- Why it matters: The page now feels more real, premium, and less generic because the visual system is built around actual client-provided vehicle imagery instead of generated placeholders.
+
+### Status
+
+- Completed: Image selection, asset mapping, full-width UI refactor, local preview verification, lint, and build.
+- In progress: Client visual review.
+- Blocked: None for this UI pass.
+- Next: Review the live local page with the client and tune any preferred image crops.
+
+### Non-technical explanation
+
+> The website now uses the real car photos from the project folder and spreads them across the full page, making the landing page feel more premium, modern, and believable.
+
+### Verification
+
+- Lint: `npm.cmd run lint` passed.
+- Type check: Covered by `npm.cmd run build`.
+- Tests: Not run; no test script was run for this visual-only change.
+- Build: `npm.cmd run build` passed.
+- Manual check: Local preview on `http://localhost:3011/` loaded with CSS, 16 images, all main sections present, no horizontal overflow at desktop default width and 375px mobile viewport. Desktop and mobile screenshots were visually checked.
+
+### Completed
+
+- Task: Premium landing page UI/UX refactor.
+- What changed: Refactored the public landing first impression and section rhythm with lighter typography, a private valuation hero headline, a tighter hero buying-desk rail, bigger cleaner logo treatment, an asymmetrical vehicle lookbook layout, a reordered homepage story, flatter brand/body-type walls, a concierge-style contact section, and calmer footer/final CTA styling. Removed wide/negative tracking from public landing text and the valuation modal labels.
+- Why it matters: The landing page now feels more modern, premium, and professional while keeping the same black/gold color direction, existing local vehicle imagery, and Milestone 1 UI-only valuation scope.
+
+### Status
+
+- Completed: Premium visual refactor and lint/build verification.
+- In progress: Client review of the updated landing page.
+- Blocked: Fresh local preview startup still hits the Windows duplicate `Path/PATH` environment issue; old preview ports later returned 404, so full browser verification could not be completed.
+- Next: Start a clean preview environment and visually review desktop/mobile with the client.
+
+### Non-technical explanation
+
+> The homepage now looks more like a luxury car valuation desk: lighter fonts, cleaner spacing, stronger car visuals, and a more professional flow from hero to contact.
+
+### Verification
+
+- Lint: `npm.cmd run lint` passed.
+- Type check: Covered by `npm.cmd run build`.
+- Tests: Not run; no test script was run for this visual-only change.
+- Build: `npm.cmd run build` passed after rerunning with network access for existing Google font fetching.
+- Manual check: Browser preview initially loaded on `http://localhost:3012` and confirmed the new hero at desktop width with no horizontal overflow; follow-up mobile/fresh preview checks were blocked because old local preview ports returned 404 and new preview startup failed on the local Windows environment issue.
+
+### Completed
+
+- Task: Brand badge color polish.
+- What changed: Updated the public Brand Browse SVG badges from a shared muted/gold tint to brand-colored treatments for Mercedes-Benz, Range Rover, Porsche, Bentley, BMW, Audi, Toyota, Nissan, Ferrari, and Lamborghini.
+- Why it matters: The accepted-brand grid now feels more recognizable and premium instead of showing every marque in the same generic line color.
+
+### Status
+
+- Completed: Brand-colored inline SVG badge update and lint/build verification.
+- In progress: Client review of the visual result.
+- Blocked: Browser preview startup hit a local Windows duplicate `Path/PATH` environment issue.
+- Next: Review the live page visually once the local preview environment is available.
+
+### Non-technical explanation
+
+> The car-brand badges now use recognizable colors, so the section looks more real and less like generic placeholder icons.
+
+### Verification
+
+- Lint: `npm.cmd run lint` passed.
+- Type check: Covered by `npm.cmd run build`.
+- Tests: Not run; no test script was run for this visual-only change.
+- Build: `npm.cmd run build` passed after rerunning with network access for existing Google font fetching.
+- Manual check: Static inspection confirmed the badges no longer use global `currentColor` tinting; browser preview was not completed because local preview startup failed on a duplicate `Path/PATH` environment issue.
+
 ## 2026-07-03
 
 ### Completed

@@ -2,10 +2,10 @@ export const copy = {
   nav: ["Home", "Valuation", "How It Works", "Contact"],
   hero: {
     eyebrow: "CarVibeDubai",
-    headline: "Get Your Free Valuation",
-    sub: "Sell your car in Dubai with a quick request, home inspection support, and direct WhatsApp follow-up from the CarVibeDubai team.",
-    cta: "Get Your Free Valuation",
-    secondaryCta: "Chat on WhatsApp",
+    headline: "Private car valuation for Dubai sellers.",
+    sub: "Share your vehicle once and let CarVibeDubai review the model, condition, documents, and inspection area before a direct WhatsApp follow-up.",
+    cta: "Request Private Valuation",
+    secondaryCta: "Speak To Concierge",
     modes: [
       { label: "Sell a Car", state: "Active" },
       { label: "Buy a Car", state: "Coming Soon" },
@@ -64,10 +64,10 @@ export const copy = {
     ],
   },
   contact: {
-    title: "Talk To CarVibeDubai",
+    title: "Speak with the valuation desk.",
     sub: "For car valuation requests, home inspection questions, or quick follow-up, message the team directly on WhatsApp.",
   },
   footer: {
-    tagline: "Free car valuation requests, WhatsApp follow-up, and home inspection coordination for Dubai sellers.",
+    tagline: "Private car valuation requests, WhatsApp follow-up, and inspection coordination for sellers across the UAE.",
   },
 };

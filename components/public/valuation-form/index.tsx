@@ -47,11 +47,11 @@ export function ValuationForm() {
   return (
     <div className="relative">
       <div className="mb-6">
-        <h2 className="mb-5 font-display text-fluid-2 leading-tight text-text">
+        <h2 className="mb-5 font-display text-fluid-2 font-light leading-tight text-text">
           Step {step}: {current.label}
         </h2>
         <div className="mb-3 flex items-center justify-between gap-4">
-          <p className="text-fluid--1 uppercase tracking-[0.22em] text-gold">
+          <p className="text-fluid--1 font-medium uppercase text-gold">
             Step {step} of {STEPS.length}
           </p>
         </div>

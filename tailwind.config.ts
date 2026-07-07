@@ -80,12 +80,43 @@ const config: Config = {
           "25%": { transform: "translateX(-6px)" },
           "75%": { transform: "translateX(6px)" },
         },
+        marquee: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
+        "slide-in": {
+          "0%": { opacity: "0", transform: "translateX(28px)" },
+          "100%": { opacity: "1", transform: "translateX(0)" },
+        },
+        "progress-fill": {
+          "0%": { width: "0%" },
+          "100%": { width: "100%" },
+        },
+        "page-intro": {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        "hero-focus": {
+          "0%": { opacity: "0", filter: "blur(18px)", transform: "scale(1.06)" },
+          "60%": { opacity: "1" },
+          "100%": { opacity: "1", filter: "blur(0)", transform: "scale(1)" },
+        },
+        "hero-rise": {
+          "0%": { opacity: "0", filter: "blur(6px)", transform: "translateY(20px)" },
+          "100%": { opacity: "1", filter: "blur(0)", transform: "translateY(0)" },
+        },
       },
       animation: {
         "pulse-glow": "pulse-glow 2.4s ease-out infinite",
         "fade-in": "fade-in 200ms ease-out",
         "flash-in": "flash-in 1.6s ease-out",
         shake: "shake 0.35s ease-in-out",
+        marquee: "marquee 32s linear infinite",
+        "slide-in": "slide-in 550ms ease-out",
+        "progress-fill": "progress-fill 7000ms linear forwards",
+        "page-intro": "page-intro 0.45s ease-out both",
+        "hero-focus": "hero-focus 1.7s cubic-bezier(.16,.84,.44,1) both",
+        "hero-rise": "hero-rise 1s cubic-bezier(.16,.84,.44,1) both",
       },
     },
   },
