@@ -15,9 +15,9 @@ Update it after meaningful completed work. Do not invent hours, tests, or dates.
 ### Status
 
 - Completed: Code polish, documentation synchronization, meeting report generation, and Vercel-style local checks.
-- In progress: Commit/push to GitHub.
+- In progress: Client review of the pushed Milestone 1 package.
 - Blocked: None currently; Git for Windows was installed via `winget`, but the current shell still uses the full Git executable path because PATH has not refreshed.
-- Next: Commit the Milestone 1 package and push to `https://github.com/Gene232908/carvibe`.
+- Next: Review the pushed GitHub/Vercel result and use the Word meeting pack for the July 12 client meeting.
 
 ### Non-technical explanation
 
@@ -29,7 +29,7 @@ Update it after meaningful completed work. Do not invent hours, tests, or dates.
 - Type check: covered by `npm run build`.
 - Tests: not run; no test script is configured.
 - Build: `npm run build` passed.
-- Git: Git for Windows installed via `winget`; repository checks run with the full Git executable path.
+- Git: Git for Windows installed via `winget`; committed and pushed `bdd265a` to `origin/main`.
 
 ## 2026-07-06
 

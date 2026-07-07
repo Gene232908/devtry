@@ -17,7 +17,7 @@ Final Milestone 1 landing polish is in place: the approved hero section was pres
 
 Milestone 1 meeting materials were generated under `docs/meetings/`: `Milestone1_Report_2026-07-12.md` and `Milestone1_Report_2026-07-12.docx`. The Word file includes a simple non-technical script, live demo walkthrough, and likely client question scenarios.
 
-Git for Windows was installed via `winget` during release preparation. The current shell PATH has not refreshed, so use `C:\Program Files\Git\cmd\git.exe` directly if needed.
+Git for Windows was installed via `winget` during release preparation. The Milestone 1 landing package was committed and pushed to `origin/main` (`bdd265a`). The current shell PATH has not refreshed, so use `C:\Program Files\Git\cmd\git.exe` directly if needed.
 
 Tightened "Why Choose Us" sizing after the client said it took up more than a full screen's height - swapped the spacious `py-section` padding token for an explicit compact `min-h-[540px]/[580px]`, cut the statement text size roughly in half (`text-fluid-2/3` instead of `text-fluid-4/5`), and tightened all the internal spacing/button sizes for a leaner, more minimalist proportion.
 
@@ -43,7 +43,7 @@ Earlier in the same day: added a persistent thin `UtilityBar` (black/gold hairli
 
 ## Current task
 
-Finish GitHub handoff for the Milestone 1 public landing package once Git is available, then review the live site and meeting pack with the client.
+Review the pushed Milestone 1 public landing package, live site, and meeting pack with the client.
 
 ## Important decisions
 
@@ -65,4 +65,4 @@ Finish GitHub handoff for the Milestone 1 public landing package once Git is ava
 
 ## Exact next action
 
-Commit and push the current Milestone 1 landing package to `https://github.com/Gene232908/carvibe`. After push, review `http://localhost:3000/` on desktop and phone, and use `docs/meetings/Milestone1_Report_2026-07-12.docx` for the July 12 meeting.
+Review `http://localhost:3000/` on desktop and phone, confirm any Vercel deployment check from GitHub, and use `docs/meetings/Milestone1_Report_2026-07-12.docx` for the July 12 meeting.
