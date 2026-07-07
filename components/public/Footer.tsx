@@ -130,15 +130,45 @@ export function Footer() {
         />
         <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-bg/70 via-black/35 to-bg" />
 
-        <p
-          className={cn(
-            "relative z-10 select-none whitespace-nowrap px-6 text-center font-display text-[clamp(2.2rem,1.3rem+5.5vw,7rem)] font-semibold uppercase leading-none tracking-tight text-white/95 transition-all duration-[2000ms] ease-out motion-reduce:transition-none motion-reduce:duration-0",
-            revealed ? "translate-y-0 opacity-100 blur-0" : "translate-y-4 opacity-0 blur-[10px]",
-          )}
-          style={{ textShadow: "0 4px 40px rgba(0,0,0,.6), 0 0 30px rgba(212,175,78,.15)" }}
-        >
-          {brand.name}
-        </p>
+        <div className="relative z-10 flex flex-col items-center px-6">
+          <p
+            className={cn(
+              "text-[0.62rem] font-medium uppercase tracking-[0.52em] text-white/55 transition-all duration-1000 ease-out motion-reduce:transition-none",
+              revealed ? "translate-y-0 opacity-100 delay-[650ms]" : "-translate-y-2 opacity-0",
+            )}
+          >
+            Dubai &middot; United Arab Emirates
+          </p>
+
+          <div className="mt-4 overflow-hidden py-1">
+            <p
+              className={cn(
+                "select-none whitespace-nowrap text-center font-display text-[clamp(2.1rem,1.2rem+5.2vw,6.6rem)] font-light uppercase leading-none tracking-[0.12em] text-white transition-transform duration-[1300ms] ease-[cubic-bezier(.22,1,.3,1)] will-change-transform motion-reduce:transition-none motion-reduce:duration-0",
+                revealed ? "translate-y-0" : "translate-y-[112%]",
+              )}
+              style={{ textShadow: "0 4px 34px rgba(0,0,0,.55)" }}
+            >
+              {brand.name}
+            </p>
+          </div>
+
+          <span
+            aria-hidden="true"
+            className={cn(
+              "mt-6 h-px w-24 origin-center bg-gradient-to-r from-transparent via-gold/80 to-transparent transition-transform duration-[1100ms] ease-out motion-reduce:transition-none",
+              revealed ? "scale-x-100 delay-[450ms]" : "scale-x-0",
+            )}
+          />
+
+          <p
+            className={cn(
+              "mt-5 text-[0.6rem] font-light uppercase tracking-[0.44em] text-white/45 transition-all duration-1000 ease-out motion-reduce:transition-none",
+              revealed ? "translate-y-0 opacity-100 delay-[850ms]" : "translate-y-2 opacity-0",
+            )}
+          >
+            Premium Car Valuation
+          </p>
+        </div>
       </div>
 
       <div className="container relative z-10 -mt-4 pb-12">
