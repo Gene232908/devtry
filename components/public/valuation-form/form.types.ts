@@ -17,7 +17,7 @@ export type ValuationFormValues = {
 
 export type FormErrors = Partial<Record<keyof ValuationFormValues, string>>;
 
-export type FormState = "filling" | "validating" | "submitting" | "success";
+export type FormState = "filling" | "validating" | "otp_entry" | "verifying_otp" | "submitting" | "success";
 
 export const emptyValues: ValuationFormValues = {
   make: "",

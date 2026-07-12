@@ -8,6 +8,7 @@ import { useValuationForm } from "./use-valuation-form";
 import { StepCarDetails } from "./step-car-details";
 import { StepCondition } from "./step-condition";
 import { StepContact } from "./step-contact";
+import { OtpModal } from "./otp-modal";
 import { ThankYouModal } from "./thank-you-modal";
 import { ValuationFormValues } from "./form.types";
 
@@ -26,6 +27,7 @@ export function ValuationForm() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
   const isBusy = form.state === "validating" || form.state === "submitting";
+  const isLocked = form.state !== "filling";
   const current = STEPS[step - 1];
 
   function goNext() {
@@ -95,12 +97,20 @@ export function ValuationForm() {
               <ArrowRight className="h-4 w-4" />
             </Button>
           ) : (
-            <Button type="submit" className="flex-1 uppercase" loading={isBusy} disabled={isBusy}>
+            <Button type="submit" className="flex-1 uppercase" loading={isBusy} disabled={isLocked}>
               {isBusy ? "Submitting" : "Get Your Free Valuation"}
             </Button>
           )}
         </div>
       </form>
+
+      <OtpModal
+        open={form.state === "otp_entry" || form.state === "verifying_otp"}
+        phone={form.values.whatsapp}
+        verifying={form.state === "verifying_otp"}
+        onVerify={form.verifyOtp}
+        onClose={form.cancelOtp}
+      />
 
       <ThankYouModal
         open={form.state === "success"}

@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { leadSchema, normalizeUaeMobile } from "./lead.schema";
 import { emptyValues, FormErrors, FormState, ValuationFormValues } from "./form.types";
+import { DEMO_OTP_CODE } from "./otp-modal";
 
 export function useValuationForm() {
   const [values, setValues] = useState<ValuationFormValues>(emptyValues);
@@ -64,8 +65,8 @@ export function useValuationForm() {
     [values],
   );
 
-  // Milestone 1 demo build: no backend. Submitting simulates a short delay
-  // and always ends in the Thank You state instead of calling OTP/leads APIs.
+  // Milestone 1 demo build: no backend. Submitting shows a demo OTP step
+  // (fixed code, no SMS sent) and always ends in the Thank You state.
   const submit = useCallback(async () => {
     setState("validating");
     setSubmitError(null);
@@ -88,10 +89,25 @@ export function useValuationForm() {
       return;
     }
 
+    setState("otp_entry");
+  }, [validate, values.honeypot, values.whatsapp]);
+
+  const verifyOtp = useCallback(async (code: string) => {
+    setState("verifying_otp");
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    if (code !== DEMO_OTP_CODE) {
+      setState("otp_entry");
+      return { ok: false as const };
+    }
+
     setState("submitting");
     await new Promise((resolve) => setTimeout(resolve, 700));
     setState("success");
-  }, [validate, values.honeypot, values.whatsapp]);
+    return { ok: true as const };
+  }, []);
+
+  const cancelOtp = useCallback(() => setState("filling"), []);
 
   const reset = useCallback(() => {
     setValues(emptyValues);
@@ -109,6 +125,8 @@ export function useValuationForm() {
     setField,
     submit,
     validateStep,
+    verifyOtp,
+    cancelOtp,
     reset,
   };
 }
