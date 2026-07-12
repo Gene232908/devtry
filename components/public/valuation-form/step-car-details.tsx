@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Select } from "@/components/ui/Select";
-import { YEARS, MILEAGE_BRACKETS } from "@/config/vehicles";
+import { YEARS, MILEAGE_BRACKETS, MAKES } from "@/config/vehicles";
 import { ValuationFormValues, FormErrors } from "./form.types";
 
 type Props = {
@@ -11,32 +10,10 @@ type Props = {
   setField: <K extends keyof ValuationFormValues>(key: K, value: ValuationFormValues[K]) => void;
 };
 
-type CatalogModel = { id: string; name: string };
-type CatalogMake = { id: string; name: string; models: CatalogModel[] };
-
 export function StepCarDetails({ values, errors, setField }: Props) {
-  const [makes, setMakes] = useState<CatalogMake[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/vehicles", { cache: "no-store" })
-      .then((res) => res.json())
-      .then((json) => {
-        if (!cancelled && json?.ok) setMakes(json.data.makes as CatalogMake[]);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const modelOptions = (makes.find((m) => m.name === values.make)?.models ?? []).map((m) => ({
-    label: m.name,
-    value: m.name,
+  const modelOptions = (MAKES.find((m) => m.name === values.make)?.models ?? []).map((name) => ({
+    label: name,
+    value: name,
   }));
 
   return (
@@ -52,11 +29,10 @@ export function StepCarDetails({ values, errors, setField }: Props) {
         />
         <Select
           label="Make"
-          placeholder={loading ? "Loading..." : "Select make"}
-          options={makes.map((m) => ({ label: m.name, value: m.name }))}
+          placeholder="Select make"
+          options={MAKES.map((m) => ({ label: m.name, value: m.name }))}
           value={values.make}
           onChange={(v) => setField("make", v)}
-          disabled={loading}
           error={errors.make}
         />
         <Select

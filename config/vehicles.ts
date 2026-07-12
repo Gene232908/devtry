@@ -1,6 +1,14 @@
-// Make/model options moved to a database-backed catalog (car_makes/car_models
-// tables) so admins can add/remove brands and models from /admin/catalog.
-// See app/api/vehicles/route.ts for the public read endpoint.
+export const MAKES: { name: string; models: string[] }[] = [
+  { name: "Rolls-Royce", models: ["Phantom", "Ghost", "Cullinan", "Wraith"] },
+  { name: "Bentley", models: ["Bentayga", "Continental GT", "Flying Spur"] },
+  { name: "Range Rover", models: ["Sport SVR", "Sport", "Velar", "Evoque"] },
+  { name: "Mercedes-Benz", models: ["S-Class", "G-Class G63", "E-Class", "GLE"] },
+  { name: "Lamborghini", models: ["Urus", "Huracán", "Aventador"] },
+  { name: "Ferrari", models: ["488", "Roma", "Portofino", "F8"] },
+  { name: "Porsche", models: ["Cayenne", "Panamera", "911"] },
+  { name: "Toyota", models: ["Land Cruiser", "Camry", "Fortuner"] },
+  { name: "Nissan", models: ["Patrol", "Altima", "X-Trail"] },
+];
 
 const currentYear = new Date().getFullYear();
 export const YEARS: number[] = Array.from({ length: currentYear + 1 - 1990 + 1 }, (_, i) => currentYear + 1 - i);
