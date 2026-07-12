@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: var(--font-sans, Arial), Helvetica, sans-serif;
+  --bg: #0a0a0a;
+  --bg-rgb: 10 10 10;
+  --bg-elev: #111111;
+  --bg-elev-rgb: 17 17 17;
+  --surface: #161616;
+  --surface-rgb: 22 22 22;
+  --surface-2: #1e1c19;
+  --surface-2-rgb: 30 28 25;
+  --bg-panel: #111110;
+  --bg-panel-rgb: 17 17 16;
+  --border: #2a2620;
+  --border-rgb: 42 38 32;
+  --border-gold: #4a3d1f;
+  --border-gold-rgb: 74 61 31;
+  --gold: #d4af4e;
+  --gold-rgb: 212 175 78;
+  --gold-soft: #c1a04c;
+  --gold-soft-rgb: 193 160 76;
+  --gold-hi: #f4e3a8;
+  --gold-hi-rgb: 244 227 168;
+  --gold-deep: #8c6f2a;
+  --gold-deep-rgb: 140 111 42;
+  --text: #f5f3ef;
+  --text-rgb: 245 243 239;
+  --text-muted: #a39c90;
+  --text-muted-rgb: 163 156 144;
+  --text-faint: #6e675c;
+  --text-faint-rgb: 110 103 92;
+  --success: #34c77b;
+  --success-rgb: 52 199 123;
+  --warning: #e0b341;
+  --warning-rgb: 224 179 65;
+  --info: #5aa9e6;
+  --info-rgb: 90 169 230;
+  --danger: #e5484d;
+  --danger-rgb: 229 72 77;
+
+  /* fluid type scale */
+  --step--1: clamp(0.83rem, 0.79rem + 0.18vw, 0.94rem);
+  --step-0: clamp(1rem, 0.95rem + 0.24vw, 1.13rem);
+  --step-1: clamp(1.2rem, 1.11rem + 0.43vw, 1.5rem);
+  --step-2: clamp(1.44rem, 1.3rem + 0.71vw, 2rem);
+  --step-3: clamp(1.73rem, 1.5rem + 1.14vw, 2.66rem);
+  --step-4: clamp(2.07rem, 1.73rem + 1.74vw, 3.55rem);
+  --step-5: clamp(2.49rem, 1.97rem + 2.59vw, 4.73rem);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: var(--text);
+  background: var(--bg);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-feature-settings: "kern" 1, "liga" 1;
+}
+
+::selection {
+  background: rgba(212, 175, 78, 0.32);
+  color: var(--text);
+}
+
+@layer utilities {
+  /*
+    Gold budget — gold appears only as: eyebrow labels + .gold-rule, primary CTA
+    fill (.btn-gold), key stat/step numbers, hover/focus accents, and the two
+    .divider-gold-fade bookends (final CTA band, footer). Resting borders and
+    dividers use white hairlines (.hairline-*, divide-white/5) instead.
+  */
+  .font-display {
+    font-family: var(--font-display), var(--font-sans), Arial, Helvetica, sans-serif;
+    font-feature-settings: "kern" 1, "liga" 1;
+  }
+
+  .gold-glow {
+    box-shadow:
+      0 0 0 1px var(--gold),
+      0 0 18px -2px rgba(212, 175, 78, 0.5);
+  }
+
+  .btn-gold {
+    background: linear-gradient(135deg, #f6e6ad 0%, #d8b558 46%, #a9822f 100%);
+    border: 1px solid rgba(169, 130, 47, 0.85);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.32),
+      0 12px 30px -20px rgba(244, 227, 168, 0.7);
+    color: #1a1508;
+  }
+
+  .card-shadow {
+    box-shadow:
+      0 18px 58px -42px rgba(212, 175, 78, 0.5),
+      0 10px 34px -26px rgba(0, 0, 0, 0.9);
+  }
+
+  .hairline-t {
+    border-top: 1px solid rgb(255 255 255 / 0.06);
+  }
+
+  .hairline-b {
+    border-bottom: 1px solid rgb(255 255 255 / 0.06);
+  }
+
+  .gold-rule {
+    display: inline-block;
+    width: 2rem;
+    height: 2px;
+    background: var(--gold);
+  }
+
+  .divider-gold-fade {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(244, 227, 168, 0.55), transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

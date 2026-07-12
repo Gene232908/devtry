@@ -1,0 +1,66 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dev-*.log
+.tmp/
+
+# local env files
+.env*.local
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# local-only meeting/setup artifacts
+/*.exe
+/CarVibe_Meeting_Transcript_Pack.zip
+~$*.docx
+*.docx
+
+# local planning, prompt, and private meeting docs
+*.md
+!README.md
+!AGENTS.md
+!RULES.md
+!AI_DOCS_GUIDE.md
+!CARVIBE_BUILD_PLAN.md
+!docs/ai/*.md
+/docs/client/
+/docs/meetings/
+/_OLD_AI_DOCS_BACKUP/
+/Microsoft/
+/CarVibe_Calling_Commands.txt
+/ETO YUNG CALLING MO.txt
+/MEETING_EXTRACTION_PROMPT.txt
+/MEETING_WORKFLOW.md
+/promptmonato.txt
+
+# raw local image dumps/backups
+/public/images/WhatsApp Image *.jpeg
+/public/images/old/
