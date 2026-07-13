@@ -20,7 +20,7 @@ export const copy = {
   valuation: {
     eyebrow: "Free Valuation Request",
     title: "Start with your contact details so the team can follow up before the lead goes cold.",
-    sub: "Share your name, WhatsApp number, car details, and inspection area. The team reviews the request and contacts you on WhatsApp.",
+    sub: "Share your name, phone number, car details, trim, and location. The team reviews the request and contacts you directly.",
     highlights: [
       {
         title: "Luxury market review",

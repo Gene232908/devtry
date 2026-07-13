@@ -11,7 +11,7 @@ export function StepContact({ values, errors, setField }: Props) {
   return (
     <div className="flex flex-col gap-4">
       <p className="rounded-card border border-border-gold/45 bg-bg/35 p-3 text-fluid--1 leading-6 text-text-muted">
-        Start here so the CarVibeDubai team can reach you on WhatsApp before you leave the form.
+        Start here so the CarVibeDubai team can reach you before you leave the form.
       </p>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input
@@ -22,7 +22,7 @@ export function StepContact({ values, errors, setField }: Props) {
           error={errors.fullName}
         />
         <Input
-          label="WhatsApp Number"
+          label="Phone Number"
           placeholder="050 123 4567 or +971 50 123 4567"
           inputMode="tel"
           value={values.whatsapp}

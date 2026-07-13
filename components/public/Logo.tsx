@@ -16,17 +16,17 @@ export function Logo({ className, compact = false, showText = true, tone = "dark
     <div className={cn("flex min-w-0 max-w-full items-center gap-3", className)}>
       <span
         className={cn(
-          "relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-gold/50 bg-[#10100f] shadow-[0_12px_30px_-22px_rgba(243,222,138,.5)]",
-          compact ? "h-10 w-10" : "h-12 w-12 sm:h-14 sm:w-14",
+          "relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-gold/60 bg-[#10100f] shadow-[0_0_0_1px_rgba(243,222,138,.18),0_14px_34px_-20px_rgba(243,222,138,.7)]",
+          compact ? "h-[3.25rem] w-[3.25rem]" : "h-14 w-14 sm:h-16 sm:w-16",
         )}
       >
         <Image
           src="/images/logo.png"
           alt=""
-          width={96}
-          height={96}
+          width={128}
+          height={128}
           priority
-          className="h-[86%] w-[86%] object-contain"
+          className="h-[88%] w-[88%] object-contain"
         />
       </span>
 
@@ -34,7 +34,7 @@ export function Logo({ className, compact = false, showText = true, tone = "dark
         <span className="flex min-w-0 flex-col leading-none">
           <span
             className={cn(
-              "font-display text-[1.12rem] font-medium uppercase leading-none sm:text-[1.28rem]",
+              "font-display text-[1.22rem] font-semibold uppercase leading-none sm:text-[1.42rem]",
               isLight ? "text-[#181611]" : "text-text",
             )}
           >

@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ShieldCheck, X } from "lucide-react";
+import { Banknote, MapPin, ShieldCheck, X } from "lucide-react";
 import { copy } from "@/config/copy";
-import { landingImages } from "@/config/homepage";
 import { ValuationForm } from "./valuation-form";
 import { VALUATION_MODAL_EVENT } from "./open-valuation-modal";
 
@@ -28,9 +27,11 @@ export function ValuationModal() {
 
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
+    document.documentElement.classList.add("modal-open");
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
+      document.documentElement.classList.remove("modal-open");
     };
   }, [open]);
 
@@ -38,7 +39,7 @@ export function ValuationModal() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/78 p-3 backdrop-blur-md animate-fade-in sm:p-5"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-3 sm:p-5"
       role="dialog"
       aria-modal="true"
       aria-label="Private car valuation"
@@ -54,7 +55,7 @@ export function ValuationModal() {
           type="button"
           onClick={() => setOpen(false)}
           aria-label="Close valuation modal"
-          className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-border-gold/60 bg-bg/70 text-text-muted backdrop-blur-md transition-colors hover:border-gold hover:text-text"
+          className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-border-gold/60 bg-bg/90 text-text-muted transition-colors hover:border-gold hover:text-text"
         >
           <X className="h-5 w-5" />
         </button>
@@ -74,23 +75,46 @@ export function ValuationModal() {
             <ValuationForm />
           </div>
 
-          <div className="relative hidden min-h-[520px] border-l border-border-gold/55 p-7 lg:block">
-            <div
-              aria-hidden="true"
-              className="absolute inset-0 bg-cover opacity-30"
-              style={{
-                backgroundImage: `url('${landingImages.modal}')`,
-                backgroundPosition: "50% 58%",
-              }}
-            />
-            <div className="relative flex h-full items-center">
-              <div
-                role="img"
-                aria-label="Luxury car in a Dubai showroom"
-                className="aspect-[1.08/1] w-full overflow-hidden rounded-card border border-border-gold/75 bg-cover bg-[64%_center] shadow-[0_24px_60px_-38px_rgba(243,222,138,.75)] backdrop-blur-sm"
-                style={{ backgroundImage: `url('${landingImages.modal}')` }}
-              />
+          <div className="relative hidden min-h-[560px] flex-col justify-between overflow-hidden border-l border-border-gold/55 bg-[radial-gradient(120%_85%_at_82%_0%,rgba(212,175,78,.18),transparent_58%)] p-8 lg:flex">
+            {/* animated location rings */}
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0 motion-reduce:hidden">
+              <span className="absolute left-1/2 top-[44%] h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border border-gold/25 animate-ping-ring will-change-transform" />
+              <span className="absolute left-1/2 top-[44%] h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full border border-gold/15 animate-ping-ring will-change-transform [animation-delay:1.1s]" />
             </div>
+
+            <p className="relative text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-gold">
+              CarVibeDubai
+            </p>
+
+            <div className="relative flex flex-1 flex-col items-center justify-center text-center">
+              <span className="relative mb-7 flex h-20 w-20 items-center justify-center">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-gold/20 animate-ping-ring will-change-transform motion-reduce:hidden" />
+                <span className="relative flex h-20 w-20 items-center justify-center rounded-full border border-gold/40 bg-gold/10 text-gold animate-ad-float will-change-transform motion-reduce:animate-none">
+                  <MapPin className="h-9 w-9" aria-hidden="true" strokeWidth={1.5} />
+                </span>
+              </span>
+              <h3 className="font-display text-fluid-2 font-light leading-tight text-text">
+                We Buy Cars Across the UAE
+              </h3>
+              <p className="mt-3 max-w-xs text-fluid--1 font-light leading-7 text-text-muted">
+                Wherever you are in the UAE, get a free car valuation and request a market-based offer from CarVibeDubai.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-2">
+                {["Instant cash", "Free inspection", "All 7 Emirates"].map((chip) => (
+                  <span
+                    key={chip}
+                    className="rounded-full border border-gold/30 bg-gold/10 px-3.5 py-1.5 text-[0.72rem] font-medium text-gold"
+                  >
+                    {chip}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <p className="relative flex items-center gap-2 text-fluid--1 font-light text-text-muted">
+              <Banknote className="h-4 w-4 shrink-0 text-gold" aria-hidden="true" />
+              Fair cash offer, paid on handover.
+            </p>
           </div>
         </div>
       </div>

@@ -9,7 +9,7 @@ export function SellerAssurance() {
       <Reveal>
         <SectionHeader
           eyebrow="Why Sell To CarVibeDubai"
-          title="A fair, transparent process built to earn your trust."
+          title="Fair and transparent. A process built to earn your trust."
           intro="Handing over your car is a big decision. Every step is designed to keep the deal honest, balanced, and pressure-free."
         />
       </Reveal>

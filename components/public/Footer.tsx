@@ -20,7 +20,7 @@ const CONTACT_ROWS: Array<{ label: string; value: string; icon: LucideIcon; href
 
 function FacebookIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4" fill="currentColor">
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-[22px] w-[22px]" fill="currentColor">
       <path d="M14 13.5h2.5l.5-3H14V8.5c0-.9.25-1.5 1.53-1.5H17V4.36C16.73 4.32 15.8 4.25 14.7 4.25c-2.3 0-3.87 1.4-3.87 3.97V10.5H8.5v3H10.83V21h3.17v-7.5Z" />
     </svg>
   );
@@ -28,7 +28,7 @@ function FacebookIcon() {
 
 function InstagramIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-[22px] w-[22px]" fill="none" stroke="currentColor" strokeWidth="1.9">
       <rect x="3.5" y="3.5" width="17" height="17" rx="4.5" />
       <circle cx="12" cy="12" r="4.1" />
       <circle cx="17.1" cy="6.9" r="0.9" fill="currentColor" stroke="none" />
@@ -138,7 +138,7 @@ export function Footer() {
               revealed ? "translate-y-0 opacity-100 delay-[650ms]" : "-translate-y-2 opacity-0",
             )}
           >
-            Dubai &middot; United Arab Emirates
+            United Arab Emirates
           </p>
 
           <div className="mt-4 overflow-hidden py-1">
@@ -175,7 +175,7 @@ export function Footer() {
       <div className="container relative z-10 -mt-4 pb-12">
         <div className="grid grid-cols-1 gap-y-12 lg:grid-cols-2 lg:items-start lg:gap-x-20">
           <RevealOnScroll>
-            <Logo />
+            <Logo className="[&>span:nth-child(2)>span:last-child]:hidden" />
             <p className="mt-6 max-w-sm text-fluid--1 font-light leading-7 text-text-muted">{copy.footer.tagline}</p>
             <a
               href="#home"
@@ -231,7 +231,7 @@ export function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`${brand.name} on Facebook`}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.05] text-text-muted transition-colors hover:bg-gold/15 hover:text-gold"
+              className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/80 transition-colors hover:border-gold/50 hover:bg-gold/15 hover:text-gold"
             >
               <FacebookIcon />
             </a>
@@ -240,7 +240,7 @@ export function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`${brand.name} on Instagram`}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.05] text-text-muted transition-colors hover:bg-gold/15 hover:text-gold"
+              className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/80 transition-colors hover:border-gold/50 hover:bg-gold/15 hover:text-gold"
             >
               <InstagramIcon />
             </a>

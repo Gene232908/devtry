@@ -1,4 +1,4 @@
-import { BadgeCheck, Eye, Handshake, LucideIcon, MapPin, Scale } from "lucide-react";
+import { Banknote, BadgeCheck, Building2, Eye, LucideIcon, Wrench } from "lucide-react";
 
 export type SellerAssurance = {
   title: string;
@@ -6,7 +6,7 @@ export type SellerAssurance = {
   icon: LucideIcon;
 };
 
-export type InspectionOption = {
+export type ScrapPoint = {
   title: string;
   body: string;
   icon: LucideIcon;
@@ -31,22 +31,28 @@ export const sellerAssurances: SellerAssurance[] = [
     icon: Eye,
   },
   {
-    title: "A Deal We Both Agree On",
-    body: "Nothing is final until both sides are comfortable. Negotiation stays open, honest, and pressure-free.",
-    icon: Scale,
+    title: "Instant Cash",
+    body: "Once we agree on a fair price, you get paid on the spot - quick, secure, and no waiting for slow bank transfers.",
+    icon: Banknote,
   },
 ];
 
-export const inspectionOptions: InspectionOption[] = [
+// "Scrap & Damaged Cars" section — we buy non-running / accident / old cars too.
+export const scrapPoints: ScrapPoint[] = [
   {
-    title: "Your Location",
-    body: "We can come to your home, office, or preferred spot anywhere across the UAE for the inspection.",
-    icon: MapPin,
+    title: "Accident & Damaged",
+    body: "Bumped, dented, or written off - we still make a fair cash offer based on parts and salvage value.",
+    icon: Wrench,
   },
   {
-    title: "Meet Halfway",
-    body: "Prefer a public meeting point instead? We agree on a convenient spot together before confirming.",
-    icon: Handshake,
+    title: "Non-Running & Old",
+    body: "Engine trouble, expired registration, or simply too old to drive? We take it off your hands.",
+    icon: Building2,
+  },
+  {
+    title: "Cash & Free Collection",
+    body: "Accept the offer and we take care of the collection and paperwork for you.",
+    icon: Banknote,
   },
 ];
 

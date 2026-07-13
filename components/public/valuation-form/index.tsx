@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { useValuationForm } from "./use-valuation-form";
 import { StepCarDetails } from "./step-car-details";
-import { StepCondition } from "./step-condition";
+import { StepTrimLocation } from "./step-trim-location";
 import { StepContact } from "./step-contact";
 import { OtpModal } from "./otp-modal";
 import { ThankYouModal } from "./thank-you-modal";
@@ -18,8 +18,8 @@ const STEPS: Array<{
   fields: Array<keyof ValuationFormValues>;
 }> = [
   { n: 1, label: "Contact Info", fields: ["fullName", "whatsapp", "consent"] },
-  { n: 2, label: "Car Details", fields: ["year", "make", "model", "mileageKm"] },
-  { n: 3, label: "Condition & Location", fields: ["condition", "emirate", "area"] },
+  { n: 2, label: "Car Details", fields: ["year", "make", "model", "mileageKm", "description"] },
+  { n: 3, label: "Trim & Location", fields: ["trim", "optionLevel", "location"] },
 ];
 
 export function ValuationForm() {
@@ -71,10 +71,10 @@ export function ValuationForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        <div className="min-h-[250px] animate-fade-in">
+        <div key={step} className="min-h-[250px] animate-step-in">
           {step === 1 && <StepContact values={form.values} errors={form.errors} setField={form.setField} />}
           {step === 2 && <StepCarDetails values={form.values} errors={form.errors} setField={form.setField} />}
-          {step === 3 && <StepCondition values={form.values} errors={form.errors} setField={form.setField} />}
+          {step === 3 && <StepTrimLocation values={form.values} errors={form.errors} setField={form.setField} />}
         </div>
 
         {form.submitError && (

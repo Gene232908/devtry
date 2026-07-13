@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowRight, Sparkles } from "lucide-react";
 import { landingImages } from "@/config/homepage";
 import { openValuationModal } from "./open-valuation-modal";
 
@@ -27,7 +28,7 @@ export function Hero() {
         className="pointer-events-none absolute left-[16%] top-1/2 h-[58vh] w-[52%] -translate-y-1/2 bg-[radial-gradient(closest-side,rgba(255,255,255,.08),rgba(255,255,255,.02)_52%,transparent_74%)] mix-blend-screen blur-[55px]"
       />
 
-      <div className="container relative z-10 flex min-h-[85svh] items-center pb-16 pt-36 sm:pt-40 lg:pb-20 lg:pt-44">
+      <div className="container relative z-10 flex min-h-[100svh] items-center pb-16 pt-36 sm:min-h-[85svh] sm:pt-40 lg:pb-20 lg:pt-44">
         <div className="w-full max-w-[40rem] [&>*]:animate-hero-rise [&>*]:motion-reduce:animate-none">
           <h1
             className="font-display font-semibold leading-[1.12] text-white text-balance [text-shadow:0_2px_20px_rgba(0,0,0,.7),0_1px_4px_rgba(0,0,0,.6)] [animation-delay:.45s]"
@@ -43,17 +44,27 @@ export function Hero() {
             car with CarVibeDubai is launching soon.
           </p>
 
-          <button
-            type="button"
-            onClick={openValuationModal}
-            className="mt-8 inline-flex h-12 items-center justify-center border border-white/60 px-7 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-text transition-colors hover:border-gold hover:text-gold [animation-delay:.75s]"
-          >
-            Get Your Free Valuation
-          </button>
+          <div className="mt-9 [animation-delay:.75s]">
+            <button
+              type="button"
+              onClick={openValuationModal}
+              className="group relative inline-flex h-14 w-full items-center justify-center overflow-hidden whitespace-nowrap rounded-full btn-gold px-5 text-[0.72rem] font-bold uppercase tracking-[0.06em] shadow-[0_22px_50px_-20px_rgba(244,227,168,.95)] animate-cta-pulse transition-transform duration-200 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 sm:h-16 sm:w-auto sm:px-11 sm:text-[1rem] sm:tracking-[0.12em]"
+            >
+              <span className="relative z-10 flex items-center gap-1.5 sm:gap-2.5">
+                <Sparkles className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" aria-hidden="true" />
+                Click For Free Valuation
+                <ArrowRight className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:translate-x-1 sm:h-5 sm:w-5" aria-hidden="true" />
+              </span>
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 left-0 z-0 w-1/2 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent)] animate-shine motion-reduce:hidden"
+              />
+            </button>
 
-          <p className="mt-4 text-[0.72rem] font-light text-white/50 [animation-delay:.9s]">
-            Free request / WhatsApp follow-up / Fair, transparent negotiation
-          </p>
+            <p className="mt-4 text-[0.72rem] font-light text-white/50">
+              Free request / WhatsApp follow-up / Fair, transparent negotiation
+            </p>
+          </div>
         </div>
       </div>
     </section>

@@ -30,7 +30,7 @@ export function SellExperience() {
 
       <div className="container relative z-10">
         <Reveal className="mx-auto max-w-2xl text-center">
-          <p className="inline-flex items-center gap-3 text-[0.72rem] font-medium uppercase tracking-[0.2em] text-gold">
+          <p className="inline-flex items-center gap-3 text-[0.82rem] font-semibold uppercase tracking-[0.18em] text-gold">
             <span aria-hidden="true" className="gold-rule" />
             How It Works
             <span aria-hidden="true" className="gold-rule" />

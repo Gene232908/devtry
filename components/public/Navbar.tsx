@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { label: "How It Works", href: "#sell-your-car" },
   { label: "Brands", href: "#brands" },
   { label: "Buy", badge: "Coming soon" },
+  { label: "Scrap", href: "#scrap" },
   { label: "Contact Us", href: "#footer" },
 ];
 
@@ -57,26 +58,28 @@ export function Navbar() {
 
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
+    document.documentElement.classList.add("modal-open");
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
+      document.documentElement.classList.remove("modal-open");
     };
   }, [comingSoonOpen]);
 
   return (
     <header className="fixed inset-x-0 top-8 z-50 px-4 pt-4 text-text sm:px-6 lg:px-8">
-      <nav className="mx-auto flex max-w-[1180px] items-center justify-between gap-4">
+      <nav className="mx-auto flex max-w-[1280px] items-center justify-between gap-4">
         <Link href="#home" className="min-w-0">
           <Logo compact className="[&>span:nth-child(2)>span:last-child]:hidden" />
         </Link>
 
-        <div className="hidden items-center rounded-full border border-white/15 bg-white/15 px-2 py-1 text-[0.74rem] font-medium text-white/85 shadow-[0_18px_45px_-30px_rgba(0,0,0,.95)] backdrop-blur-xl lg:flex">
+        <div className="hidden items-center rounded-full border border-white/20 bg-white/15 px-2 py-1 text-[0.82rem] font-medium text-white/90 shadow-[0_18px_45px_-30px_rgba(0,0,0,.95)] backdrop-blur-xl lg:flex">
           {NAV_ITEMS.map((item, index) => {
             const isActive = Boolean(item.href) && activeId === item.href!.slice(1);
             const itemClassName = cn(
-              "group relative flex min-h-8 items-center gap-1.5 px-4 transition-colors hover:text-white",
+              "group relative flex min-h-9 items-center gap-1.5 px-4 transition-colors hover:text-white",
               index > 0 && "border-l border-white/18",
-              isActive ? "text-gold" : "text-white/85",
+              isActive ? "text-gold" : "text-white/90",
             );
 
             const underline = (
@@ -94,7 +97,7 @@ export function Navbar() {
                 <button key={item.label} type="button" onClick={() => setComingSoonOpen(true)} className={itemClassName}>
                   <span>{item.label}</span>
                   {item.badge ? (
-                    <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-[0.56rem] font-medium uppercase text-gold">
+                    <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-[0.62rem] font-medium uppercase text-gold">
                       {item.badge}
                     </span>
                   ) : null}
@@ -113,7 +116,7 @@ export function Navbar() {
                 <span>{item.label}</span>
                 {underline}
                 {item.badge ? (
-                  <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-[0.56rem] font-medium uppercase text-gold">
+                  <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-[0.62rem] font-medium uppercase text-gold">
                     {item.badge}
                   </span>
                 ) : null}
@@ -126,18 +129,18 @@ export function Navbar() {
           <button
             type="button"
             onClick={openValuationModal}
-            className="inline-flex h-9 items-center gap-2 rounded-full border border-gold bg-black/35 px-4 text-[0.72rem] font-medium text-gold transition-colors hover:bg-gold hover:text-black"
+            className="inline-flex h-10 items-center gap-2 rounded-full border border-gold bg-black/35 px-4 text-[0.8rem] font-medium text-gold transition-colors hover:bg-gold hover:text-black"
           >
             Call Now
-            <Phone className="h-3.5 w-3.5" />
+            <Phone className="h-4 w-4" />
           </button>
           <button
             type="button"
             onClick={openValuationModal}
-            className="inline-flex h-9 items-center gap-2 rounded-full bg-gold px-4 text-[0.72rem] font-semibold text-black transition-colors hover:bg-gold-hi"
+            className="inline-flex h-10 items-center gap-2 rounded-full bg-gold px-4 text-[0.8rem] font-semibold text-black transition-colors hover:bg-gold-hi"
           >
             Message Us
-            <MessageCircle className="h-3.5 w-3.5" />
+            <MessageCircle className="h-4 w-4" />
           </button>
         </div>
 
@@ -152,7 +155,7 @@ export function Navbar() {
       </nav>
 
       {open && (
-        <div className="mx-auto mt-3 max-w-[1180px] animate-fade-in rounded-[24px] border border-white/12 bg-black/80 p-3 text-text shadow-[0_24px_70px_-40px_rgba(0,0,0,.95)] backdrop-blur-2xl lg:hidden">
+        <div className="mx-auto mt-3 max-w-[1280px] animate-fade-in rounded-[24px] border border-white/12 bg-black/80 p-3 text-text shadow-[0_24px_70px_-40px_rgba(0,0,0,.95)] backdrop-blur-2xl lg:hidden">
           <div className="grid gap-1">
             {NAV_ITEMS.map((item) => {
               if (COMING_SOON_LABELS.includes(item.label)) {
@@ -221,7 +224,7 @@ export function Navbar() {
 
       {comingSoonOpen && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/78 p-4 backdrop-blur-md animate-fade-in"
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/85 p-4 animate-fade-in"
           role="dialog"
           aria-modal="true"
           aria-label="Buy a car, coming soon"

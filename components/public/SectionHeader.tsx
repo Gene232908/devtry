@@ -17,7 +17,7 @@ export function SectionHeader({ eyebrow, title, intro, align = "start", classNam
       )}
     >
       <div>
-        <p className="flex items-center gap-3 text-[0.72rem] font-medium uppercase text-gold">
+        <p className="flex items-center gap-3 text-[0.82rem] font-semibold uppercase tracking-[0.18em] text-gold">
           <span aria-hidden="true" className="gold-rule" />
           {eyebrow}
         </p>

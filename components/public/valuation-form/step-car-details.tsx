@@ -53,6 +53,27 @@ export function StepCarDetails({ values, errors, setField }: Props) {
         onChange={(v) => setField("mileageKm", v)}
         error={errors.mileageKm}
       />
+      <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor="car-description"
+          className="text-fluid--1 font-medium uppercase tracking-[0.14em] text-text-faint"
+        >
+          Describe Your Car <span className="normal-case tracking-normal text-text-faint/70">(optional)</span>
+        </label>
+        <textarea
+          id="car-description"
+          rows={3}
+          placeholder="Tell us anything about your car - service history, extras, small damage, colour, etc."
+          value={values.description}
+          onChange={(e) => setField("description", e.target.value)}
+          className="w-full resize-none rounded-card border border-border-gold/45 bg-bg/45 px-4 py-3 text-fluid-0 text-text placeholder:text-text-faint outline-none transition-all duration-150 focus:border-gold focus:bg-surface-2/80 focus:shadow-[0_0_0_3px_rgba(212,175,55,.16)]"
+        />
+        {errors.description && (
+          <span className="text-fluid--1 text-danger" role="alert">
+            {errors.description}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

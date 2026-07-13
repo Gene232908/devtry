@@ -14,11 +14,14 @@ export function useValuationForm() {
 
   const setField = useCallback(<K extends keyof ValuationFormValues>(key: K, value: ValuationFormValues[K]) => {
     setValues((v) => {
-      if (key === "make") return { ...v, make: value as string, model: "" };
-      if (key === "emirate") return { ...v, emirate: value as string, area: "" };
+      // Trim is connected to make + model, so reset it when either changes.
+      if (key === "make") return { ...v, make: value as string, model: "", trim: "" };
+      if (key === "model") return { ...v, model: value as string, trim: "" };
       return { ...v, [key]: value };
     });
-    setErrors((e) => ({ ...e, [key]: undefined }));
+    // Skip the state update entirely when there's nothing to clear — avoids
+    // a wasted re-render on every keystroke of a clean (no-error) field.
+    setErrors((e) => (e[key] === undefined ? e : { ...e, [key]: undefined }));
   }, []);
 
   const validate = useCallback(() => {
