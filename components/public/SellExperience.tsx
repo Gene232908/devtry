@@ -6,7 +6,7 @@ import { buttonClasses } from "@/components/ui/Button";
 import { openValuationModal } from "./open-valuation-modal";
 import { Reveal } from "./Reveal";
 
-const TRUST_POINTS = ["Fast vehicle valuation", "Transparent follow-up", "Hassle-free documents"];
+const TRUST_POINTS = ["Fast vehicle valuation", "Transparent follow-up", "Seamless Documentation"];
 
 export function SellExperience() {
   return (
@@ -30,7 +30,7 @@ export function SellExperience() {
 
       <div className="container relative z-10">
         <Reveal className="mx-auto max-w-2xl text-center">
-          <p className="inline-flex items-center gap-3 text-[0.72rem] font-medium uppercase tracking-[0.2em] text-gold">
+          <p className="inline-flex items-center gap-3 text-[0.82rem] font-semibold uppercase tracking-[0.18em] text-gold">
             <span aria-hidden="true" className="gold-rule" />
             How It Works
             <span aria-hidden="true" className="gold-rule" />
@@ -91,7 +91,7 @@ export function SellExperience() {
         <Reveal delay={180} className="mt-5 flex justify-center">
           <p className="flex items-center gap-2 text-center text-[0.72rem] font-light text-text-faint">
             <FileCheck className="h-4 w-4 shrink-0" />
-            Documentation and backend storage remain pending final approval.
+            Your details are stored securely and reviewed only by the CarVibeDubai team.
           </p>
         </Reveal>
       </div>

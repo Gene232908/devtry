@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { leadSchema } from "./lead.schema";
+import { leadSchema, normalizeUaeMobile } from "./lead.schema";
 import { emptyValues, FormErrors, FormState, ValuationFormValues } from "./form.types";
-import { useOtp } from "./use-otp";
+import { DEMO_OTP_CODE } from "./otp-modal";
 
 export function useValuationForm() {
   const [values, setValues] = useState<ValuationFormValues>(emptyValues);
@@ -11,14 +11,17 @@ export function useValuationForm() {
   const [state, setState] = useState<FormState>("filling");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const startedAtRef = useRef<number>(Date.now());
-  const otp = useOtp();
 
   const setField = useCallback(<K extends keyof ValuationFormValues>(key: K, value: ValuationFormValues[K]) => {
     setValues((v) => {
-      if (key === "make") return { ...v, make: value as string, model: "" };
+      // Trim is connected to make + model, so reset it when either changes.
+      if (key === "make") return { ...v, make: value as string, model: "", trim: "" };
+      if (key === "model") return { ...v, model: value as string, trim: "" };
       return { ...v, [key]: value };
     });
-    setErrors((e) => ({ ...e, [key]: undefined }));
+    // Skip the state update entirely when there's nothing to clear — avoids
+    // a wasted re-render on every keystroke of a clean (no-error) field.
+    setErrors((e) => (e[key] === undefined ? e : { ...e, [key]: undefined }));
   }, []);
 
   const validate = useCallback(() => {
@@ -65,6 +68,8 @@ export function useValuationForm() {
     [values],
   );
 
+  // Milestone 1 demo build: no backend. Submitting shows a demo OTP step
+  // (fixed code, no SMS sent) and always ends in the Thank You state.
   const submit = useCallback(async () => {
     setState("validating");
     setSubmitError(null);
@@ -80,31 +85,32 @@ export function useValuationForm() {
       return;
     }
 
-    setState("sending_otp");
-    const res = await otp.send();
-    if (!res.ok) {
-      setSubmitError("Couldn't send code, try again.");
+    const phone = normalizeUaeMobile(values.whatsapp);
+    if (!phone) {
+      setSubmitError("Enter a valid UAE mobile number.");
       setState("filling");
       return;
     }
-    setState("otp_entry");
-  }, [validate, values.honeypot, otp]);
 
-  const verifyOtp = useCallback(
-    async (code: string) => {
-      setState("verifying_otp");
-      const res = await otp.verify(code);
-      if (!res.ok) {
-        setState("otp_entry");
-        return { ok: false as const, attemptsLeft: res.attemptsLeft };
-      }
-      setState("submitting");
-      await new Promise((r) => setTimeout(r, 700));
-      setState("success");
-      return { ok: true as const };
-    },
-    [otp],
-  );
+    setState("otp_entry");
+  }, [validate, values.honeypot, values.whatsapp]);
+
+  const verifyOtp = useCallback(async (code: string) => {
+    setState("verifying_otp");
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    if (code !== DEMO_OTP_CODE) {
+      setState("otp_entry");
+      return { ok: false as const };
+    }
+
+    setState("submitting");
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    setState("success");
+    return { ok: true as const };
+  }, []);
+
+  const cancelOtp = useCallback(() => setState("filling"), []);
 
   const reset = useCallback(() => {
     setValues(emptyValues);
@@ -113,8 +119,6 @@ export function useValuationForm() {
     startedAtRef.current = Date.now();
     setState("filling");
   }, []);
-
-  const cancelOtp = useCallback(() => setState("filling"), []);
 
   return {
     values,
@@ -125,8 +129,7 @@ export function useValuationForm() {
     submit,
     validateStep,
     verifyOtp,
-    reset,
     cancelOtp,
-    otp,
+    reset,
   };
 }

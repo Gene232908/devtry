@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { useValuationForm } from "./use-valuation-form";
 import { StepCarDetails } from "./step-car-details";
-import { StepCondition } from "./step-condition";
+import { StepTrimLocation } from "./step-trim-location";
 import { StepContact } from "./step-contact";
 import { OtpModal } from "./otp-modal";
 import { ThankYouModal } from "./thank-you-modal";
@@ -18,15 +18,16 @@ const STEPS: Array<{
   fields: Array<keyof ValuationFormValues>;
 }> = [
   { n: 1, label: "Contact Info", fields: ["fullName", "whatsapp", "consent"] },
-  { n: 2, label: "Car Details", fields: ["year", "make", "model", "mileageKm"] },
-  { n: 3, label: "Condition & Location", fields: ["condition", "emirate"] },
+  { n: 2, label: "Car Details", fields: ["year", "make", "model", "mileageKm", "description"] },
+  { n: 3, label: "Trim & Location", fields: ["trim", "optionLevel", "location"] },
 ];
 
 export function ValuationForm() {
   const form = useValuationForm();
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
-  const isBusy = form.state === "validating" || form.state === "sending_otp" || form.state === "submitting";
+  const isBusy = form.state === "validating" || form.state === "submitting";
+  const isLocked = form.state !== "filling";
   const current = STEPS[step - 1];
 
   function goNext() {
@@ -70,10 +71,10 @@ export function ValuationForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        <div className="min-h-[250px] animate-fade-in">
+        <div key={step} className="min-h-[250px] animate-step-in">
           {step === 1 && <StepContact values={form.values} errors={form.errors} setField={form.setField} />}
           {step === 2 && <StepCarDetails values={form.values} errors={form.errors} setField={form.setField} />}
-          {step === 3 && <StepCondition values={form.values} errors={form.errors} setField={form.setField} />}
+          {step === 3 && <StepTrimLocation values={form.values} errors={form.errors} setField={form.setField} />}
         </div>
 
         {form.submitError && (
@@ -96,21 +97,18 @@ export function ValuationForm() {
               <ArrowRight className="h-4 w-4" />
             </Button>
           ) : (
-            <Button type="submit" className="flex-1 uppercase" loading={isBusy} disabled={isBusy}>
-              {form.state === "sending_otp" ? "Sending code..." : isBusy ? "Submitting" : "Get Your Free Valuation"}
+            <Button type="submit" className="flex-1 uppercase" loading={isBusy} disabled={isLocked}>
+              {isBusy ? "Submitting" : "Get Your Free Valuation"}
             </Button>
           )}
         </div>
       </form>
 
       <OtpModal
-        open={form.state === "otp_entry" || form.state === "verifying_otp" || form.state === "submitting"}
+        open={form.state === "otp_entry" || form.state === "verifying_otp"}
         phone={form.values.whatsapp}
-        resendIn={form.otp.resendIn}
-        attemptsLeft={form.otp.attemptsLeft}
-        verifying={form.state === "verifying_otp" || form.state === "submitting"}
+        verifying={form.state === "verifying_otp"}
         onVerify={form.verifyOtp}
-        onResend={() => form.otp.send()}
         onClose={form.cancelOtp}
       />
 

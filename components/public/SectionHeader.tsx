@@ -6,9 +6,10 @@ type SectionHeaderProps = {
   intro?: string;
   align?: "start" | "split";
   className?: string;
+  titleClassName?: string;
 };
 
-export function SectionHeader({ eyebrow, title, intro, align = "start", className }: SectionHeaderProps) {
+export function SectionHeader({ eyebrow, title, intro, align = "start", className, titleClassName }: SectionHeaderProps) {
   return (
     <div
       className={cn(
@@ -17,11 +18,11 @@ export function SectionHeader({ eyebrow, title, intro, align = "start", classNam
       )}
     >
       <div>
-        <p className="flex items-center gap-3 text-[0.72rem] font-medium uppercase text-gold">
+        <p className="flex items-center gap-3 text-[0.82rem] font-semibold uppercase tracking-[0.18em] text-gold">
           <span aria-hidden="true" className="gold-rule" />
           {eyebrow}
         </p>
-        <h2 className="mt-5 max-w-2xl font-display text-fluid-4 font-light leading-[1.08] text-text text-balance">
+        <h2 className={cn("mt-5 max-w-2xl font-display text-fluid-4 font-light leading-[1.08] text-text text-balance", titleClassName)}>
           {title}
         </h2>
       </div>
