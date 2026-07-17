@@ -5,18 +5,17 @@ import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
+export const DEMO_OTP_CODE = "123456";
+
 type Props = {
   open: boolean;
   phone: string;
-  resendIn: number;
-  attemptsLeft: number;
   verifying: boolean;
-  onVerify: (code: string) => Promise<{ ok: boolean; attemptsLeft?: number }>;
-  onResend: () => void;
+  onVerify: (code: string) => Promise<{ ok: boolean }>;
   onClose: () => void;
 };
 
-export function OtpModal({ open, phone, resendIn, attemptsLeft, verifying, onVerify, onResend, onClose }: Props) {
+export function OtpModal({ open, phone, verifying, onVerify, onClose }: Props) {
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [error, setError] = useState<string | null>(null);
   const [shake, setShake] = useState(false);
@@ -26,7 +25,7 @@ export function OtpModal({ open, phone, resendIn, attemptsLeft, verifying, onVer
     setError(null);
     const res = await onVerify(code);
     if (!res.ok) {
-      setError(`Incorrect code. ${res.attemptsLeft ?? attemptsLeft} attempts left.`);
+      setError("Incorrect code. This is a demo — use the code shown above.");
       setShake(true);
       setDigits(Array(6).fill(""));
       inputsRef.current[0]?.focus();
@@ -56,7 +55,10 @@ export function OtpModal({ open, phone, resendIn, attemptsLeft, verifying, onVer
   return (
     <Dialog open={open} onClose={onClose} title="Verify your number">
       <p className="mb-4 text-fluid--1 leading-6 text-text-muted">
-        Enter the 6-digit code sent to <span className="text-text">{phone}</span>. Demo code: 123456.
+        Enter the 6-digit code sent to <span className="text-text">{phone}</span> via SMS.
+      </p>
+      <p className="mb-4 rounded-card border border-gold/40 bg-gold/10 px-3 py-2 text-fluid--1 text-gold">
+        Demo mode: no SMS sent. Use code <span className="font-semibold">{DEMO_OTP_CODE}</span>.
       </p>
       <div className={cn("flex gap-2", shake && "animate-shake")} onPaste={handlePaste}>
         {digits.map((d, i) => (
@@ -83,15 +85,7 @@ export function OtpModal({ open, phone, resendIn, attemptsLeft, verifying, onVer
         </p>
       )}
       {verifying && <p className="mt-3 text-fluid--1 text-text-muted">Verifying...</p>}
-      <div className="mt-5 flex items-center justify-between gap-4">
-        <button
-          type="button"
-          disabled={resendIn > 0}
-          onClick={onResend}
-          className="text-left text-fluid--1 text-gold disabled:text-text-faint"
-        >
-          {resendIn > 0 ? `Resend code in ${resendIn}s` : "Resend code"}
-        </button>
+      <div className="mt-5 flex justify-end">
         <Button type="button" variant="ghost" size="sm" onClick={onClose}>
           Cancel
         </Button>

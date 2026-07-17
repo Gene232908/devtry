@@ -20,7 +20,7 @@ export const copy = {
   valuation: {
     eyebrow: "Free Valuation Request",
     title: "Start with your contact details so the team can follow up before the lead goes cold.",
-    sub: "Share your name, WhatsApp number, car details, and inspection area. The team reviews the request and contacts you on WhatsApp.",
+    sub: "Share your name, phone number, car details, trim, and location. The team reviews the request and contacts you directly.",
     highlights: [
       {
         title: "Luxury market review",
@@ -68,6 +68,6 @@ export const copy = {
     sub: "For car valuation requests, home inspection questions, or quick follow-up, message the team directly on WhatsApp.",
   },
   footer: {
-    tagline: "Private car valuation requests, WhatsApp follow-up, and inspection coordination for sellers across the UAE.",
+    tagline: "Valuation requests, WhatsApp follow-up, and inspection coordination for sellers across the UAE.",
   },
 };

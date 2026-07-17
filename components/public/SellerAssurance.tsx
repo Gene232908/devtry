@@ -1,8 +1,4 @@
-"use client";
-
 import { sellerAssurances } from "@/config/homepage";
-import { buttonClasses } from "@/components/ui/Button";
-import { openValuationModal } from "./open-valuation-modal";
 import { Section } from "./Section";
 import { SectionHeader } from "./SectionHeader";
 import { Reveal } from "./Reveal";
@@ -13,7 +9,7 @@ export function SellerAssurance() {
       <Reveal>
         <SectionHeader
           eyebrow="Why Sell To CarVibeDubai"
-          title="A fair, transparent process built to earn your trust."
+          title="Fair and transparent. A process built to earn your trust."
           intro="Handing over your car is a big decision. Every step is designed to keep the deal honest, balanced, and pressure-free."
         />
       </Reveal>
@@ -58,12 +54,6 @@ export function SellerAssurance() {
           );
         })}
       </div>
-
-      <Reveal delay={120} className="mt-12 flex justify-center">
-        <button type="button" onClick={openValuationModal} className={buttonClasses({ size: "lg" })}>
-          Get Your Free Valuation
-        </button>
-      </Reveal>
     </Section>
   );
 }

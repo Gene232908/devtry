@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowRight, Clock, MapPin, Phone, type LucideIcon } from "lucide-react";
+import { ArrowRight, Clock, MapPin, type LucideIcon } from "lucide-react";
 import { Logo } from "./Logo";
 import { brand } from "@/config/brand";
 import { copy } from "@/config/copy";
@@ -11,18 +11,16 @@ import { cn } from "@/lib/utils";
 const FOOTER_LINKS = [
   { label: "Privacy", href: "/privacy" },
   { label: "Terms", href: "/terms" },
-  { label: "Admin", href: "/admin" },
 ];
 
 const CONTACT_ROWS: Array<{ label: string; value: string; icon: LucideIcon; href?: string }> = [
   { label: "Showroom Area", value: brand.address, icon: MapPin },
-  { label: "Direct Line", value: brand.callNumber, icon: Phone, href: `tel:${brand.callNumber}` },
   { label: "Hours", value: brand.hours, icon: Clock },
 ];
 
 function FacebookIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4" fill="currentColor">
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-[22px] w-[22px]" fill="currentColor">
       <path d="M14 13.5h2.5l.5-3H14V8.5c0-.9.25-1.5 1.53-1.5H17V4.36C16.73 4.32 15.8 4.25 14.7 4.25c-2.3 0-3.87 1.4-3.87 3.97V10.5H8.5v3H10.83V21h3.17v-7.5Z" />
     </svg>
   );
@@ -30,7 +28,7 @@ function FacebookIcon() {
 
 function InstagramIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-[22px] w-[22px]" fill="none" stroke="currentColor" strokeWidth="1.9">
       <rect x="3.5" y="3.5" width="17" height="17" rx="4.5" />
       <circle cx="12" cy="12" r="4.1" />
       <circle cx="17.1" cy="6.9" r="0.9" fill="currentColor" stroke="none" />
@@ -113,7 +111,7 @@ export function Footer() {
   }, []);
 
   return (
-    <footer className="relative isolate overflow-hidden bg-bg">
+    <footer id="footer" className="relative isolate overflow-hidden bg-bg">
       <div
         ref={bandRef}
         className="relative isolate flex min-h-[36svh] items-center justify-center overflow-hidden lg:min-h-[42svh]"
@@ -128,7 +126,10 @@ export function Footer() {
           onEnded={() => setRevealed(true)}
           className="absolute inset-0 h-full w-full object-cover"
         />
-        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-bg/70 via-black/35 to-bg" />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-[linear-gradient(to_bottom,var(--bg)_0%,rgba(0,0,0,.35)_32%,rgba(0,0,0,.35)_68%,var(--bg)_100%)]"
+        />
 
         <div className="relative z-10 flex flex-col items-center px-6">
           <p
@@ -137,14 +138,14 @@ export function Footer() {
               revealed ? "translate-y-0 opacity-100 delay-[650ms]" : "-translate-y-2 opacity-0",
             )}
           >
-            Dubai &middot; United Arab Emirates
+            United Arab Emirates
           </p>
 
           <div className="mt-4 overflow-hidden py-1">
             <p
               className={cn(
-                "select-none whitespace-nowrap text-center font-display text-[clamp(2.1rem,1.2rem+5.2vw,6.6rem)] font-light uppercase leading-none tracking-[0.12em] text-white transition-transform duration-[1300ms] ease-[cubic-bezier(.22,1,.3,1)] will-change-transform motion-reduce:transition-none motion-reduce:duration-0",
-                revealed ? "translate-y-0" : "translate-y-[112%]",
+                "select-none whitespace-nowrap text-center font-display text-[clamp(2.1rem,1.2rem+5.2vw,6.6rem)] font-light uppercase leading-none tracking-[0.12em] text-white transition-all duration-[2600ms] ease-[cubic-bezier(.12,.72,.16,1)] will-change-[opacity,transform,filter] motion-reduce:transition-none motion-reduce:duration-0",
+                revealed ? "translate-y-0 scale-100 opacity-100 blur-0" : "translate-y-4 scale-[0.9] opacity-0 blur-[18px]",
               )}
               style={{ textShadow: "0 4px 34px rgba(0,0,0,.55)" }}
             >
@@ -174,7 +175,7 @@ export function Footer() {
       <div className="container relative z-10 -mt-4 pb-12">
         <div className="grid grid-cols-1 gap-y-12 lg:grid-cols-2 lg:items-start lg:gap-x-20">
           <RevealOnScroll>
-            <Logo />
+            <Logo className="[&>span:nth-child(2)>span:last-child]:hidden" />
             <p className="mt-6 max-w-sm text-fluid--1 font-light leading-7 text-text-muted">{copy.footer.tagline}</p>
             <a
               href="#home"
@@ -230,7 +231,7 @@ export function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`${brand.name} on Facebook`}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.05] text-text-muted transition-colors hover:bg-gold/15 hover:text-gold"
+              className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/80 transition-colors hover:border-gold/50 hover:bg-gold/15 hover:text-gold"
             >
               <FacebookIcon />
             </a>
@@ -239,7 +240,7 @@ export function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`${brand.name} on Instagram`}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.05] text-text-muted transition-colors hover:bg-gold/15 hover:text-gold"
+              className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/80 transition-colors hover:border-gold/50 hover:bg-gold/15 hover:text-gold"
             >
               <InstagramIcon />
             </a>

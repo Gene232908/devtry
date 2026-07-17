@@ -26,6 +26,8 @@
   --gold-hi-rgb: 244 227 168;
   --gold-deep: #8c6f2a;
   --gold-deep-rgb: 140 111 42;
+  --ivory: #f5efe0;
+  --ivory-rgb: 245 239 224;
   --text: #f5f3ef;
   --text-rgb: 245 243 239;
   --text-muted: #a39c90;
@@ -131,4 +133,15 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Pause decorative background motion while a modal is open — nothing behind
+   the backdrop-blur overlay is visible anyway, but the browser still has to
+   recomposite the blur every frame these keep animating. Purely a perf win,
+   no visual change to either state. */
+.modal-open .animate-marquee-slow,
+.modal-open .animate-marquee,
+.modal-open .animate-marquee-reverse,
+.modal-open .animate-cta-pulse {
+  animation-play-state: paused;
 }

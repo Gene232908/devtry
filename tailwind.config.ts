@@ -11,7 +11,7 @@ const config: Config = {
     container: {
       center: true,
       padding: "1.5rem",
-      screens: { xl: "1200px" },
+      screens: { xl: "1280px", "2xl": "1440px" },
     },
     extend: {
       colors: {
@@ -28,6 +28,7 @@ const config: Config = {
           hi: "rgb(var(--gold-hi-rgb) / <alpha-value>)",
           deep: "rgb(var(--gold-deep-rgb) / <alpha-value>)",
         },
+        ivory: "rgb(var(--ivory-rgb) / <alpha-value>)",
         text: {
           DEFAULT: "rgb(var(--text-rgb) / <alpha-value>)",
           muted: "rgb(var(--text-muted-rgb) / <alpha-value>)",
@@ -84,8 +85,32 @@ const config: Config = {
           "0%": { transform: "translateX(0)" },
           "100%": { transform: "translateX(-50%)" },
         },
+        "marquee-reverse": {
+          "0%": { transform: "translateX(-50%)" },
+          "100%": { transform: "translateX(0)" },
+        },
+        shine: {
+          "0%": { transform: "translateX(-130%) skewX(-12deg)" },
+          "55%, 100%": { transform: "translateX(240%) skewX(-12deg)" },
+        },
+        "cta-pulse": {
+          "0%, 100%": { boxShadow: "0 20px 44px -22px rgba(244,227,168,.9), 0 0 0 0 rgba(244,227,168,.45)" },
+          "50%": { boxShadow: "0 22px 48px -20px rgba(244,227,168,1), 0 0 0 12px rgba(244,227,168,0)" },
+        },
+        "ad-float": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-10px)" },
+        },
+        "ping-ring": {
+          "0%": { transform: "scale(0.7)", opacity: "0.7" },
+          "80%, 100%": { transform: "scale(2.2)", opacity: "0" },
+        },
         "slide-in": {
           "0%": { opacity: "0", transform: "translateX(28px)" },
+          "100%": { opacity: "1", transform: "translateX(0)" },
+        },
+        "step-in": {
+          "0%": { opacity: "0", transform: "translateX(12px)" },
           "100%": { opacity: "1", transform: "translateX(0)" },
         },
         "progress-fill": {
@@ -111,8 +136,15 @@ const config: Config = {
         "fade-in": "fade-in 200ms ease-out",
         "flash-in": "flash-in 1.6s ease-out",
         shake: "shake 0.35s ease-in-out",
-        marquee: "marquee 32s linear infinite",
+        marquee: "marquee 34s linear infinite",
+        "marquee-slow": "marquee 90s linear infinite",
+        "marquee-reverse": "marquee-reverse 34s linear infinite",
+        shine: "shine 3.4s ease-in-out infinite",
+        "cta-pulse": "cta-pulse 2.6s ease-in-out infinite",
+        "ad-float": "ad-float 4.5s ease-in-out infinite",
+        "ping-ring": "ping-ring 2.4s ease-out infinite",
         "slide-in": "slide-in 550ms ease-out",
+        "step-in": "step-in 260ms cubic-bezier(.16,.84,.44,1) both",
         "progress-fill": "progress-fill 7000ms linear forwards",
         "page-intro": "page-intro 0.45s ease-out both",
         "hero-focus": "hero-focus 1.7s cubic-bezier(.16,.84,.44,1) both",
