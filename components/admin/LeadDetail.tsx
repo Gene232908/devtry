@@ -46,13 +46,24 @@ export function LeadDetail({ lead }: { lead: Lead }) {
             <div className="grid grid-cols-2 gap-x-4 gap-y-4 text-fluid--1 sm:grid-cols-4">
               <Detail label="Make" value={lead.make} />
               <Detail label="Model" value={lead.model} />
+              <Detail label="Trim" value={lead.trim || "—"} />
               <Detail label="Year" value={String(lead.year)} />
               <Detail label="Mileage" value={`${lead.mileageKm.toLocaleString()} km`} />
-              <Detail label="Condition" value={lead.condition.charAt(0).toUpperCase() + lead.condition.slice(1)} />
+              <Detail
+                label="Option Level"
+                value={lead.optionLevel ?? (lead.condition ? lead.condition.charAt(0).toUpperCase() + lead.condition.slice(1) : "—")}
+              />
+              <Detail label="Location" value={lead.location || "—"} />
               <Detail label="Phone" value={formatPhoneDisplay(lead.phoneE164)} />
               <Detail label="Email" value={lead.email || "—"} />
               <Detail label="Source" value="Web" />
             </div>
+            {lead.description ? (
+              <div className="border-t border-border pt-4">
+                <p className="text-text-faint">Seller&apos;s description</p>
+                <p className="mt-1.5 text-fluid--1 font-light leading-6 text-text">{lead.description}</p>
+              </div>
+            ) : null}
           </Card>
 
           <Card className="flex flex-col gap-3 p-5">

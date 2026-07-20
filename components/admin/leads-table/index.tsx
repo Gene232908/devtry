@@ -7,11 +7,20 @@ import { useLeadsFilter } from "@/lib/admin/use-leads-filter";
 import { exportLeadsCsv } from "@/lib/admin/export-csv";
 import { LeadsToolbar } from "./toolbar";
 import { LeadRow } from "./row";
+import { LeadsTableSkeleton } from "./skeleton";
 import { Pagination } from "./pagination";
 
 export function LeadsTable() {
-  const { leads, updateLead } = useLeads();
+  const { leads, updateLead, isLive, isLoading, isRefreshing, refresh } = useLeads();
   const filter = useLeadsFilter(leads);
+
+  if (isLoading) {
+    return (
+      <Card className="p-5">
+        <LeadsTableSkeleton />
+      </Card>
+    );
+  }
 
   return (
     <Card className="p-5">
@@ -22,12 +31,17 @@ export function LeadsTable() {
         onStatus={filter.setStatus}
         make={filter.make}
         onMake={filter.setMake}
+        emirate={filter.emirate}
+        onEmirate={filter.setEmirate}
         onExport={() => exportLeadsCsv(filter.allFiltered)}
         count={filter.totalCount}
+        isLive={isLive}
+        isRefreshing={isRefreshing}
+        onRefresh={refresh}
       />
 
       <div className="mt-5 overflow-x-auto">
-        <table className="w-full min-w-[860px] text-left text-fluid--1">
+        <table className="w-full min-w-[940px] text-left text-fluid--1">
           <thead>
             <tr className="border-b border-border text-text-faint">
               <th className="py-2 pr-4 font-normal">Client Name</th>
@@ -38,6 +52,7 @@ export function LeadsTable() {
               </th>
               <th className="py-2 pr-4 font-normal">Car Details</th>
               <th className="py-2 pr-4 font-normal">Mileage</th>
+              <th className="py-2 pr-4 font-normal">Emirate</th>
               <th className="py-2 pr-4 font-normal">
                 <button className="flex items-center gap-1" onClick={() => filter.toggleSort("date")}>
                   Date <ArrowUpDown className="h-3 w-3" />
@@ -54,7 +69,7 @@ export function LeadsTable() {
           </thead>
           <tbody>
             {filter.pageItems.map((lead) => (
-              <LeadRow key={lead.id} lead={lead} onStatusChange={(status) => updateLead(lead.id, { status })} />
+              <LeadRow key={lead.id} lead={lead} updateLead={updateLead} />
             ))}
           </tbody>
         </table>
@@ -64,7 +79,13 @@ export function LeadsTable() {
         )}
       </div>
 
-      <Pagination page={filter.page} totalPages={filter.totalPages} onPageChange={filter.setPage} />
+      <Pagination
+        page={filter.page}
+        totalPages={filter.totalPages}
+        pageSize={filter.pageSize}
+        totalCount={filter.totalCount}
+        onPageChange={filter.setPage}
+      />
     </Card>
   );
 }

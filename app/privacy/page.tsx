@@ -1,11 +1,13 @@
 import { UtilityBar } from "@/components/public/UtilityBar";
 import { Navbar } from "@/components/public/Navbar";
 import { Footer } from "@/components/public/Footer";
+import { PageViewTracker } from "@/components/public/PageViewTracker";
 import { brand } from "@/config/brand";
 
 export default function PrivacyPage() {
   return (
     <>
+      <PageViewTracker />
       <UtilityBar />
       <Navbar />
       <main className="container pb-16 pt-36 sm:pt-40">

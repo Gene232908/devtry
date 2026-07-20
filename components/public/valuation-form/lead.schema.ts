@@ -1,17 +1,23 @@
 import { z } from "zod";
 
 const UAE_MOBILE_PATTERNS = [/^05\d{8}$/, /^9715\d{8}$/];
+// TEMPORARY (Meta WhatsApp free-tier testing): also accept PH-shaped numbers
+// so the form doesn't block entering the registered PH test recipient.
+// Remove once WhatsApp OTP testing moves off the PH number.
+const PH_MOBILE_PATTERNS = [/^09\d{9}$/, /^639\d{9}$/];
 
 export function isValidUaeMobileNumber(value: string) {
   const digits = value.replace(/\D/g, "");
-  return UAE_MOBILE_PATTERNS.some((pattern) => pattern.test(digits));
+  return [...UAE_MOBILE_PATTERNS, ...PH_MOBILE_PATTERNS].some((pattern) => pattern.test(digits));
 }
 
-/** Normalizes a UAE mobile number (05..., 9715..., or +9715...) to E.164 (+9715...). */
+/** Normalizes a UAE mobile number (05..., 9715..., or +9715...) to E.164 (+9715...). Also accepts PH numbers temporarily — see note above. */
 export function normalizeUaeMobile(value: string): string | null {
   const digits = value.replace(/\D/g, "");
   if (/^05\d{8}$/.test(digits)) return `+971${digits.slice(1)}`;
   if (/^9715\d{8}$/.test(digits)) return `+${digits}`;
+  if (/^09\d{9}$/.test(digits)) return `+63${digits.slice(1)}`;
+  if (/^639\d{9}$/.test(digits)) return `+${digits}`;
   return null;
 }
 

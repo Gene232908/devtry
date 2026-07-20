@@ -2,9 +2,15 @@
 
 ## Current objective
 
-Prepare Milestone 1 public landing work for GitHub/Vercel review and collect remaining client inputs.
+Run the one remaining manual database migration for the just-restored Supabase backend, then verify a real end-to-end valuation submission.
 
 ## In progress
+
+- [ ] Run `supabase/migrations/0006_trim_and_option_level.sql` in the Supabase SQL Editor.
+  - Related feature: Public valuation form + Admin leads
+  - Acceptance criteria: A real form submission (real OTP, real Supabase insert) saves `trim`/`description`/`option_level` and they display correctly on `/admin/leads/[id]`.
+  - Risks: None to existing behavior — mock/demo mode keeps working regardless via the graceful-fallback design in `lib/admin/leads-store.tsx` and `use-valuation-form.ts`.
+  - Next action: Client/developer runs the migration, then does one real test submission on the live site.
 
 - [ ] Client review of Milestone 1 public landing revisions.
   - Related feature: Public landing page
@@ -14,19 +20,17 @@ Prepare Milestone 1 public landing work for GitHub/Vercel review and collect rem
 
 ## Next
 
+- [ ] Test admin login live (requires a real Supabase Auth user matching an email in `0002_seed.sql`).
+- [ ] Decide on lead data retention/deletion policy (`KNOWN_ISSUES.md` ISSUE-004).
+- [ ] Add pagination to `/api/admin/leads` before lead volume grows (`KNOWN_ISSUES.md` ISSUE-003).
 - [ ] Collect exact CarVibe Gmail address for notifications/footer.
 - [ ] Collect final logo file from the group chat and place it in the project if needed.
-- [ ] Collect final make/model dropdown list for later database-backed management.
 - [ ] Confirm whether financing and reviews are approved as real backend-backed scope or should remain UI-only previews.
-- [ ] Audit current screens.
-- [ ] Move embedded mock data into repositories.
-- [ ] Keep the database plan synchronized.
-- [ ] Complete loading, empty, error, and mobile states.
+- [ ] Complete loading, empty, error, and mobile states for the live (non-mock) admin data path.
 
 ## Blocked
 
-- [ ] Final Supabase implementation.
-  - Blocked by client approval and `FINISH THE PRODUCT`.
+- [ ] Formal UAE legal/compliance review before production (per `RULES.md` UAE privacy rule) — needs client-arranged legal review, not something to resolve in code.
 
 ## Completed
 

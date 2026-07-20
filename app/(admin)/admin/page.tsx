@@ -6,12 +6,12 @@ import { VisitorsChart } from "@/components/admin/VisitorsChart";
 import { SubmissionsChart } from "@/components/admin/SubmissionsChart";
 import { RecentLeads } from "@/components/admin/RecentLeads";
 import { useLeads } from "@/lib/admin/leads-store";
-import { computeStats } from "@/config/mock-data";
+import { useAdminStats } from "@/lib/admin/use-admin-stats";
 import { formatAed, formatNumber } from "@/lib/format";
 
 export default function AdminDashboardPage() {
-  const { leads } = useLeads();
-  const stats = computeStats(leads);
+  const { leads, isLoading: leadsLoading } = useLeads();
+  const { stats, visitors, submissions, isLoading: statsLoading } = useAdminStats();
 
   return (
     <div className="flex flex-col gap-6">
@@ -21,20 +21,20 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard label="Total Leads" value={formatNumber(stats.totalLeads)} icon={Users} accent />
-        <StatCard label="New Submissions (Today)" value={formatNumber(stats.newToday)} icon={FileCheck2} />
-        <StatCard label="Active Leads" value={formatNumber(stats.activeLeads)} icon={Activity} />
-        <StatCard label="Website Visitors" value={formatNumber(stats.visitorsThisWeek)} sublabel="This Week" icon={Eye} />
-        <StatCard label="Average Value" value={formatAed(stats.averageValue)} icon={Wallet} accent />
-        <StatCard label="WhatsApp Clicks" value={formatNumber(stats.whatsappClicks)} icon={MessageCircle} />
+        <StatCard label="Total Leads" value={formatNumber(stats.totalLeads)} icon={Users} accent isLoading={statsLoading} />
+        <StatCard label="New Submissions (Today)" value={formatNumber(stats.newToday)} icon={FileCheck2} isLoading={statsLoading} />
+        <StatCard label="Active Leads" value={formatNumber(stats.activeLeads)} icon={Activity} isLoading={statsLoading} />
+        <StatCard label="Website Visitors" value={formatNumber(stats.visitorsThisWeek)} sublabel="This Week" icon={Eye} isLoading={statsLoading} />
+        <StatCard label="Average Value" value={formatAed(stats.averageValue)} icon={Wallet} accent isLoading={statsLoading} />
+        <StatCard label="WhatsApp Clicks" value={formatNumber(stats.whatsappClicks)} icon={MessageCircle} isLoading={statsLoading} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <VisitorsChart />
-        <SubmissionsChart />
+        <VisitorsChart data={visitors} isLoading={statsLoading} />
+        <SubmissionsChart data={submissions} isLoading={statsLoading} />
       </div>
 
-      <RecentLeads leads={leads} />
+      <RecentLeads leads={leads} isLoading={leadsLoading} />
     </div>
   );
 }

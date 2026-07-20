@@ -4,6 +4,43 @@ This is the factual source for reports.
 
 Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
+## 2026-07-17
+
+### Completed
+
+- Task: `FINISH THE PRODUCT` — restored and adapted the Supabase/Twilio backend from the `wip-backup-before-milestone1` branch into `main`, on top of the already-merged Milestone 1 public landing page.
+- What changed:
+  - Restored `lib/supabase/{client,server,admin}.ts`, `lib/twilio/verify.ts`, `lib/otp-token.ts`, `lib/rate-limit.ts`, `lib/otp-dev.ts`, `lib/server/{ip,otp-log}.ts`, `lib/uae-time.ts`, `lib/admin/{lead-mapper,export-csv,use-leads-filter}.ts`, `middleware.ts`, all 5 original SQL migrations, and 15 `app/api/*` routes plus the `/admin/login`, `/admin/set-password`, `/admin/catalog` pages, all previously present on the backup branch but missing from `main`.
+  - Added a new migration `supabase/migrations/0006_trim_and_option_level.sql`: adds `trim`, `description`, and a new `option_level` enum (`Basic Mode`/`Mid Mode`/`Full Option`) to `leads` without touching the legacy `condition` column, plus seeds BMW (5 Series, X5, 3 Series) into the `car_makes`/`car_models` catalog tables to match the current static `config/vehicles.ts` list.
+  - Adapted `app/api/leads/route.ts` and `lib/admin/lead-mapper.ts` from the backup's old field set (`condition`/`emirate`/`area`) to the current valuation form's fields (`trim`/`optionLevel`/`location`/`description`); `location` maps to the existing `emirate` column, no new column needed there.
+  - Added `trim`, `description`, `optionLevel`, `location`, `isSpam` to the `Lead` type in `config/mock-data.ts`; kept `condition` as a deprecated/legacy field rather than removing it (backward-compatible per `RELEASE_OPERATIONS.md`).
+  - `components/admin/LeadDetail.tsx` now displays Trim, Option Level (falls back to the legacy Condition wording for old rows), and Location; `lib/admin/export-csv.ts` gained Trim/Option Level/Description columns.
+  - Removed the emirate/area sub-filtering from `lib/admin/use-leads-filter.ts` — it referenced fields the admin UI never actually exposed a filter control for, so it was dead code once the `Lead` type changed shape.
+  - `lib/admin/leads-store.tsx`: on mount, now tries `GET /api/admin/leads` first; only falls back to the existing mock/localStorage dataset if that fails or Supabase isn't configured, so the dashboard never breaks in demo mode. `updateLead` now also `PATCH`es `/api/leads/{id}` when running live, best-effort (local state always updates immediately either way).
+  - `components/public/valuation-form/use-valuation-form.ts`: `submit()` now tries the real `POST /api/otp/send` first; only falls back to the fully client-side demo OTP flow if that call fails. `verifyOtp()` correspondingly calls the real `/api/otp/verify` + `/api/leads` when live. Added an `otpDevBypass` flag (surfaced from the send response's `devBypass` field) so `OtpModal` shows the "no SMS sent, use code X" hint whenever the server used its dev-only bypass — not just in full offline-demo mode — since showing no hint at all would strand a real visitor with no code to enter.
+  - Added `@supabase/ssr`, `@supabase/supabase-js`, and `twilio` to `package.json` (all three were on the backup branch's `package.json` but missing from `main`'s).
+- Why it matters: `FINISH THE PRODUCT` (per `AGENTS.md`/`FINALIZATION_PROTOCOL.md`) is the client-approval trigger for connecting the real backend; this brings the previously-built, already-working Supabase/Twilio implementation back into the active branch instead of leaving it stranded on a backup branch, while keeping the mock/demo experience fully intact as an automatic fallback for anyone testing without live credentials configured.
+
+### Verification
+
+- Lint: `npx eslint . --ext .ts,.tsx` passed (zero output) after every phase of the restoration.
+- Type check: covered by `npm run build`, run repeatedly through the restoration; the only real compile errors surfaced were (1) `components/admin/leads-table/toolbar.tsx` still treating `MAKES` as `string[]` after `config/vehicles.ts`'s make/model rework earlier this session (fixed: use `m.name`), and (2) the 5 dead pre-milestone-1 files (`Contact.tsx`, `car-logos.tsx`, `step-condition.tsx`, `use-otp.ts`, `logo-carousel.tsx`) referencing type shapes that no longer existed once the config files were updated — removed with explicit user confirmation, since none were imported by any current code path (admin or public) and TypeScript still type-checks unreferenced files in this project's `tsconfig`.
+- Build: `npm run build` passed clean on the final pass — all 17 routes (8 public/admin pages + 15 API routes, `/api/vehicles` through `/api/admin/settings`) plus the now-active `middleware.ts` (84.1 kB) compiled successfully.
+- Manual check: confirmed against the actual dev server (not just build output) that `/api/vehicles` returns real seeded catalog rows (live Supabase, not mock), `/api/otp/send` returns `devBypass: true` (confirming `DEV_OTP_BYPASS=true` is active server-side, so no real SMS was sent during testing), and `/admin` correctly 307-redirects to `/admin/login` now that the restored `middleware.ts` sees real Supabase credentials and enforces auth (it fails open — no redirect — when Supabase isn't configured, so this only activates once credentials exist, which they already did here).
+- Environment: discovered mid-session that `.env.local` actually has real Supabase + Twilio values (an earlier grep-based check in this same session incorrectly reported them as empty — the regex matched the `KEY=` prefix without checking for a value after it). This is a live project, not a placeholder — `/api/vehicles`already returned real seeded rows with real UUIDs, and migrations 0001-0005 were evidently already applied there previously.
+- Also fixed mid-session: the host machine's `C:` drive was at 0 bytes free, which made `npm install`/`npm run build` fail with `ENOSPC` even though the project itself lives on `D:` with 50 GB free — `npm`'s cache and Windows' `TEMP` both default to `C:` regardless of project location. Worked around by setting `npm config set cache "D:\npm-cache"` (persisted) and exporting `TEMP`/`TMP`/`NPM_CONFIG_CACHE` to `D:`-based paths for build/install commands, without writing anything else to `C:`. The underlying full `C:` drive is a separate, still-open machine-level issue for the user to resolve on their own schedule.
+
+### Remaining work
+
+- **Run `supabase/migrations/0006_trim_and_option_level.sql` in the Supabase SQL Editor** — not yet applied to the live project. Until then, a real end-to-end lead submission (real OTP → real `/api/leads` insert) will fail server-side with a "column does not exist" error, since the live `leads` table doesn't have `trim`/`description`/`option_level` yet. The graceful-fallback design means this fails safely (shows an error message, doesn't crash), but real submissions won't succeed until the migration runs.
+- No live end-to-end test of a full real lead submission (OTP send → verify → insert) was performed this session, specifically to avoid hitting that missing-column error against the real database before the migration is applied.
+- Admin login was not tested live (`/admin/login` renders and the middleware correctly redirects to it, but no attempt was made to actually sign in, since that requires a real Supabase Auth user account matching the emails hardcoded in `0002_seed.sql`).
+- Pagination, data retention/deletion policy, and formal UAE legal/compliance review remain open — see `KNOWN_ISSUES.md` ISSUE-003/004.
+
+### Non-technical explanation
+
+> You asked to bring back the real database and text-message verification system that was already built earlier, and make sure the new "Trim" and "Describe your car" fields from the valuation form actually save and show up on the admin side. That's done on the code side — it builds cleanly and the site still works normally for anyone testing without real credentials (it automatically falls back to the practice/demo mode, so nothing breaks). There's one manual step left on your end: running one small database update (a single SQL file) in your Supabase dashboard so the live database actually has room for the new Trim/Description fields — after that, real form submissions will save correctly and show up in the admin leads list.
+
 ## 2026-07-07
 
 ### Completed
