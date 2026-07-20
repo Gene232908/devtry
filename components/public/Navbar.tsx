@@ -67,7 +67,7 @@ export function Navbar() {
   }, [comingSoonOpen]);
 
   return (
-    <header className="fixed inset-x-0 top-8 z-50 px-4 pt-4 text-text sm:px-6 lg:px-8">
+    <header className="absolute inset-x-0 top-8 z-50 px-4 pt-4 text-text sm:px-6 lg:px-8">
       <nav className="mx-auto flex max-w-[1280px] items-center justify-between gap-4">
         <Link href="#home" className="min-w-0">
           <Logo compact className="[&>span:nth-child(2)>span:last-child]:hidden" />

@@ -18,7 +18,37 @@ export type ValuationFormValues = {
 
 export type FormErrors = Partial<Record<keyof ValuationFormValues, string>>;
 
-export type FormState = "filling" | "validating" | "otp_entry" | "verifying_otp" | "submitting" | "success";
+export type FormState = "filling" | "validating" | "submitting" | "success";
+
+export type PhoneVerificationStatus =
+  | "unverified"
+  | "sending"
+  | "code_sent"
+  | "verifying"
+  | "verified"
+  | "error";
+
+export type PhoneVerification = {
+  status: PhoneVerificationStatus;
+  /** The exact phone value that was verified — used to detect edits after verification. */
+  verifiedPhone: string | null;
+  /** Server-issued proof required by the final submission; cleared whenever verification is invalidated. */
+  proof: string | null;
+  /** True when the server used its dev-only OTP bypass (no real WhatsApp message sent). */
+  devBypass: boolean;
+  /** Unix ms timestamp after which "Resend OTP" becomes available again. */
+  resendAvailableAt: number | null;
+  errorMessage: string | null;
+};
+
+export const emptyPhoneVerification: PhoneVerification = {
+  status: "unverified",
+  verifiedPhone: null,
+  proof: null,
+  devBypass: false,
+  resendAvailableAt: null,
+  errorMessage: null,
+};
 
 export const emptyValues: ValuationFormValues = {
   fullName: "",

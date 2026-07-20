@@ -2,16 +2,18 @@
 
 ## Current state
 
-- Phase: frontend and workflow development.
-- Backend: waiting for client approval.
-- Supabase: planned, not final.
+- Phase: backend finalization in progress (`FINISH THE PRODUCT` sent 2026-07-17).
+- Backend: Supabase + Twilio code restored and adapted on `main`, code-complete. One manual step open — see below.
+- Supabase: live project, credentials configured in `.env.local`. Migrations 0001-0005 already applied previously; 0006 (new this session: trim/description/option_level columns, BMW catalog seed) still needs to be run manually in the Supabase SQL Editor.
 - Client milestone package: generated under `docs/client/` and aligned with the signed proposal PDF plus `CARVIBE_BUILD_PLAN.md`.
-- Milestone 1 public landing revisions from Sir Nyash's form answers are implemented in the UI only.
+- Milestone 1 public landing page is on `main`, merged from the `milestone-1` branch's UI work, now with the real backend wired underneath (graceful fallback to demo/mock mode when Supabase/Twilio aren't reachable).
 - Weekly report: `CALLME`.
 - Five-part presentation: `DAY5REPORT`.
-- Backend finalization: `FINISH THE PRODUCT`.
+- Backend finalization: `FINISH THE PRODUCT` (already sent — see 2026-07-17 in `WORK_LOG.md` for the full breakdown).
 
 ## Last completed work
+
+**2026-07-17 (most recent):** `FINISH THE PRODUCT` executed — restored the Supabase/Twilio backend (previously built on `wip-backup-before-milestone1`) into `main`, adapted to the current valuation form's fields (Trim, Describe Your Car, Basic/Mid/Full Option). Admin dashboard and public valuation form both try the real backend first and gracefully fall back to mock/demo mode if it's unreachable. Full details, verification, and the one remaining manual step (running migration 0006) are in `WORK_LOG.md` under that date — read it before continuing this work.
 
 Final Milestone 1 landing polish is in place: the approved hero section was preserved and given a blur-to-sharp focus-in animation, while the separate full-page intro was reduced to a lightweight opacity fade to avoid stacking heavy blur filters. The client `dubaii.jpeg` Defender photo is used in the How It Works section with a fully blended top gradient, the loading screen was removed, and the previous footer video band was merged into a single compact footer with no visible divider lines.
 
@@ -65,4 +67,4 @@ Review the pushed Milestone 1 public landing package, live site, and meeting pac
 
 ## Exact next action
 
-Review `http://localhost:3000/` on desktop and phone, confirm any Vercel deployment check from GitHub, and use `docs/meetings/Milestone1_Report_2026-07-12.docx` for the July 12 meeting.
+Run `supabase/migrations/0006_trim_and_option_level.sql` in the Supabase SQL Editor (dashboard -> SQL Editor -> paste -> run), then do one real end-to-end valuation form submission on the live site to confirm a lead lands in the `leads` table with `trim`/`description`/`option_level` populated and shows correctly on `/admin/leads`. Separately: review `http://localhost:3000/` on desktop and phone, confirm any Vercel deployment check from GitHub, and use `docs/meetings/Milestone1_Report_2026-07-12.docx` for the July 12 meeting.

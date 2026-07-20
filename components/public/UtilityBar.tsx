@@ -20,7 +20,7 @@ function InstagramIcon() {
 
 export function UtilityBar() {
   return (
-    <div className="fixed inset-x-0 top-0 z-[60] h-8 border-b border-gold/25 bg-black text-white/80">
+    <div className="absolute inset-x-0 top-0 z-[60] h-8 border-b border-gold/25 bg-black text-white/80">
       <div className="container flex h-full items-center justify-end text-[0.66rem] tracking-wide">
         <div className="flex items-center gap-4">
           <a

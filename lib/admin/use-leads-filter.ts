@@ -1,18 +1,27 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Lead, LeadStatus } from "@/config/mock-data";
 
 export type SortKey = "date" | "mobile" | "value";
 
 export function useLeadsFilter(leads: Lead[]) {
+  // searchInput updates the text box instantly; search (debounced) drives
+  // filtering, so typing doesn't re-filter/re-sort/re-render on every keystroke.
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<LeadStatus | "all">("all");
   const [make, setMake] = useState<string>("all");
+  const [emirate, setEmirateState] = useState<string>("all");
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
-  const pageSize = 6;
+  const [pageSize, setPageSizeState] = useState(6);
+
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 200);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   const filtered = useMemo(() => {
     let result = leads;
@@ -22,6 +31,7 @@ export function useLeadsFilter(leads: Lead[]) {
     }
     if (status !== "all") result = result.filter((l) => l.status === status);
     if (make !== "all") result = result.filter((l) => l.make === make);
+    if (emirate !== "all") result = result.filter((l) => l.location === emirate);
 
     const sorted = [...result].sort((a, b) => {
       let cmp = 0;
@@ -31,10 +41,14 @@ export function useLeadsFilter(leads: Lead[]) {
       return sortDir === "asc" ? cmp : -cmp;
     });
     return sorted;
-  }, [leads, search, status, make, sortKey, sortDir]);
+  }, [leads, search, status, make, emirate, sortKey, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const pageItems = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const safePage = Math.min(page, totalPages);
+  const pageItems = useMemo(
+    () => filtered.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [filtered, safePage, pageSize],
+  );
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
@@ -47,9 +61,9 @@ export function useLeadsFilter(leads: Lead[]) {
   }
 
   return {
-    search,
+    search: searchInput,
     setSearch: (v: string) => {
-      setSearch(v);
+      setSearchInput(v);
       setPage(1);
     },
     status,
@@ -62,11 +76,21 @@ export function useLeadsFilter(leads: Lead[]) {
       setMake(v);
       setPage(1);
     },
+    emirate,
+    setEmirate: (v: string) => {
+      setEmirateState(v);
+      setPage(1);
+    },
     sortKey,
     sortDir,
     toggleSort,
-    page,
+    page: safePage,
     setPage,
+    pageSize,
+    setPageSize: (v: number) => {
+      setPageSizeState(v);
+      setPage(1);
+    },
     totalPages,
     pageItems,
     totalCount: filtered.length,

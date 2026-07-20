@@ -5,15 +5,39 @@ Record unresolved bugs, risks, and technical debt.
 ## ISSUE-001 — Backend not yet approved
 
 **Severity:** Expected limitation  
+**Status:** Resolved (code-complete; one manual step remaining)
+
+`FINISH THE PRODUCT` was sent on 2026-07-17. The Supabase/Twilio backend from
+the `wip-backup-before-milestone1` branch was restored into `main` and adapted
+to the current valuation form (Trim, Describe Your Car, Basic/Mid/Full Option
+instead of the old excellent/good/fair condition field). See `WORK_LOG.md`
+2026-07-17 for the full breakdown.
+
+**Remaining manual step:** migration `supabase/migrations/0006_trim_and_option_level.sql`
+has not been run against the live Supabase project yet (adds `trim`,
+`description`, `option_level` columns to `leads`, plus BMW to the vehicle
+catalog). Run it in Supabase -> SQL Editor before relying on those fields
+end-to-end. Migrations 0001-0005 were already applied previously (confirmed
+live via `/api/vehicles` returning real seeded catalog data).
+
+## ISSUE-003 — Admin leads list has no pagination
+
+**Severity:** Low (pre-existing, inherited from the restored backend)  
 **Status:** Open
 
-The system does not yet have the final approved Supabase implementation.
+`GET /api/admin/leads` fetches every row with no `limit`/pagination. Fine at
+current lead volume; revisit before lead count grows large (see
+`RULES.md` performance rule: avoid unbounded data loading).
 
-Resolution trigger:
+## ISSUE-004 — No documented data retention/deletion policy
 
-```text
-FINISH THE PRODUCT
-```
+**Severity:** Medium (UAE privacy compliance gap)  
+**Status:** Open
+
+The `leads` table stores personal data (name, phone, email, car details)
+with no retention period or deletion process defined yet. `SECURITY_COMPLIANCE.md`
+requires this documented before production; still needs client/legal input
+on how long lead data should be kept and how deletion requests are handled.
 
 ## ISSUE-002 - WhatsApp number format too strict
 

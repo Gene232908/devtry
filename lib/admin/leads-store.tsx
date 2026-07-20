@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Lead, LeadStatus, mockLeads } from "@/config/mock-data";
 
 const STORAGE_KEY = "cvd_admin_leads_v1";
@@ -9,35 +9,127 @@ type LeadsContextValue = {
   leads: Lead[];
   updateLead: (id: string, patch: Partial<Lead>) => void;
   getLead: (id: string) => Lead | undefined;
+  /** True once real Supabase-backed leads loaded successfully; false = demo/mock data. */
+  isLive: boolean;
+  /** True until the first live/mock resolution completes — avoids flashing mock data before live data arrives. */
+  isLoading: boolean;
+  /** Re-fetches live leads from the server. No-op in demo/mock mode. */
+  refresh: () => Promise<void>;
+  isRefreshing: boolean;
 };
 
 const LeadsContext = createContext<LeadsContextValue | null>(null);
 
 export function LeadsProvider({ children }: { children: React.ReactNode }) {
-  const [leads, setLeads] = useState<Lead[]>(mockLeads);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [isLive, setIsLive] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const isLiveRef = useRef(false);
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        setLeads(JSON.parse(stored));
-      } catch {
-        // ignore malformed cache, keep seed data
-      }
+  // Try real Supabase-backed leads first; fall back to the local mock/demo
+  // dataset whenever the database isn't configured yet (or the request fails
+  // for any reason) so the dashboard never breaks in demo mode.
+  const loadLive = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/leads", { cache: "no-store" });
+      if (!res.ok) return false;
+      const body = await res.json();
+      if (!body.ok || !Array.isArray(body.data?.leads)) return false;
+      setLeads(body.data.leads);
+      setIsLive(true);
+      isLiveRef.current = true;
+      return true;
+    } catch {
+      return false;
     }
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    loadLive().then((live) => {
+      if (cancelled) return;
+      if (!live) {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          try {
+            setLeads(JSON.parse(stored));
+          } catch {
+            setLeads(mockLeads);
+          }
+        } else {
+          setLeads(mockLeads);
+        }
+      }
+      setIsLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadLive]);
+
+  // The admin layout mounts this provider once and keeps it alive across every
+  // /admin/* page — without this, leads submitted after the dashboard was
+  // first opened (e.g. from another tab, or the public site) would never show
+  // up until a full page reload. Re-fetch whenever the tab regains focus.
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState === "visible" && isLiveRef.current) {
+        loadLive();
+      }
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, [loadLive]);
+
+  useEffect(() => {
+    if (isLive || isLoading) return; // real data persists in Supabase, not localStorage
     localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
-  }, [leads]);
+  }, [leads, isLive, isLoading]);
 
   const value = useMemo<LeadsContextValue>(
     () => ({
       leads,
-      updateLead: (id, patch) => setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l))),
+      isLive,
+      isLoading,
+      isRefreshing,
+      refresh: async () => {
+        if (!isLiveRef.current) return;
+        setIsRefreshing(true);
+        try {
+          await loadLive();
+        } finally {
+          setIsRefreshing(false);
+        }
+      },
+      updateLead: (id, patch) => {
+        setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+        if (!isLive) return;
+
+        const body: Record<string, unknown> = {};
+        if (patch.status !== undefined) body.status = patch.status;
+        if (patch.estimatedValueAed !== undefined) body.estimated_value_aed = patch.estimatedValueAed;
+        if (patch.notes !== undefined) body.notes = patch.notes;
+        if (patch.isSpam !== undefined) body.is_spam = patch.isSpam;
+        if (Object.keys(body).length === 0) return;
+
+        fetch(`/api/leads/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }).catch(() => {
+          // best-effort; local state is already updated for immediate feedback
+        });
+      },
       getLead: (id) => leads.find((l) => l.id === id),
     }),
-    [leads],
+    [leads, isLive, isLoading, isRefreshing, loadLive],
   );
 
   return <LeadsContext.Provider value={value}>{children}</LeadsContext.Provider>;

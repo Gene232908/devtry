@@ -1,15 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Bell, LogOut, ChevronDown, Menu } from "lucide-react";
 import { Logo } from "@/components/public/Logo";
 import { useLeads } from "@/lib/admin/leads-store";
+import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 
 export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
-  const { leads } = useLeads();
+  const router = useRouter();
+  const { leads, isLive, isLoading } = useLeads();
   const [menuOpen, setMenuOpen] = useState(false);
   const newCount = leads.filter((l) => l.status === "new").length;
+
+  async function handleSignOut() {
+    try {
+      await getSupabaseBrowser().auth.signOut();
+    } catch {
+      // best-effort; still redirect away from the admin area either way
+    }
+    router.replace("/admin/login");
+    router.refresh();
+  }
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-border-gold bg-bg-elev px-4 sm:px-6">
@@ -21,6 +35,18 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
           <Logo />
         </Link>
         <span className="hidden text-fluid--1 text-text-faint sm:inline">| Admin</span>
+        {!isLoading && (
+          <span
+            className={cn(
+              "hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.65rem] font-medium uppercase tracking-wide sm:flex",
+              isLive ? "border-success/40 text-success" : "border-warning/40 text-warning",
+            )}
+            title={isLive ? "Showing real data from Supabase" : "Showing demo/practice data — Supabase not connected"}
+          >
+            <span className={cn("h-1.5 w-1.5 rounded-full", isLive ? "bg-success" : "bg-warning")} />
+            {isLive ? "Live" : "Demo Mode"}
+          </span>
+        )}
       </div>
 
       <div className="flex items-center gap-4">
@@ -48,9 +74,13 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
               <Link href="/admin/settings" className="block px-4 py-2 text-fluid--1 text-text hover:bg-surface-2">
                 Profile
               </Link>
-              <Link href="/" className="flex items-center gap-2 px-4 py-2 text-fluid--1 text-text hover:bg-surface-2">
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="flex w-full items-center gap-2 px-4 py-2 text-left text-fluid--1 text-text hover:bg-surface-2"
+              >
                 <LogOut className="h-4 w-4" /> Sign out
-              </Link>
+              </button>
             </div>
           )}
         </div>

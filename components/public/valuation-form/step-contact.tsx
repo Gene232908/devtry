@@ -1,13 +1,17 @@
+import { CheckCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
-import { ValuationFormValues, FormErrors } from "./form.types";
+import { ValuationFormValues, FormErrors, PhoneVerification } from "./form.types";
 
 type Props = {
   values: ValuationFormValues;
   errors: FormErrors;
+  phoneVerification: PhoneVerification;
   setField: <K extends keyof ValuationFormValues>(key: K, value: ValuationFormValues[K]) => void;
 };
 
-export function StepContact({ values, errors, setField }: Props) {
+export function StepContact({ values, errors, phoneVerification, setField }: Props) {
+  const isVerified = phoneVerification.status === "verified" && phoneVerification.verifiedPhone === values.whatsapp;
+
   return (
     <div className="flex flex-col gap-4">
       <p className="rounded-card border border-border-gold/45 bg-bg/35 p-3 text-fluid--1 leading-6 text-text-muted">
@@ -21,14 +25,22 @@ export function StepContact({ values, errors, setField }: Props) {
           onChange={(e) => setField("fullName", e.target.value)}
           error={errors.fullName}
         />
-        <Input
-          label="Phone Number"
-          placeholder="050 123 4567 or +971 50 123 4567"
-          inputMode="tel"
-          value={values.whatsapp}
-          onChange={(e) => setField("whatsapp", e.target.value)}
-          error={errors.whatsapp}
-        />
+        <div>
+          <Input
+            label="Phone Number"
+            placeholder="050 123 4567 or +971 50 123 4567"
+            inputMode="tel"
+            value={values.whatsapp}
+            onChange={(e) => setField("whatsapp", e.target.value)}
+            error={errors.whatsapp}
+          />
+          {isVerified && (
+            <span className="mt-2 inline-flex items-center gap-1.5 text-fluid--1 font-medium text-success">
+              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+              WhatsApp number verified.
+            </span>
+          )}
+        </div>
       </div>
       <label className="flex items-start gap-2.5 rounded-card border border-border bg-bg/35 p-3 text-fluid--1 leading-6 text-text-muted">
         <input

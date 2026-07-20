@@ -42,7 +42,12 @@ export function ValuationForm() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!form.validateStep(current.fields)) return;
-    await form.submit();
+    const result = await form.submit();
+    // If the phone number turned out invalid at final-submit time, jump back
+    // to Step 1 so the error (attached to that field) is actually visible.
+    if (!result.ok && "invalidPhone" in result && result.invalidPhone) {
+      setStep(1);
+    }
   }
 
   return (
@@ -72,7 +77,14 @@ export function ValuationForm() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <div key={step} className="min-h-[250px] animate-step-in">
-          {step === 1 && <StepContact values={form.values} errors={form.errors} setField={form.setField} />}
+          {step === 1 && (
+            <StepContact
+              values={form.values}
+              errors={form.errors}
+              phoneVerification={form.phoneVerification}
+              setField={form.setField}
+            />
+          )}
           {step === 2 && <StepCarDetails values={form.values} errors={form.errors} setField={form.setField} />}
           {step === 3 && <StepTrimLocation values={form.values} errors={form.errors} setField={form.setField} />}
         </div>
@@ -105,10 +117,10 @@ export function ValuationForm() {
       </form>
 
       <OtpModal
-        open={form.state === "otp_entry" || form.state === "verifying_otp"}
         phone={form.values.whatsapp}
-        verifying={form.state === "verifying_otp"}
-        onVerify={form.verifyOtp}
+        phoneVerification={form.phoneVerification}
+        onVerify={form.verifyPhoneOtp}
+        onResend={form.resendOtp}
         onClose={form.cancelOtp}
       />
 

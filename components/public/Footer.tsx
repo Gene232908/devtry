@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 const FOOTER_LINKS = [
   { label: "Privacy", href: "/privacy" },
   { label: "Terms", href: "/terms" },
+  { label: "Admin", href: "/admin" },
 ];
 
 const CONTACT_ROWS: Array<{ label: string; value: string; icon: LucideIcon; href?: string }> = [

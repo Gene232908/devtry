@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { StatusPill } from "@/components/ui/Pill";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { Lead } from "@/config/mock-data";
 import { formatDate, formatPhoneDisplay } from "@/lib/format";
 
-export function RecentLeads({ leads }: { leads: Lead[] }) {
+export function RecentLeads({ leads, isLoading }: { leads: Lead[]; isLoading?: boolean }) {
   const recent = leads.slice(0, 5);
 
   return (
@@ -16,7 +17,19 @@ export function RecentLeads({ leads }: { leads: Lead[] }) {
         </Link>
       </div>
 
-      {recent.length === 0 ? (
+      {isLoading ? (
+        <div className="flex flex-col gap-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 border-b border-border pb-3">
+              <Skeleton className="h-4 w-28 shrink-0" />
+              <Skeleton className="h-4 w-24 shrink-0" />
+              <Skeleton className="h-4 w-32 shrink-0" />
+              <Skeleton className="h-4 w-20 shrink-0" />
+              <Skeleton className="ml-auto h-6 w-20 shrink-0 rounded-full" />
+            </div>
+          ))}
+        </div>
+      ) : recent.length === 0 ? (
         <p className="py-8 text-center text-fluid--1 text-text-faint">No leads yet — share your link.</p>
       ) : (
         <div className="overflow-x-auto">

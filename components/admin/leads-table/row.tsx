@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import Link from "next/link";
 import { MessageCircle, ChevronDown } from "lucide-react";
 import { StatusPill } from "@/components/ui/Pill";
@@ -11,7 +11,9 @@ import { cn } from "@/lib/utils";
 
 const STATUS_OPTIONS: LeadStatus[] = ["new", "pending", "contacted", "valuation_sent", "closed"];
 
-export function LeadRow({ lead, onStatusChange }: { lead: Lead; onStatusChange: (status: LeadStatus) => void }) {
+type Props = { lead: Lead; updateLead: (id: string, patch: Partial<Lead>) => void };
+
+export const LeadRow = memo(function LeadRow({ lead, updateLead }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -31,6 +33,7 @@ export function LeadRow({ lead, onStatusChange }: { lead: Lead; onStatusChange: 
         {lead.year} {lead.make} {lead.model}
       </td>
       <td className="py-3 pr-4 text-text-muted">{lead.mileageKm.toLocaleString()} km</td>
+      <td className="py-3 pr-4 text-text-muted">{lead.location || "—"}</td>
       <td className="py-3 pr-4 text-text-muted">{formatDate(lead.createdAt)}</td>
       <td className="py-3 pr-4 text-text-muted">{formatAed(lead.estimatedValueAed)}</td>
       <td className="py-3 pr-4">
@@ -50,7 +53,7 @@ export function LeadRow({ lead, onStatusChange }: { lead: Lead; onStatusChange: 
                   <button
                     type="button"
                     onClick={() => {
-                      onStatusChange(s);
+                      updateLead(lead.id, { status: s });
                       setOpen(false);
                     }}
                     className={cn(
@@ -82,4 +85,4 @@ export function LeadRow({ lead, onStatusChange }: { lead: Lead; onStatusChange: 
       </td>
     </tr>
   );
-}
+});
