@@ -80,7 +80,36 @@ export async function POST(req: NextRequest) {
     // non-fatal
   }
 
-  // 60-second resend cooldown, enforced server-side against the last send for this phone.
+  // DEV ONLY: use the fixed code and skip the real WhatsApp send, so the full
+  // DB-backed verify flow (hash check, attempt limits) is still exercised
+  // locally without needing a real message delivered.
+  const devBypass = isDevOtpBypass();
+  const code = devBypass ? DEV_OTP_CODE : generateOtpCode();
+
+  // Persistent abuse/spend guards, checked BEFORE the resend cooldown.
+  //
+  // The order matters for what the caller is told. Both return 429, but they
+  // mean different things: the cooldown clears in a minute, a daily cap does
+  // not clear until tomorrow. Checking the cooldown first meant anyone over a
+  // daily cap was told "please wait before requesting another code" — advice
+  // that cannot work, since waiting the minute out just produces the same
+  // refusal. The longer-lasting limit has to win.
+  //
+  // Skipped under the dev bypass, where nothing is sent and nothing is billed.
+  // Still runs before the insert, so a denied request leaves no row behind and
+  // cannot inflate its own counters.
+  if (!devBypass) {
+    const denial = await checkOtpSendGuards(supabase, phone, hashIp(ip));
+    if (denial) {
+      console.warn(`[otp/send] blocked: ${denial.reason}`);
+      void logOtpAttempt({ phone, ip, action: "send", success: false });
+      return err(denial.kind, "Too many verification requests. Our team will contact you shortly.", 429);
+    }
+  }
+
+  // 60-second resend cooldown, enforced server-side against the last send for
+  // this phone. Only reached by callers still within their daily allowance, so
+  // "please wait" is now always truthful advice.
   const { data: lastRow } = await supabase
     .from("whatsapp_otp_verifications")
     .select("last_sent_at")
@@ -97,25 +126,6 @@ export async function POST(req: NextRequest) {
         "Please wait before requesting another code.",
         429,
       );
-    }
-  }
-
-  // DEV ONLY: use the fixed code and skip the real WhatsApp send, so the full
-  // DB-backed verify flow (hash check, attempt limits) is still exercised
-  // locally without needing a real message delivered.
-  const devBypass = isDevOtpBypass();
-  const code = devBypass ? DEV_OTP_CODE : generateOtpCode();
-
-  // Persistent abuse/spend guards. Skipped under the dev bypass, where nothing
-  // is actually sent and so nothing is billed. Checked after the cooldown but
-  // before the insert, so a denied request leaves no row behind and cannot
-  // inflate its own counters.
-  if (!devBypass) {
-    const denial = await checkOtpSendGuards(supabase, phone, hashIp(ip));
-    if (denial) {
-      console.warn(`[otp/send] blocked: ${denial.reason}`);
-      void logOtpAttempt({ phone, ip, action: "send", success: false });
-      return err(denial.kind, "Too many verification requests. Our team will contact you shortly.", 429);
     }
   }
 
