@@ -8,11 +8,78 @@
 // Nothing here touches the database.
 
 import type { PartialLead } from "@/lib/admin/partial-lead";
+import type { Lead } from "@/config/mock-data";
 
 /** Recent-ish timestamps so the dashboard never looks stale during a demo. */
 function hoursAgo(hours: number): string {
   return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
 }
+
+/**
+ * Untouched leads, dated today. The rest of the demo set is older and already
+ * worked, so without these the dashboard opens with an empty "Recent Leads"
+ * panel and nothing to demonstrate: New-first ordering has nothing to lift to
+ * the top, and there is no lead to open and show turning into Pending.
+ */
+export const demoNewLeads: Lead[] = [
+  {
+    id: "L-400881",
+    fullName: "Noura Al Hammadi",
+    phoneE164: "+971555000201",
+    email: "",
+    make: "Porsche",
+    model: "Macan",
+    trim: "GTS",
+    year: 2023,
+    mileageKm: 14500,
+    condition: "excellent",
+    optionLevel: "Full Option",
+    description: "Agency serviced, still under warranty. Selling before relocating.",
+    location: "Dubai",
+    status: "new",
+    estimatedValueAed: null,
+    notes: "",
+    createdAt: hoursAgo(2),
+  },
+  {
+    id: "L-400880",
+    fullName: "Tariq Bin Saleh",
+    phoneE164: "+971555000202",
+    email: "tariq.s@example.com",
+    make: "Mercedes-Benz",
+    model: "G-Class",
+    trim: "G 63 AMG",
+    year: 2021,
+    mileageKm: 38000,
+    condition: "excellent",
+    optionLevel: "Full Option",
+    description: "Two owners, full service history, no accidents.",
+    location: "Abu Dhabi",
+    status: "new",
+    estimatedValueAed: null,
+    notes: "",
+    createdAt: hoursAgo(6),
+  },
+  {
+    id: "L-400879",
+    fullName: "Aisha Rahman",
+    phoneE164: "+971555000203",
+    email: "",
+    make: "Nissan",
+    model: "Patrol",
+    trim: "SE Titanium",
+    year: 2019,
+    mileageKm: 91000,
+    condition: "good",
+    optionLevel: "Mid Mode",
+    description: "Family car, regularly serviced, minor scratches on rear bumper.",
+    location: "Sharjah",
+    status: "new",
+    estimatedValueAed: null,
+    notes: "",
+    createdAt: hoursAgo(11),
+  },
+];
 
 export const demoPartialLeads: PartialLead[] = [
   {
@@ -73,6 +140,7 @@ export type DemoBlockedNumber = {
   reason: string;
   note: string | null;
   full_name: string | null;
+  source_lead_id: string | null;
   created_at: string;
 };
 
@@ -81,7 +149,9 @@ export const demoBlockedNumbers: DemoBlockedNumber[] = [
     phone_e164: "+971555000901",
     reason: "manual_spam",
     note: "Repeated fake submissions with different names.",
-    full_name: "Unknown",
+    full_name: "Yusuf Al Marri",
+    // Blocked from a lead, so the name links back to that lead's record.
+    source_lead_id: "L-400866",
     created_at: hoursAgo(30),
   },
   {
@@ -89,6 +159,8 @@ export const demoBlockedNumbers: DemoBlockedNumber[] = [
     reason: "otp_abuse",
     note: "Blocked after repeated unverified code requests.",
     full_name: null,
+    // Raised by the automatic guards — no lead behind it, so no link.
+    source_lead_id: null,
     created_at: hoursAgo(50),
   },
 ];

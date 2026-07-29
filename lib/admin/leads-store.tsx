@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Lead, LeadStatus, mockLeads } from "@/config/mock-data";
 import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
+import { demoNewLeads } from "@/config/demo-admin-data";
 
 const STORAGE_KEY = "cvd_admin_leads_v1";
 
@@ -73,7 +74,9 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
     // session (or saved under an older shape) would either confuse the
     // discussion or crash the detail page on a field that no longer exists.
     if (ADMIN_PREVIEW) {
-      setLeads(mockLeads);
+      // Fresh, untouched leads first so the dashboard has something to show in
+      // Recent Leads and New-first ordering has something to lift to the top.
+      setLeads([...demoNewLeads, ...mockLeads]);
       setIsLoading(false);
       return;
     }
