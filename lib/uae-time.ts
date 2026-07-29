@@ -15,6 +15,21 @@ export function isSameUaeDay(a: Date, b: Date = new Date()): boolean {
   return startOfUaeDayUtc(a).getTime() === startOfUaeDayUtc(b).getTime();
 }
 
+/**
+ * Formats a date as a short UAE-local date, e.g. "21 Jan 2026". Date only —
+ * admin screens show when something happened, not the minute, and a timestamp
+ * rendered in the viewer's own timezone would be wrong for a UAE business.
+ */
+export function formatUaeDateShort(date: Date | string): string {
+  const value = typeof date === "string" ? new Date(date) : date;
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Dubai",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(value);
+}
+
 /** Formats a date as a UAE-local date string, e.g. "21 January 2026". */
 export function formatUaeDate(date: Date = new Date()): string {
   return new Intl.DateTimeFormat("en-GB", {

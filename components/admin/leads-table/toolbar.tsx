@@ -1,7 +1,7 @@
 import { Search, Download, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { LeadStatus } from "@/config/mock-data";
-import { STATUS_LABEL } from "@/lib/format";
+import { FILTER_STATUS_OPTIONS, STATUS_LABEL } from "@/lib/format";
 import { MAKES } from "@/config/vehicles";
 import { AREAS_BY_EMIRATE } from "@/config/emirates-areas";
 import { cn } from "@/lib/utils";
@@ -24,7 +24,10 @@ type Props = {
   onRefresh?: () => void;
 };
 
-const STATUSES: (LeadStatus | "all")[] = ["all", "new", "pending", "contacted", "valuation_sent", "closed"];
+// "valuation_sent" is retired and deliberately absent — it is no longer a state
+// a lead can be moved into, so offering it as a filter would only ever return
+// historical rows.
+const STATUSES: (LeadStatus | "all")[] = ["all", ...FILTER_STATUS_OPTIONS];
 
 export function LeadsToolbar({
   search,

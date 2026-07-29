@@ -3,17 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Bell, LogOut, ChevronDown, Menu } from "lucide-react";
+import { LogOut, ChevronDown, Menu } from "lucide-react";
 import { Logo } from "@/components/public/Logo";
-import { useLeads } from "@/lib/admin/leads-store";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
-import { cn } from "@/lib/utils";
 
 export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
   const router = useRouter();
-  const { leads, isLive, isLoading } = useLeads();
   const [menuOpen, setMenuOpen] = useState(false);
-  const newCount = leads.filter((l) => l.status === "new").length;
 
   async function handleSignOut() {
     try {
@@ -32,31 +28,13 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
           <Menu className="h-5 w-5" />
         </button>
         <Link href="/admin">
-          <Logo />
+          {/* "sm" keeps the mark inside the 4rem header instead of overlapping it. */}
+          <Logo size="sm" />
         </Link>
         <span className="hidden text-fluid--1 text-text-faint sm:inline">| Admin</span>
-        {!isLoading && (
-          <span
-            className={cn(
-              "hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.65rem] font-medium uppercase tracking-wide sm:flex",
-              isLive ? "border-success/40 text-success" : "border-warning/40 text-warning",
-            )}
-            title={isLive ? "Showing real data from Supabase" : "Showing demo/practice data — Supabase not connected"}
-          >
-            <span className={cn("h-1.5 w-1.5 rounded-full", isLive ? "bg-success" : "bg-warning")} />
-            {isLive ? "Live" : "Demo Mode"}
-          </span>
-        )}
       </div>
 
       <div className="flex items-center gap-4">
-        <button type="button" className="relative p-2 text-text-muted hover:text-text" aria-label="Notifications">
-          <Bell className="h-5 w-5" />
-          {newCount > 0 && (
-            <span className="absolute right-1 top-1 flex h-2 w-2 rounded-full bg-danger" />
-          )}
-        </button>
-
         <div className="relative">
           <button
             type="button"

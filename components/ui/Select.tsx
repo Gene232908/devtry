@@ -4,7 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type SelectOption = { label: string; value: string };
+export type SelectOption = {
+  label: string;
+  value: string;
+  /**
+   * Optional explanation, revealed under the label on hover/focus. Use it when
+   * an option's name alone does not make its meaning obvious — it keeps the
+   * closed control uncluttered while still letting the field explain itself.
+   */
+  hint?: string;
+};
 
 type SelectProps = {
   label?: string;
@@ -70,12 +79,26 @@ export function Select({ label, placeholder = "Select", options, value, onChange
                       setOpen(false);
                     }}
                     className={cn(
-                      "flex w-full items-center justify-between px-4 py-2.5 text-left text-fluid-0 text-text transition-colors",
+                      "group block w-full px-4 py-2.5 text-left text-fluid-0 text-text transition-colors",
                       isSelected ? "bg-gold/10 text-gold" : "hover:bg-surface",
                     )}
                   >
-                    {opt.label}
-                    {isSelected && <Check className="h-4 w-4 text-gold" />}
+                    <span className="flex items-center justify-between gap-3">
+                      {opt.label}
+                      {isSelected && <Check className="h-4 w-4 shrink-0 text-gold" />}
+                    </span>
+                    {opt.hint && (
+                      // Collapsed until hover/focus so the list stays scannable.
+                      // grid-rows 0fr -> 1fr animates height without hard-coding
+                      // one, so a longer hint can never be clipped.
+                      <span className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-200 ease-out group-hover:grid-rows-[1fr] group-focus-visible:grid-rows-[1fr] motion-reduce:transition-none">
+                        <span className="overflow-hidden">
+                          <span className="block pt-1 text-fluid--1 font-light leading-5 text-text-muted">
+                            {opt.hint}
+                          </span>
+                        </span>
+                      </span>
+                    )}
                   </button>
                 </li>
               );

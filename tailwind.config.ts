@@ -130,6 +130,25 @@ const config: Config = {
           "0%": { opacity: "0", filter: "blur(6px)", transform: "translateY(20px)" },
           "100%": { opacity: "1", filter: "blur(0)", transform: "translateY(0)" },
         },
+        "overlay-in": {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        "overlay-out": {
+          "0%": { opacity: "1" },
+          "100%": { opacity: "0" },
+        },
+        // Settles rather than bounces — the slight overshoot on scale reads as
+        // responsive without feeling springy on a confirmation prompt.
+        "pop-in": {
+          "0%": { opacity: "0", transform: "translateY(12px) scale(.94)" },
+          "60%": { opacity: "1", transform: "translateY(0) scale(1.008)" },
+          "100%": { opacity: "1", transform: "translateY(0) scale(1)" },
+        },
+        "pop-out": {
+          "0%": { opacity: "1", transform: "translateY(0) scale(1)" },
+          "100%": { opacity: "0", transform: "translateY(8px) scale(.97)" },
+        },
       },
       animation: {
         "pulse-glow": "pulse-glow 2.4s ease-out infinite",
@@ -149,6 +168,10 @@ const config: Config = {
         "page-intro": "page-intro 0.45s ease-out both",
         "hero-focus": "hero-focus 1.7s cubic-bezier(.16,.84,.44,1) both",
         "hero-rise": "hero-rise 1s cubic-bezier(.16,.84,.44,1) both",
+        "overlay-in": "overlay-in 180ms ease-out both",
+        "overlay-out": "overlay-out 160ms ease-in both",
+        "pop-in": "pop-in 260ms cubic-bezier(.16,.84,.44,1) both",
+        "pop-out": "pop-out 160ms cubic-bezier(.4,0,1,1) both",
       },
     },
   },

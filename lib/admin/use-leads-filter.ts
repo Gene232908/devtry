@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Lead, LeadStatus } from "@/config/mock-data";
 
-export type SortKey = "date" | "mobile" | "value";
+export type SortKey = "date" | "value";
 
 export function useLeadsFilter(leads: Lead[]) {
   // searchInput updates the text box instantly; search (debounced) drives
@@ -34,9 +34,15 @@ export function useLeadsFilter(leads: Lead[]) {
     if (emirate !== "all") result = result.filter((l) => l.location === emirate);
 
     const sorted = [...result].sort((a, b) => {
+      // New always floats to the top, whatever else is selected — untouched
+      // leads are the ones that lose money by sitting unseen, so no column sort
+      // is allowed to bury them. Everything below sorts normally.
+      const aIsNew = a.status === "new" ? 0 : 1;
+      const bIsNew = b.status === "new" ? 0 : 1;
+      if (aIsNew !== bIsNew) return aIsNew - bIsNew;
+
       let cmp = 0;
       if (sortKey === "date") cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      if (sortKey === "mobile") cmp = a.phoneE164.localeCompare(b.phoneE164);
       if (sortKey === "value") cmp = (a.estimatedValueAed ?? 0) - (b.estimatedValueAed ?? 0);
       return sortDir === "asc" ? cmp : -cmp;
     });

@@ -21,6 +21,15 @@ const OTP_MESSAGES = {
   expired: "Verification code expired.",
   tooManyAttempts: "Too many incorrect attempts.",
   cooldown: "Please wait before requesting another code.",
+  // Distinct from `cooldown`: that one clears in 60 seconds, this one holds for
+  // a rolling 24 hours, so retrying will not help and the copy must not imply
+  // it will.
+  // NOTE: this promises a callback. Nothing delivers on that automatically —
+  // a blocked caller never completes verification, so no lead row is created
+  // and they never appear in the admin dashboard. Their number is recorded in
+  // whatsapp_otp_verifications, so honouring this requires someone to watch
+  // that table. See the follow-up noted in docs when wiring that up.
+  dailyLimit: "Too many verification requests. Our team will contact you shortly.",
   sendFailed: "Unable to send the code. Please try again.",
 };
 
@@ -35,6 +44,8 @@ function messageForKind(kind: string | undefined): string {
     case "resend_cooldown":
     case "rate_limited":
       return OTP_MESSAGES.cooldown;
+    case "daily_limit":
+      return OTP_MESSAGES.dailyLimit;
     default:
       return OTP_MESSAGES.sendFailed;
   }
@@ -63,6 +74,12 @@ export function useValuationForm() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [phoneVerification, setPhoneVerification] = useState<PhoneVerification>(emptyPhoneVerification);
   const startedAtRef = useRef<number>(Date.now());
+  // Last payload sent to /api/partial-lead — suppresses repeat captures that
+  // carry no new information.
+  const capturedSignatureRef = useRef<string | null>(null);
+  // Set the moment a real lead is created. Read synchronously by
+  // capturePartial, which cannot wait for the `state` re-render.
+  const submittedRef = useRef(false);
 
   const setField = useCallback(<K extends keyof ValuationFormValues>(key: K, value: ValuationFormValues[K]) => {
     setValues((v) => {
@@ -200,6 +217,7 @@ export function useValuationForm() {
       // the demo flow client-side.
       if (!proof) {
         await new Promise((resolve) => setTimeout(resolve, 700));
+        submittedRef.current = true;
         setState("success");
         return;
       }
@@ -216,6 +234,7 @@ export function useValuationForm() {
           setSubmitError(body?.error?.message || "Couldn't submit your details. Please try again.");
           return;
         }
+        submittedRef.current = true;
         setState("success");
       } catch {
         setState("filling");
@@ -319,12 +338,71 @@ export function useValuationForm() {
     return sendOtp();
   }, [validate, values.honeypot, values.whatsapp, phoneVerification, submitLead, sendOtp]);
 
+  /**
+   * Records a half-finished form so a visitor who types their name and number
+   * and then leaves is still reachable. Fire-and-forget by design: it must
+   * never delay, block, or fail the interaction that triggered it.
+   *
+   * Two guards keep this quiet. `capturedSignatureRef` skips the request
+   * whenever nothing worth capturing has changed since last time, so ticking
+   * consent on and off, or pressing Next twice, sends nothing. And a completed
+   * submission stops capturing entirely — that person is a real lead now, and
+   * the server refuses to re-open them as incomplete anyway.
+   */
+  const capturePartial = useCallback(
+    (trigger: "close" | "consent" | "next", furthestStep: number) => {
+      if (submittedRef.current || state === "success") return;
+
+      // The phone number is the dedupe key and the only way to follow up, so
+      // there is nothing to capture without a usable one.
+      if (!normalizeWhatsappPhone(values.whatsapp)) return;
+      if (values.honeypot.trim().length > 0) return;
+
+      const payload = {
+        fullName: values.fullName,
+        whatsapp: values.whatsapp,
+        consent: values.consent,
+        furthestStep,
+        trigger,
+        honeypot: values.honeypot,
+        make: values.make,
+        model: values.model,
+        year: values.year,
+        mileageKm: values.mileageKm,
+        description: values.description,
+      };
+
+      // Trigger is excluded from the signature on purpose: the same details
+      // arriving via a different trigger is not new information.
+      const signature = JSON.stringify({ ...payload, trigger: undefined });
+      if (signature === capturedSignatureRef.current) return;
+      capturedSignatureRef.current = signature;
+
+      try {
+        void fetch("/api/partial-lead", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          // Lets the request survive the modal unmounting right after this.
+          keepalive: true,
+        }).catch(() => {
+          // Ignored: a failed capture is invisible to the customer by design.
+        });
+      } catch {
+        // Ignored — see above.
+      }
+    },
+    [state, values],
+  );
+
   const reset = useCallback(() => {
     setValues(emptyValues);
     setErrors({});
     setSubmitError(null);
     setPhoneVerification(emptyPhoneVerification);
     startedAtRef.current = Date.now();
+    capturedSignatureRef.current = null;
+    submittedRef.current = false;
     setState("filling");
   }, []);
 
@@ -340,6 +418,7 @@ export function useValuationForm() {
     verifyPhoneOtp,
     resendOtp,
     cancelOtp,
+    capturePartial,
     reset,
   };
 }

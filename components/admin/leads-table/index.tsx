@@ -11,7 +11,7 @@ import { LeadsTableSkeleton } from "./skeleton";
 import { Pagination } from "./pagination";
 
 export function LeadsTable() {
-  const { leads, updateLead, isLive, isLoading, isRefreshing, refresh } = useLeads();
+  const { leads, isLive, isLoading, isRefreshing, refresh } = useLeads();
   const filter = useLeadsFilter(leads);
 
   if (isLoading) {
@@ -41,15 +41,10 @@ export function LeadsTable() {
       />
 
       <div className="mt-5 overflow-x-auto">
-        <table className="w-full min-w-[940px] text-left text-fluid--1">
+        <table className="w-full min-w-[760px] text-left text-fluid--1">
           <thead>
             <tr className="border-b border-border text-text-faint">
               <th className="py-2 pr-4 font-normal">Client Name</th>
-              <th className="py-2 pr-4 font-normal">
-                <button className="flex items-center gap-1" onClick={() => filter.toggleSort("mobile")}>
-                  Mobile <ArrowUpDown className="h-3 w-3" />
-                </button>
-              </th>
               <th className="py-2 pr-4 font-normal">Car Details</th>
               <th className="py-2 pr-4 font-normal">Mileage</th>
               <th className="py-2 pr-4 font-normal">Emirate</th>
@@ -64,12 +59,11 @@ export function LeadsTable() {
                 </button>
               </th>
               <th className="py-2 pr-4 font-normal">Status</th>
-              <th className="py-2 pr-1 font-normal text-right">WhatsApp</th>
             </tr>
           </thead>
           <tbody>
             {filter.pageItems.map((lead) => (
-              <LeadRow key={lead.id} lead={lead} updateLead={updateLead} />
+              <LeadRow key={lead.id} lead={lead} />
             ))}
           </tbody>
         </table>

@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
 
-const STATUSES = new Set(["new", "pending", "contacted", "valuation_sent", "closed"]);
+// "deal" = the customer agreed to sell; "closed" = met but no agreement.
+// "valuation_sent" stays accepted so historical rows can still be written back,
+// but it is no longer offered anywhere in the UI.
+const STATUSES = new Set(["new", "pending", "contacted", "inspected", "deal", "closed", "valuation_sent"]);
 
 type LeadEventInsert = { lead_id: string; type: string; meta: Record<string, unknown> };
 

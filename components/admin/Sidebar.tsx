@@ -2,29 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  ListChecks,
-  Settings,
-  BarChart3,
-  Package,
-  Users,
-  Globe,
-  Lock,
-} from "lucide-react";
+import { LayoutDashboard, ListChecks, Settings, Ban, FileClock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ENABLED = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/leads", label: "Leads", icon: ListChecks },
+  { href: "/admin/incomplete", label: "Incomplete Forms", icon: FileClock },
+  { href: "/admin/blocked", label: "Blocked Numbers", icon: Ban },
   { href: "/admin/settings", label: "Settings", icon: Settings },
-];
-
-const COMING_SOON = [
-  { label: "Analytics", icon: BarChart3 },
-  { label: "Inventory", icon: Package },
-  { label: "Users", icon: Users },
-  { label: "Website", icon: Globe },
 ];
 
 export function Sidebar({ className }: { className?: string }) {
@@ -49,25 +35,6 @@ export function Sidebar({ className }: { className?: string }) {
           </Link>
         );
       })}
-
-      <div className="mt-4 border-t border-border pt-4">
-        <p className="mb-2 px-3 text-fluid--1 text-text-faint">Coming soon</p>
-        {COMING_SOON.map((item) => {
-          const Icon = item.icon;
-          return (
-            <div
-              key={item.label}
-              className="flex items-center justify-between rounded-card px-3 py-2.5 text-fluid--1 text-text-faint opacity-60"
-            >
-              <span className="flex items-center gap-3">
-                <Icon className="h-4 w-4" />
-                {item.label}
-              </span>
-              <Lock className="h-3.5 w-3.5" />
-            </div>
-          );
-        })}
-      </div>
     </aside>
   );
 }
