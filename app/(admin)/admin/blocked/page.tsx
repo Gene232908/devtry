@@ -5,6 +5,8 @@ import { Ban, RefreshCw, ShieldOff } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
+import { demoBlockedNumbers, demoSuspiciousNumbers } from "@/config/demo-admin-data";
 
 // Numbers that are refused before any WhatsApp message is sent, so a blocked
 // sender costs nothing. Also surfaces numbers that tripped the automatic OTP
@@ -60,6 +62,16 @@ export default function BlockedNumbersPage() {
 
   const load = useCallback(async () => {
     setError(null);
+
+    // Milestone 2: design preview — demo rows only, so the real blocklist is
+    // never exposed and never altered from a walkthrough.
+    if (ADMIN_PREVIEW) {
+      setBlocked(demoBlockedNumbers);
+      setSuspicious(demoSuspiciousNumbers);
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch("/api/admin/blocked-numbers", { cache: "no-store" });
       const body = await res.json();
@@ -114,6 +126,32 @@ export default function BlockedNumbersPage() {
 
   async function runPending() {
     if (!pending) return;
+
+    // Milestone 2: nothing is written. The lists update so the flow can be
+    // demonstrated, but no number is actually blocked or unblocked.
+    if (ADMIN_PREVIEW) {
+      if (pending.kind === "block") {
+        const row = suspicious.find((s) => s.phone_e164 === pending.phone);
+        setSuspicious((current) => current.filter((s) => s.phone_e164 !== pending.phone));
+        if (row) {
+          setBlocked((current) => [
+            {
+              phone_e164: row.phone_e164,
+              reason: "otp_abuse",
+              note: "Blocked after repeated unverified code requests.",
+              full_name: null,
+              created_at: new Date().toISOString(),
+            },
+            ...current,
+          ]);
+        }
+      } else {
+        setBlocked((current) => current.filter((b) => b.phone_e164 !== pending.phone));
+      }
+      setDialogOpen(false);
+      return;
+    }
+
     if (pending.kind === "block") {
       await blockNumber(pending.phone, "otp_abuse", "Blocked after repeated unverified code requests.");
     } else {

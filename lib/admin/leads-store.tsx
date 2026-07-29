@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Lead, LeadStatus, mockLeads } from "@/config/mock-data";
+import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 
 const STORAGE_KEY = "cvd_admin_leads_v1";
 
@@ -32,6 +33,10 @@ export function LeadsProvider({ children }: { children: React.ReactNode }) {
   // dataset whenever the database isn't configured yet (or the request fails
   // for any reason) so the dashboard never breaks in demo mode.
   const loadLive = useCallback(async () => {
+    // Milestone 2: the dashboard is a design preview, so it never reads real
+    // customer data. Returning false drops through to the demo dataset below.
+    if (ADMIN_PREVIEW) return false;
+
     try {
       const res = await fetch("/api/admin/leads", { cache: "no-store" });
       if (!res.ok) return false;
@@ -115,6 +120,14 @@ export function LeadsProvider({ children }: { children: React.ReactNode }) {
       // status looked saved until the page was reloaded — the worst possible
       // outcome, because nothing on screen suggested anything was wrong.
       updateLead: async (id, patch) => {
+        // Milestone 2: the preview must never write. The change is still shown
+        // locally so a walkthrough can demonstrate what the screen does, but it
+        // is discarded on reload and never reaches the database.
+        if (ADMIN_PREVIEW) {
+          setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+          return true;
+        }
+
         const previous = leads.find((l) => l.id === id);
         setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
         if (!isLive) return true;

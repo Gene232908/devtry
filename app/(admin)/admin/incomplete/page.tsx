@@ -8,6 +8,8 @@ import { Card } from "@/components/ui/Card";
 import { StatusPill } from "@/components/ui/Pill";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { type PartialLead } from "@/lib/admin/partial-lead";
+import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
+import { demoPartialLeads } from "@/config/demo-admin-data";
 import { LeadStatus } from "@/config/mock-data";
 
 // Valuation forms that were started but never submitted. These are UNVERIFIED:
@@ -44,6 +46,16 @@ export default function IncompleteValuationsPage() {
 
   const load = useCallback(async () => {
     setError(null);
+
+    // Milestone 2: design preview — rendered from demo rows, never from the
+    // database, so real captured numbers stay off a screen whose access rules
+    // are still being built.
+    if (ADMIN_PREVIEW) {
+      setRows(demoPartialLeads);
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch("/api/admin/partial-leads", { cache: "no-store" });
       const body = await res.json();
@@ -66,6 +78,15 @@ export default function IncompleteValuationsPage() {
   async function runPending() {
     if (!pending) return;
     const { kind, row } = pending;
+
+    // Milestone 2: nothing is written. The row leaves the list so the flow can
+    // be demonstrated, but it returns on refresh and no number is ever blocked.
+    if (ADMIN_PREVIEW) {
+      setRows((current) => current.filter((r) => r.id !== row.id));
+      setDialogOpen(false);
+      return;
+    }
+
     setBusyId(row.id);
 
     try {

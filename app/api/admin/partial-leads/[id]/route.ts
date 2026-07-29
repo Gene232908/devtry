@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { PARTIAL_LEAD_COLUMNS, PARTIAL_STATUSES_ALLOWED } from "@/lib/admin/partial-lead";
+import { blockedByPreview } from "@/lib/admin/preview-guard";
 
 // Admin-only (gated by middleware.ts for /api/admin/*). Single incomplete
 // valuation form: read it, record follow-up on it, or delete it.
@@ -33,6 +34,9 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const blocked = blockedByPreview();
+  if (blocked) return blocked;
+
   if (!isSupabaseConfigured()) return fail("Database is not configured.", 503);
 
   let body: { status?: unknown; notes?: unknown };
@@ -63,6 +67,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const blocked = blockedByPreview();
+  if (blocked) return blocked;
+
   if (!isSupabaseConfigured()) return fail("Database is not configured.", 503);
 
   const { error } = await getSupabaseAdmin().from("partial_leads").delete().eq("id", params.id);
