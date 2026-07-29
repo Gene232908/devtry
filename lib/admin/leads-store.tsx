@@ -67,6 +67,17 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
       return;
     }
 
+    // Milestone 2: the preview always shows the same fixed demo dataset. The
+    // cached copy below is deliberately bypassed — a walkthrough must look
+    // identical every time it is opened, and a row left over from an earlier
+    // session (or saved under an older shape) would either confuse the
+    // discussion or crash the detail page on a field that no longer exists.
+    if (ADMIN_PREVIEW) {
+      setLeads(mockLeads);
+      setIsLoading(false);
+      return;
+    }
+
     loadLive().then((live) => {
       if (cancelled) return;
       if (!live) {
@@ -108,6 +119,10 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
   }, [loadLive]);
 
   useEffect(() => {
+    // Milestone 2: the preview writes nothing, not even locally — otherwise a
+    // change made during one walkthrough would still be there at the start of
+    // the next, and the demo would drift away from the fixed dataset.
+    if (ADMIN_PREVIEW) return;
     if (isLive || isLoading) return; // real data persists in Supabase, not localStorage
     localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
   }, [leads, isLive, isLoading]);
