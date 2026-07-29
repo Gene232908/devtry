@@ -117,17 +117,14 @@ export default function IncompleteValuationsPage() {
   const pendingName = pending?.row.full_name || "this contact";
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-fluid-2 font-light text-text">Incomplete Valuation Form</h1>
-          <p className="mt-1 text-fluid--1 text-text-muted">
-            Visitors who started a valuation and left before submitting. Numbers here are not verified.
-          </p>
-        </div>
-        <Button variant="outline" onClick={() => void load()}>
-          <RefreshCw className="h-4 w-4" /> Refresh
-        </Button>
+    // Header, spacing, card padding and table rhythm all mirror the Leads
+    // Directory — these are sibling pages in the same dashboard.
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="font-display text-fluid-3 text-text">Incomplete Valuation Form</h1>
+        <p className="mt-1 text-fluid--1 text-text-muted">
+          Visitors who started a valuation and left before submitting. Numbers here are not verified.
+        </p>
       </div>
 
       {error && (
@@ -137,7 +134,9 @@ export default function IncompleteValuationsPage() {
       )}
 
       {loading ? (
-        <p className="text-fluid--1 text-text-muted">Loading…</p>
+        <Card className="p-5">
+          <p className="text-fluid--1 text-text-muted">Loading…</p>
+        </Card>
       ) : rows.length === 0 ? (
         <Card className="p-8 text-center">
           <p className="text-fluid-0 text-text">No incomplete forms right now.</p>
@@ -146,27 +145,37 @@ export default function IncompleteValuationsPage() {
           </p>
         </Card>
       ) : (
-        <Card className="overflow-x-auto p-0">
-          <table className="w-full min-w-[520px] border-collapse text-fluid--1">
-            <thead>
-              <tr className="border-b border-border text-left text-text-faint">
-                <th className="px-4 py-3 font-medium">Client Name</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.id} className="border-b border-border/60 last:border-0 hover:bg-surface-2/50">
-                  <td className="px-4 py-3">
-                    <Link href={`/admin/incomplete/${row.id}`} className="text-text hover:text-gold">
-                      {row.full_name || "Unnamed contact"}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusPill status={row.status as LeadStatus} />
-                  </td>
-                  <td className="px-4 py-3">
+        <Card className="p-5">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-fluid--1 text-text-muted">
+              {rows.length} incomplete {rows.length === 1 ? "form" : "forms"}
+            </p>
+            <Button variant="outline" onClick={() => void load()}>
+              <RefreshCw className="h-4 w-4" /> Refresh
+            </Button>
+          </div>
+
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full min-w-[520px] text-left text-fluid--1">
+              <thead>
+                <tr className="border-b border-border text-text-faint">
+                  <th className="py-2 pr-4 font-normal">Client Name</th>
+                  <th className="py-2 pr-4 font-normal">Status</th>
+                  <th className="py-2 pr-1 font-normal text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.id} className="border-b border-border last:border-0 hover:bg-surface-2/50">
+                    <td className="py-3 pr-4">
+                      <Link href={`/admin/incomplete/${row.id}`} className="text-text hover:text-gold">
+                        {row.full_name || "Unnamed contact"}
+                      </Link>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <StatusPill status={row.status as LeadStatus} />
+                    </td>
+                    <td className="py-3 pl-2 pr-1">
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="outline"
@@ -186,12 +195,13 @@ export default function IncompleteValuationsPage() {
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Card>
       )}
 
