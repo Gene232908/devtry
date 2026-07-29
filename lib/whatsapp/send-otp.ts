@@ -41,6 +41,11 @@ function mapMetaError(status: number, body: unknown): WhatsappError {
   if (code === 131026 || code === 131030 || code === 131047) {
     return new WhatsappError("not_allowed", "This number can't receive messages from us yet.");
   }
+  // 132000/132001 = template missing, not approved, or param count mismatch —
+  // a config problem on our side, not something the caller can retry past.
+  if (code === 132000 || code === 132001) {
+    return new WhatsappError("misconfigured", `WhatsApp template rejected: ${errorObj?.message ?? "unknown template error"}`);
+  }
   return new WhatsappError("otp_send_failed", "Couldn't send the code. Please try again.");
 }
 
@@ -98,6 +103,42 @@ async function sendTemplateOtp(phoneE164: string, code: string): Promise<void> {
 }
 
 /**
+ * TEMPORARY test-mode path: sends the OTP through an already-approved template
+ * that happens to have body parameters, passing the code in as one of them.
+ *
+ * Why this exists: the free-form path below only delivers inside the 24-hour
+ * customer-service window, so it silently stops working a day after the tester
+ * last messaged the test number — the Graph API still answers 200/"accepted"
+ * and the message is dropped, which is impossible to detect from the response.
+ * Templates have no such window, so this path delivers reliably during testing
+ * without waiting on business verification for the real Authentication
+ * template (see sendTemplateOtp).
+ *
+ * Configure with WHATSAPP_TEST_TEMPLATE_NAME plus WHATSAPP_TEST_TEMPLATE_PARAMS,
+ * a comma-separated list of that template's body parameters in order, where the
+ * literal token {{code}} is replaced with the OTP. The wording will not match
+ * the template's own copy (it's a Meta sample template) — that's expected and
+ * fine for testing; sendTemplateOtp remains the production path.
+ */
+async function sendTestTemplateOtp(phoneE164: string, code: string, templateName: string): Promise<void> {
+  const templateLanguage = process.env.WHATSAPP_TEST_TEMPLATE_LANGUAGE || "en_US";
+  const params = (process.env.WHATSAPP_TEST_TEMPLATE_PARAMS ?? "{{code}}")
+    .split(",")
+    .map((p) => p.trim().replace("{{code}}", code));
+
+  await postToGraphApi({
+    messaging_product: "whatsapp",
+    to: phoneE164.replace(/^\+/, ""),
+    type: "template",
+    template: {
+      name: templateName,
+      language: { code: templateLanguage },
+      components: [{ type: "body", parameters: params.map((text) => ({ type: "text", text })) }],
+    },
+  });
+}
+
+/**
  * TEMPORARY test-mode path: sends the OTP as a plain free-form text message
  * instead of a template. WhatsApp allows free-form messages to a recipient
  * without any template approval, but ONLY within the 24-hour "customer
@@ -120,6 +161,12 @@ async function sendFreeformOtp(phoneE164: string, code: string): Promise<void> {
 
 export async function sendWhatsappOtp(phoneE164: string, code: string): Promise<void> {
   if (process.env.WHATSAPP_TEST_MODE === "true") {
+    // Prefer the template path when one is configured — free-form silently
+    // stops delivering once the 24-hour session window closes.
+    const testTemplate = process.env.WHATSAPP_TEST_TEMPLATE_NAME;
+    if (testTemplate) {
+      return sendTestTemplateOtp(phoneE164, code, testTemplate);
+    }
     return sendFreeformOtp(phoneE164, code);
   }
   return sendTemplateOtp(phoneE164, code);

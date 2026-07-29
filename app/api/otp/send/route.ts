@@ -4,6 +4,7 @@ import { sendWhatsappOtp, WhatsappError } from "@/lib/whatsapp/send-otp";
 import { generateOtpCode, hashOtpCode, hashIp } from "@/lib/whatsapp/otp-hash";
 import { isRateLimited } from "@/lib/rate-limit";
 import { logOtpAttempt } from "@/lib/server/otp-log";
+import { checkOtpSendGuards } from "@/lib/server/otp-guards";
 import { getClientIp } from "@/lib/server/ip";
 import { isDevOtpBypass, DEV_OTP_CODE } from "@/lib/otp-dev";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
@@ -58,6 +59,27 @@ export async function POST(req: NextRequest) {
 
   const supabase = getSupabaseAdmin();
 
+  // Hard blocklist, checked before anything else touches Meta. A number an
+  // admin marked as spam costs nothing from here on: no message is sent, so no
+  // message is billed. Fails open — a database hiccup must not stop real
+  // customers from verifying.
+  try {
+    const { data: blocked } = await supabase
+      .from("blocked_numbers")
+      .select("phone_e164")
+      .eq("phone_e164", phone)
+      .maybeSingle();
+
+    if (blocked) {
+      // Same copy as the daily-limit case on purpose: a blocked sender learns
+      // nothing about why, and a wrongly-blocked customer still gets a route in.
+      void logOtpAttempt({ phone, ip, action: "send", success: false });
+      return err("daily_limit", "Too many verification requests. Our team will contact you shortly.", 429);
+    }
+  } catch {
+    // non-fatal
+  }
+
   // 60-second resend cooldown, enforced server-side against the last send for this phone.
   const { data: lastRow } = await supabase
     .from("whatsapp_otp_verifications")
@@ -83,6 +105,19 @@ export async function POST(req: NextRequest) {
   // locally without needing a real message delivered.
   const devBypass = isDevOtpBypass();
   const code = devBypass ? DEV_OTP_CODE : generateOtpCode();
+
+  // Persistent abuse/spend guards. Skipped under the dev bypass, where nothing
+  // is actually sent and so nothing is billed. Checked after the cooldown but
+  // before the insert, so a denied request leaves no row behind and cannot
+  // inflate its own counters.
+  if (!devBypass) {
+    const denial = await checkOtpSendGuards(supabase, phone, hashIp(ip));
+    if (denial) {
+      console.warn(`[otp/send] blocked: ${denial.reason}`);
+      void logOtpAttempt({ phone, ip, action: "send", success: false });
+      return err(denial.kind, "Too many verification requests. Our team will contact you shortly.", 429);
+    }
+  }
 
   // Invalidate older, not-yet-verified codes for this phone so only the
   // newest one can succeed.

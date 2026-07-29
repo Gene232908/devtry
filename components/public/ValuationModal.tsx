@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Banknote, MapPin, ShieldCheck, X } from "lucide-react";
 import { copy } from "@/config/copy";
 import { ValuationForm } from "./valuation-form";
@@ -8,6 +8,20 @@ import { VALUATION_MODAL_EVENT } from "./open-valuation-modal";
 
 export function ValuationModal() {
   const [open, setOpen] = useState(false);
+  // Set by the form. Records whatever was typed into a half-finished form
+  // before this modal unmounts and that state is gone for good.
+  const captureRef = useRef<(() => void) | null>(null);
+
+  const registerCapture = useCallback((capture: () => void) => {
+    captureRef.current = capture;
+  }, []);
+
+  // Every route out of the modal goes through here — the X button, Escape, and
+  // the backdrop — so no exit path can skip the capture.
+  const closeModal = useCallback(() => {
+    captureRef.current?.();
+    setOpen(false);
+  }, []);
 
   useEffect(() => {
     function onOpen() {
@@ -22,7 +36,7 @@ export function ValuationModal() {
     if (!open) return;
 
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") closeModal();
     }
 
     document.addEventListener("keydown", onKey);
@@ -33,7 +47,7 @@ export function ValuationModal() {
       document.body.style.overflow = "";
       document.documentElement.classList.remove("modal-open");
     };
-  }, [open]);
+  }, [open, closeModal]);
 
   if (!open) return null;
 
@@ -44,7 +58,7 @@ export function ValuationModal() {
       aria-modal="true"
       aria-label="Private car valuation"
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget) setOpen(false);
+        if (e.target === e.currentTarget) closeModal();
       }}
     >
       <div className="relative max-h-[92svh] w-full max-w-6xl overflow-hidden rounded-card border border-border-gold/75 bg-[#10100f] shadow-[0_0_0_1px_rgba(243,222,138,.12),0_28px_90px_-38px_rgba(243,222,138,.7)]">
@@ -53,7 +67,7 @@ export function ValuationModal() {
 
         <button
           type="button"
-          onClick={() => setOpen(false)}
+          onClick={closeModal}
           aria-label="Close valuation modal"
           className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-border-gold/60 bg-bg/90 text-text-muted transition-colors hover:border-gold hover:text-text"
         >
@@ -72,7 +86,7 @@ export function ValuationModal() {
               </span>
             </div>
 
-            <ValuationForm />
+            <ValuationForm registerCapture={registerCapture} />
           </div>
 
           <div className="relative hidden min-h-[560px] flex-col justify-between overflow-hidden border-l border-border-gold/55 bg-[radial-gradient(120%_85%_at_82%_0%,rgba(212,175,78,.18),transparent_58%)] p-8 lg:flex">

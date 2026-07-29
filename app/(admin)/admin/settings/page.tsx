@@ -14,7 +14,6 @@ export default function AdminSettingsPage() {
   const [call, setCall] = useState(brand.callNumber);
   const [notifyEmail, setNotifyEmail] = useState(brand.notifyEmail);
   const [notifyEnabled, setNotifyEnabled] = useState(true);
-  const [buyACar, setBuyACar] = useState(false);
   const [managers, setManagers] = useState<Manager[]>([{ id: "m1", email: "sales@carvibedubai.com" }]);
   const [newManagerEmail, setNewManagerEmail] = useState("");
   const [saved, setSaved] = useState(false);
@@ -57,23 +56,6 @@ export default function AdminSettingsPage() {
             />
             Email me when a new lead arrives
           </label>
-        </Card>
-
-        <Card className="flex flex-col gap-4 p-5">
-          <h3 className="text-fluid-0 text-text">Feature flags</h3>
-          <label className="flex items-center justify-between text-fluid--1 text-text-muted">
-            <span>
-              Buy a Car (Inventory) <span className="text-text-faint">— Phase 2</span>
-            </span>
-            <input
-              type="checkbox"
-              checked={buyACar}
-              disabled
-              onChange={(e) => setBuyACar(e.target.checked)}
-              className="h-4 w-4 rounded border-border-gold bg-surface-2 accent-[--gold] disabled:opacity-50"
-            />
-          </label>
-          <p className="text-fluid--1 text-text-faint">Inventory ships disabled — built but off, per the agreed scope.</p>
         </Card>
 
         <Card className="flex flex-col gap-4 p-5">

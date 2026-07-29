@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -22,7 +22,7 @@ const STEPS: Array<{
   { n: 3, label: "Trim & Location", fields: ["trim", "optionLevel", "location"] },
 ];
 
-export function ValuationForm() {
+export function ValuationForm({ registerCapture }: { registerCapture?: (capture: () => void) => void } = {}) {
   const form = useValuationForm();
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
@@ -30,7 +30,33 @@ export function ValuationForm() {
   const isLocked = form.state !== "filling";
   const current = STEPS[step - 1];
 
+  // Hands the modal a way to capture an abandoned form on its way out. Kept in
+  // a ref by the parent, so closing the modal records what was typed before
+  // this component unmounts. Re-registered whenever the captured data or the
+  // current step changes, so the closure never captures stale values.
+  const { capturePartial } = form;
+  useEffect(() => {
+    registerCapture?.(() => capturePartial("close", step));
+  }, [registerCapture, capturePartial, step]);
+
+  // Ticking the consent box is a strong signal of intent, so it captures too.
+  // Driven from an effect rather than the click handler because setField is
+  // asynchronous — reading values in the handler would send the pre-click
+  // consent value. The ref check means only a real change fires a capture, so
+  // re-renders and step changes do not.
+  const consent = form.values.consent;
+  const prevConsentRef = useRef(consent);
+  useEffect(() => {
+    if (prevConsentRef.current === consent) return;
+    prevConsentRef.current = consent;
+    capturePartial("consent", step);
+  }, [consent, capturePartial, step]);
+
   function goNext() {
+    // Captured before validation so a visitor who filled in their name and
+    // number but left a later field blank is still recorded — pressing Next is
+    // intent to continue, whether or not the step actually passes.
+    form.capturePartial("next", step);
     if (!form.validateStep(current.fields)) return;
     setStep((s) => Math.min(3, s + 1) as 1 | 2 | 3);
   }

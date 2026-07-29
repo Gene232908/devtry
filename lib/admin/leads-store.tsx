@@ -7,7 +7,8 @@ const STORAGE_KEY = "cvd_admin_leads_v1";
 
 type LeadsContextValue = {
   leads: Lead[];
-  updateLead: (id: string, patch: Partial<Lead>) => void;
+  /** Resolves false when the change could not be persisted (local state is rolled back). */
+  updateLead: (id: string, patch: Partial<Lead>) => Promise<boolean>;
   getLead: (id: string) => Lead | undefined;
   /** True once real Supabase-backed leads loaded successfully; false = demo/mock data. */
   isLive: boolean;
@@ -108,24 +109,38 @@ export function LeadsProvider({ children }: { children: React.ReactNode }) {
           setIsRefreshing(false);
         }
       },
-      updateLead: (id, patch) => {
+      // Resolves false when the write did not reach the database, so a caller
+      // with a Save button can say so. It used to swallow every failure while
+      // leaving the optimistic local update in place, which meant a rejected
+      // status looked saved until the page was reloaded — the worst possible
+      // outcome, because nothing on screen suggested anything was wrong.
+      updateLead: async (id, patch) => {
+        const previous = leads.find((l) => l.id === id);
         setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
-        if (!isLive) return;
+        if (!isLive) return true;
 
         const body: Record<string, unknown> = {};
         if (patch.status !== undefined) body.status = patch.status;
         if (patch.estimatedValueAed !== undefined) body.estimated_value_aed = patch.estimatedValueAed;
         if (patch.notes !== undefined) body.notes = patch.notes;
         if (patch.isSpam !== undefined) body.is_spam = patch.isSpam;
-        if (Object.keys(body).length === 0) return;
+        if (Object.keys(body).length === 0) return true;
 
-        fetch(`/api/leads/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        }).catch(() => {
-          // best-effort; local state is already updated for immediate feedback
-        });
+        try {
+          const res = await fetch(`/api/leads/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const json = await res.json().catch(() => null);
+          if (!res.ok || !json?.ok) throw new Error(json?.error?.message ?? "update failed");
+          return true;
+        } catch {
+          // Roll the optimistic update back so the UI never shows a value the
+          // database rejected.
+          if (previous) setLeads((prev) => prev.map((l) => (l.id === id ? previous : l)));
+          return false;
+        }
       },
       getLead: (id) => leads.find((l) => l.id === id),
     }),

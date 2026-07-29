@@ -137,6 +137,17 @@ export async function POST(req: NextRequest) {
     .update({ used_at: new Date().toISOString(), valuation_submission_id: data.id })
     .eq("id", verification.id);
 
+  // This person finished the form, so any half-finished capture for the same
+  // number must stop showing as incomplete. Marking (rather than deleting) is
+  // what makes the guarantee hold under a race: capture_partial_lead refuses to
+  // update a converted row, so a capture request still in flight when this runs
+  // cannot put them back on the incomplete list.
+  try {
+    await supabase.rpc("mark_partial_lead_converted", { p_phone: phone, p_lead_id: data.id });
+  } catch {
+    // non-fatal — the lead itself is already saved
+  }
+
   // Activity timeline entry (best-effort).
   try {
     await supabase.from("lead_events").insert({

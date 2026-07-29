@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, FileCheck2, Activity, Eye, Wallet, MessageCircle } from "lucide-react";
+import { Users, FileCheck2, Activity, Eye, Wallet, MessageCircle, FileClock } from "lucide-react";
 import { StatCard } from "@/components/admin/StatCard";
 import { VisitorsChart } from "@/components/admin/VisitorsChart";
 import { SubmissionsChart } from "@/components/admin/SubmissionsChart";
@@ -27,6 +27,13 @@ export default function AdminDashboardPage() {
         <StatCard label="Website Visitors" value={formatNumber(stats.visitorsThisWeek)} sublabel="This Week" icon={Eye} isLoading={statsLoading} />
         <StatCard label="Average Value" value={formatAed(stats.averageValue)} icon={Wallet} accent isLoading={statsLoading} />
         <StatCard label="WhatsApp Clicks" value={formatNumber(stats.whatsappClicks)} icon={MessageCircle} isLoading={statsLoading} />
+        <StatCard
+          label="Incomplete Forms"
+          value={formatNumber(stats.incompleteForms)}
+          sublabel="Started, never submitted"
+          icon={FileClock}
+          isLoading={statsLoading}
+        />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

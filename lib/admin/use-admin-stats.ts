@@ -10,6 +10,8 @@ export type AdminStats = {
   visitorsThisWeek: number;
   averageValue: number;
   whatsappClicks: number;
+  /** Valuation forms started but never submitted, and not since converted. */
+  incompleteForms: number;
 };
 
 export type ChartPoint = { day: string; visitors?: number; submissions?: number };

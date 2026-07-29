@@ -6,16 +6,21 @@ const STATUS_STYLE: Record<LeadStatus, string> = {
   new: "bg-info/15 text-info",
   pending: "bg-warning/15 text-warning",
   contacted: "bg-success/15 text-success",
-  valuation_sent: "bg-gold/15 text-gold",
+  inspected: "bg-gold/15 text-gold",
+  // The win state — the only one given the solid gold treatment.
+  deal: "bg-gold/25 text-gold",
   closed: "bg-text-faint/15 text-text-muted",
+  valuation_sent: "bg-gold/15 text-gold",
 };
 
 const STATUS_DOT: Record<LeadStatus, string> = {
   new: "bg-info",
   pending: "bg-warning",
   contacted: "bg-success",
-  valuation_sent: "bg-gold",
+  inspected: "bg-gold",
+  deal: "bg-gold",
   closed: "bg-text-faint",
+  valuation_sent: "bg-gold",
 };
 
 export function StatusPill({ status }: { status: LeadStatus }) {

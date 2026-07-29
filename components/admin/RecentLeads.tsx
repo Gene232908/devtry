@@ -6,7 +6,10 @@ import { Lead } from "@/config/mock-data";
 import { formatDate, formatPhoneDisplay } from "@/lib/format";
 
 export function RecentLeads({ leads, isLoading }: { leads: Lead[]; isLoading?: boolean }) {
-  const recent = leads.slice(0, 5);
+  // Deliberately New-only. This panel exists to answer "what needs attention
+  // right now?", and anything already picked up belongs in the Leads page, not
+  // here — showing worked leads would bury the ones nobody has touched yet.
+  const recent = leads.filter((lead) => lead.status === "new").slice(0, 5);
 
   return (
     <Card className="p-5">
@@ -30,7 +33,7 @@ export function RecentLeads({ leads, isLoading }: { leads: Lead[]; isLoading?: b
           ))}
         </div>
       ) : recent.length === 0 ? (
-        <p className="py-8 text-center text-fluid--1 text-text-faint">No leads yet — share your link.</p>
+        <p className="py-8 text-center text-fluid--1 text-text-faint">No new leads today.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] text-left text-fluid--1">
