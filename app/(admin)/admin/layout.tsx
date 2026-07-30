@@ -15,38 +15,43 @@ const CHROMELESS_ROUTES = ["/admin/login", "/admin/set-password"];
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const chromeless = CHROMELESS_ROUTES.includes(pathname);
 
-  if (CHROMELESS_ROUTES.includes(pathname)) {
-    // Rendered bare — these pages already centre themselves full-screen, and
-    // LeadsProvider is skipped too since it fetches leads, which a signed-out
-    // visitor has no business triggering.
-    return <>{children}</>;
-  }
-
+  // LeadsProvider wraps BOTH branches deliberately. Mounting it only for the
+  // dashboard meant that signing in — a client-side transition from /admin/login
+  // to /admin — could render the dashboard before this layout's pathname
+  // updated, leaving useLeads() with no context and crashing the page. It is
+  // told not to fetch on the signed-out screens instead.
   return (
-    <LeadsProvider>
-      <div className="flex h-screen flex-col bg-bg">
-        <Topbar onMenuClick={() => setMobileSidebarOpen(true)} />
-        <div className="flex flex-1 overflow-hidden">
-          <Sidebar className="hidden lg:flex" />
+    <LeadsProvider enabled={!chromeless}>
+      {chromeless ? (
+        // Bare — these pages already centre themselves full-screen, and chrome
+        // around a login form implies a session that does not exist.
+        children
+      ) : (
+        <div className="flex h-screen flex-col bg-bg">
+          <Topbar onMenuClick={() => setMobileSidebarOpen(true)} />
+          <div className="flex flex-1 overflow-hidden">
+            <Sidebar className="hidden lg:flex" />
 
-          {mobileSidebarOpen && (
-            <div className="fixed inset-0 z-40 flex lg:hidden">
-              <Sidebar className="flex" />
-              <button
-                type="button"
-                aria-label="Close sidebar"
-                onClick={() => setMobileSidebarOpen(false)}
-                className="flex-1 bg-black/60"
-              >
-                <X className="m-4 h-6 w-6 text-text" />
-              </button>
-            </div>
-          )}
+            {mobileSidebarOpen && (
+              <div className="fixed inset-0 z-40 flex lg:hidden">
+                <Sidebar className="flex" />
+                <button
+                  type="button"
+                  aria-label="Close sidebar"
+                  onClick={() => setMobileSidebarOpen(false)}
+                  className="flex-1 bg-black/60"
+                >
+                  <X className="m-4 h-6 w-6 text-text" />
+                </button>
+              </div>
+            )}
 
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
+            <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
+          </div>
         </div>
-      </div>
+      )}
     </LeadsProvider>
   );
 }
