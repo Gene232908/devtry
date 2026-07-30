@@ -21,7 +21,13 @@ type LeadsContextValue = {
 
 const LeadsContext = createContext<LeadsContextValue | null>(null);
 
-export function LeadsProvider({ children }: { children: React.ReactNode }) {
+/**
+ * `enabled` lets the layout mount this provider on every admin route — which it
+ * must, since a route transition can render a page before the layout's pathname
+ * updates, and a context that is missing for even one frame crashes the page —
+ * while still not fetching leads on the signed-out screens.
+ */
+export function LeadsProvider({ children, enabled = true }: { children: React.ReactNode; enabled?: boolean }) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLive, setIsLive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,6 +55,13 @@ export function LeadsProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
+    // Signed-out screens (login, set password) mount the provider but have no
+    // business asking the server for leads.
+    if (!enabled) {
+      setIsLoading(false);
+      return;
+    }
+
     loadLive().then((live) => {
       if (cancelled) return;
       if (!live) {
@@ -69,7 +82,7 @@ export function LeadsProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [loadLive]);
+  }, [loadLive, enabled]);
 
   // The admin layout mounts this provider once and keeps it alive across every
   // /admin/* page — without this, leads submitted after the dashboard was
