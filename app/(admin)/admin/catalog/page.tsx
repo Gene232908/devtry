@@ -1,20 +1,29 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronRight, Plus, Search, Trash2, X } from "lucide-react";
 import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { Select } from "@/components/ui/Select";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { cn } from "@/lib/utils";
 
 // The Make / Model / Trim lists the public valuation form is built from.
 // Everything here is live: what is added on this page is what the next visitor
 // sees in the form's dropdowns.
 //
-// Deletes are confirmed because they cascade. Removing a brand takes its models
-// with it, and removing a model takes its trims — one stray click could empty a
-// large part of the catalog with nothing to undo it.
+// Laid out as master–detail rather than one long grid. The catalog is roughly
+// ten brands, forty models and sixty trims; showing all of it expanded at once
+// put over a hundred items on screen with wrapping chips that ran into each
+// other, and no way to find anything. Here one brand is in view at a time, its
+// models collapse until opened, and search narrows the brand list as you type.
+//
+// The add forms sit inside the thing they add to — brand at the foot of the
+// brand list, model in the brand's own pane, trim inside the model it belongs
+// to. A row of three "add" cards at the top of the page implied you would add a
+// brand, a model and a trim in one sitting, which is not how this gets used.
+//
+// Deletes are confirmed because they cascade: removing a brand takes its models
+// and all of their trims, and there is no undo.
 
 type Trim = { id: string; name: string };
 type Model = { id: string; name: string; trims: Trim[] };
@@ -30,19 +39,16 @@ export default function AdminCatalogPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [selectedMakeId, setSelectedMakeId] = useState<string>("");
+  const [search, setSearch] = useState("");
+  const [openModelIds, setOpenModelIds] = useState<Set<string>>(new Set());
+
   const [newMakeName, setNewMakeName] = useState("");
-  const [addingMake, setAddingMake] = useState(false);
-
-  const [modelMakeId, setModelMakeId] = useState("");
   const [newModelName, setNewModelName] = useState("");
-  const [addingModel, setAddingModel] = useState(false);
+  const [trimDrafts, setTrimDrafts] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState<string | null>(null);
 
-  const [trimMakeId, setTrimMakeId] = useState("");
-  const [trimModelId, setTrimModelId] = useState("");
-  const [newTrimName, setNewTrimName] = useState("");
-  const [addingTrim, setAddingTrim] = useState(false);
-
-  // `pending` outlives the dialog's exit animation so the closing dialog cannot
+  // `pending` outlives the dialog's exit animation so a closing dialog cannot
   // flash the wrong wording on its way out.
   const [pending, setPending] = useState<PendingDelete | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -69,79 +75,82 @@ export default function AdminCatalogPage() {
     void loadCatalog();
   }, [loadCatalog]);
 
-  async function addMake() {
-    const name = newMakeName.trim();
-    if (!name) return;
-    setAddingMake(true);
+  // Search matches model names too, so typing "Velar" finds the brand it sits
+  // under rather than returning nothing.
+  const filteredMakes = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return makes;
+    return makes.filter(
+      (make) =>
+        make.name.toLowerCase().includes(q) ||
+        make.models.some((model) => model.name.toLowerCase().includes(q)),
+    );
+  }, [makes, search]);
+
+  // Keep a brand in view at all times: fall back to the first available one
+  // whenever the selection disappears or filters out.
+  const selected = makes.find((make) => make.id === selectedMakeId) ?? filteredMakes[0] ?? null;
+
+  useEffect(() => {
+    if (selected && selected.id !== selectedMakeId) setSelectedMakeId(selected.id);
+  }, [selected, selectedMakeId]);
+
+  function toggleModel(id: string) {
+    setOpenModelIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function post(endpoint: string, body: unknown, failure: string) {
     setError(null);
     try {
-      const res = await fetch("/api/admin/catalog/makes", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify(body),
       });
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.ok) {
-        setError(json?.error?.message ?? "Couldn't add that brand.");
-        return;
+        setError(json?.error?.message ?? failure);
+        return false;
       }
-      setNewMakeName("");
       await loadCatalog();
+      return true;
     } catch {
-      setError("Network error while adding the brand.");
-    } finally {
-      setAddingMake(false);
+      setError("Network error. Please try again.");
+      return false;
     }
+  }
+
+  async function addMake() {
+    const name = newMakeName.trim();
+    if (!name) return;
+    setBusy("make");
+    if (await post("/api/admin/catalog/makes", { name }, "Couldn't add that brand.")) setNewMakeName("");
+    setBusy(null);
   }
 
   async function addModel() {
     const name = newModelName.trim();
-    if (!name || !modelMakeId) return;
-    setAddingModel(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/admin/catalog/models", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ makeId: modelMakeId, name }),
-      });
-      const json = await res.json().catch(() => null);
-      if (!res.ok || !json?.ok) {
-        setError(json?.error?.message ?? "Couldn't add that model.");
-        return;
-      }
+    if (!name || !selected) return;
+    setBusy("model");
+    if (await post("/api/admin/catalog/models", { makeId: selected.id, name }, "Couldn't add that model.")) {
       setNewModelName("");
-      await loadCatalog();
-    } catch {
-      setError("Network error while adding the model.");
-    } finally {
-      setAddingModel(false);
     }
+    setBusy(null);
   }
 
-  async function addTrim() {
-    const name = newTrimName.trim();
-    if (!name || !trimModelId) return;
-    setAddingTrim(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/admin/catalog/trims", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ modelId: trimModelId, name }),
-      });
-      const json = await res.json().catch(() => null);
-      if (!res.ok || !json?.ok) {
-        setError(json?.error?.message ?? "Couldn't add that trim.");
-        return;
-      }
-      setNewTrimName("");
-      await loadCatalog();
-    } catch {
-      setError("Network error while adding the trim.");
-    } finally {
-      setAddingTrim(false);
+  async function addTrim(modelId: string) {
+    const name = (trimDrafts[modelId] ?? "").trim();
+    if (!name) return;
+    setBusy(modelId);
+    if (await post("/api/admin/catalog/trims", { modelId, name }, "Couldn't add that trim.")) {
+      setTrimDrafts((current) => ({ ...current, [modelId]: "" }));
     }
+    setBusy(null);
   }
 
   function askDelete(target: PendingDelete) {
@@ -168,15 +177,7 @@ export default function AdminCatalogPage() {
         setError(json?.error?.message ?? "Couldn't remove that entry.");
         return;
       }
-      // Clear any selection pointing at something that no longer exists.
-      if (pending.kind === "make") {
-        if (modelMakeId === pending.id) setModelMakeId("");
-        if (trimMakeId === pending.id) {
-          setTrimMakeId("");
-          setTrimModelId("");
-        }
-      }
-      if (pending.kind === "model" && trimModelId === pending.id) setTrimModelId("");
+      if (pending.kind === "make" && pending.id === selectedMakeId) setSelectedMakeId("");
       await loadCatalog();
     } catch {
       setError("Network error while removing that entry.");
@@ -186,16 +187,16 @@ export default function AdminCatalogPage() {
     }
   }
 
-  const trimModelOptions = (makes.find((m) => m.id === trimMakeId)?.models ?? []).map((model) => ({
-    label: model.name,
-    value: model.id,
-  }));
+  const totals = useMemo(() => {
+    const models = makes.reduce((sum, make) => sum + make.models.length, 0);
+    const trims = makes.reduce(
+      (sum, make) => sum + make.models.reduce((s, model) => s + model.trims.length, 0),
+      0,
+    );
+    return { models, trims };
+  }, [makes]);
 
-  const totalModels = makes.reduce((sum, make) => sum + make.models.length, 0);
-  const totalTrims = makes.reduce(
-    (sum, make) => sum + make.models.reduce((s, model) => s + model.trims.length, 0),
-    0,
-  );
+  const selectedTrimCount = selected?.models.reduce((sum, model) => sum + model.trims.length, 0) ?? 0;
 
   if (loading) {
     return (
@@ -210,7 +211,8 @@ export default function AdminCatalogPage() {
       <div>
         <h1 className="font-display text-fluid-3 text-text">Vehicle Catalog</h1>
         <p className="mt-1 text-fluid--1 text-text-muted">
-          The Make, Model, and Trim options customers choose from in the valuation form. Changes here are live.
+          The Make, Model, and Trim options customers choose from in the valuation form. Changes here are live —{" "}
+          {makes.length} brands · {totals.models} models · {totals.trims} trims.
         </p>
       </div>
 
@@ -220,158 +222,227 @@ export default function AdminCatalogPage() {
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="flex flex-col gap-4 p-5">
-          <h3 className="text-fluid-0 text-text">Add a brand</h3>
-          <div className="flex gap-2">
-            <Input
-              placeholder="e.g. Aston Martin"
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[19rem_1fr]">
+        {/* ── Brands ─────────────────────────────────────────────── */}
+        <Card className="flex h-fit flex-col p-4">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-faint" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search brand or model…"
+              className="h-10 w-full rounded-card border border-border bg-surface-2 pl-9 pr-9 text-fluid--1 text-text outline-none focus:gold-glow focus:border-gold"
+            />
+            {search && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-faint hover:text-text"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          <ul className="mt-3 flex max-h-[26rem] flex-col gap-0.5 overflow-y-auto">
+            {filteredMakes.length === 0 && (
+              <li className="px-3 py-6 text-center text-fluid--1 text-text-faint">No brands match that search.</li>
+            )}
+            {filteredMakes.map((make) => {
+              const active = selected?.id === make.id;
+              return (
+                <li key={make.id}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMakeId(make.id)}
+                    className={cn(
+                      "flex w-full items-center justify-between gap-2 rounded-card px-3 py-2.5 text-left text-fluid--1 transition-colors",
+                      active ? "bg-gold/15 text-gold" : "text-text-muted hover:bg-surface-2 hover:text-text",
+                    )}
+                  >
+                    <span className="truncate">{make.name}</span>
+                    <span className={cn("shrink-0 text-[0.72rem]", active ? "text-gold/70" : "text-text-faint")}>
+                      {make.models.length}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          <div className="mt-3 flex gap-2 border-t border-border pt-3">
+            <input
               value={newMakeName}
               onChange={(e) => setNewMakeName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && void addMake()}
+              placeholder="Add a brand…"
+              className="h-10 w-full min-w-0 rounded-card border border-border bg-surface-2 px-3 text-fluid--1 text-text outline-none focus:gold-glow focus:border-gold"
             />
-            <Button onClick={() => void addMake()} disabled={addingMake || !newMakeName.trim()}>
+            <Button
+              className="shrink-0 px-3"
+              onClick={() => void addMake()}
+              disabled={busy === "make" || !newMakeName.trim()}
+              title="Add brand"
+            >
               <Plus className="h-4 w-4" />
             </Button>
           </div>
-          <p className="text-fluid--1 text-text-faint">
-            A brand with no models is hidden from the form until you add one.
-          </p>
         </Card>
 
-        <Card className="flex flex-col gap-4 p-5">
-          <h3 className="text-fluid-0 text-text">Add a model</h3>
-          <Select
-            placeholder="Choose a brand"
-            options={makes.map((m) => ({ label: m.name, value: m.id }))}
-            value={modelMakeId}
-            onChange={setModelMakeId}
-          />
-          <div className="flex gap-2">
-            <Input
-              placeholder="e.g. DBX"
-              value={newModelName}
-              onChange={(e) => setNewModelName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && void addModel()}
-              disabled={!modelMakeId}
-            />
-            <Button onClick={() => void addModel()} disabled={addingModel || !modelMakeId || !newModelName.trim()}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-          <p className="text-fluid--1 text-text-faint">Choose a brand first.</p>
-        </Card>
-
-        <Card className="flex flex-col gap-4 p-5">
-          <h3 className="text-fluid-0 text-text">Add a trim</h3>
-          <Select
-            placeholder="Choose a brand"
-            options={makes.map((m) => ({ label: m.name, value: m.id }))}
-            value={trimMakeId}
-            onChange={(v) => {
-              setTrimMakeId(v);
-              setTrimModelId("");
-            }}
-          />
-          <Select
-            placeholder={trimMakeId ? "Choose a model" : "Choose a brand first"}
-            options={trimModelOptions}
-            value={trimModelId}
-            onChange={setTrimModelId}
-            disabled={!trimMakeId}
-          />
-          <div className="flex gap-2">
-            <Input
-              placeholder="e.g. R-Dynamic HSE"
-              value={newTrimName}
-              onChange={(e) => setNewTrimName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && void addTrim()}
-              disabled={!trimModelId}
-            />
-            <Button onClick={() => void addTrim()} disabled={addingTrim || !trimModelId || !newTrimName.trim()}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-          <p className="text-fluid--1 text-text-faint">
-            A model with no trims falls back to Standard / Mid / Top of the Range.
-          </p>
-        </Card>
-      </div>
-
-      <Card className="flex flex-col gap-5 p-5">
-        <div>
-          <h3 className="text-fluid-0 text-text">Current catalog</h3>
-          <p className="mt-1 text-fluid--1 text-text-muted">
-            {makes.length} brands · {totalModels} models · {totalTrims} trims
-          </p>
-        </div>
-
-        {makes.length === 0 ? (
-          <p className="text-fluid--1 text-text-faint">No brands yet — add one above.</p>
+        {/* ── Selected brand ─────────────────────────────────────── */}
+        {!selected ? (
+          <Card className="flex flex-col items-center justify-center gap-2 p-12 text-center">
+            <p className="text-fluid-0 text-text">No brands yet.</p>
+            <p className="text-fluid--1 text-text-muted">Add your first brand using the box on the left.</p>
+          </Card>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {makes.map((make) => (
-              <div key={make.id} className="rounded-card border border-border bg-surface-2/60 p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-fluid-0 font-medium text-text">{make.name}</span>
-                  <button
-                    type="button"
-                    aria-label={`Remove ${make.name}`}
-                    onClick={() => askDelete({ kind: "make", id: make.id, name: make.name, modelCount: make.models.length })}
-                    className="text-text-faint transition-colors hover:text-danger"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
+          <Card className="flex flex-col gap-5 p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
+              <div>
+                <h2 className="font-display text-fluid-1 text-text">{selected.name}</h2>
+                <p className="mt-0.5 text-fluid--1 text-text-muted">
+                  {selected.models.length} {selected.models.length === 1 ? "model" : "models"} · {selectedTrimCount}{" "}
+                  {selectedTrimCount === 1 ? "trim" : "trims"}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                className="text-danger hover:bg-danger/10"
+                onClick={() =>
+                  askDelete({
+                    kind: "make",
+                    id: selected.id,
+                    name: selected.name,
+                    modelCount: selected.models.length,
+                  })
+                }
+              >
+                <Trash2 className="h-4 w-4" /> Remove brand
+              </Button>
+            </div>
 
-                <ul className="mt-3 flex flex-col gap-3">
-                  {make.models.length === 0 && <li className="text-fluid--1 text-text-faint">No models yet.</li>}
-                  {make.models.map((model) => (
-                    <li key={model.id}>
-                      <div className="flex items-center justify-between gap-2 text-fluid--1 text-text">
-                        {model.name}
+            <div className="flex gap-2">
+              <input
+                value={newModelName}
+                onChange={(e) => setNewModelName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && void addModel()}
+                placeholder={`Add a model to ${selected.name}…`}
+                className="h-10 w-full min-w-0 rounded-card border border-border bg-surface-2 px-3 text-fluid--1 text-text outline-none focus:gold-glow focus:border-gold"
+              />
+              <Button
+                className="shrink-0 px-3"
+                onClick={() => void addModel()}
+                disabled={busy === "model" || !newModelName.trim()}
+                title="Add model"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {selected.models.length === 0 ? (
+              <p className="py-6 text-center text-fluid--1 text-text-faint">
+                No models yet. A brand with no models is hidden from the valuation form.
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {selected.models.map((model) => {
+                  const open = openModelIds.has(model.id);
+                  return (
+                    <li key={model.id} className="rounded-card border border-border">
+                      <div className="flex items-center gap-2 px-3 py-2.5">
+                        <button
+                          type="button"
+                          onClick={() => toggleModel(model.id)}
+                          aria-expanded={open}
+                          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                        >
+                          {open ? (
+                            <ChevronDown className="h-4 w-4 shrink-0 text-gold" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 shrink-0 text-text-faint" />
+                          )}
+                          <span className="truncate text-fluid--1 text-text">{model.name}</span>
+                          <span className="shrink-0 text-[0.72rem] text-text-faint">
+                            {model.trims.length === 0
+                              ? "generic trims"
+                              : `${model.trims.length} ${model.trims.length === 1 ? "trim" : "trims"}`}
+                          </span>
+                        </button>
                         <button
                           type="button"
                           aria-label={`Remove ${model.name}`}
                           onClick={() =>
-                            askDelete({ kind: "model", id: model.id, name: model.name, trimCount: model.trims.length })
+                            askDelete({
+                              kind: "model",
+                              id: model.id,
+                              name: model.name,
+                              trimCount: model.trims.length,
+                            })
                           }
-                          className="text-text-faint transition-colors hover:text-danger"
+                          className="shrink-0 text-text-faint transition-colors hover:text-danger"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
 
-                      {model.trims.length === 0 ? (
-                        <p className="mt-1 pl-3 text-[0.72rem] text-text-faint">No trims — using the generic list.</p>
-                      ) : (
-                        <ul className="mt-1 flex flex-wrap gap-1.5 pl-3">
-                          {model.trims.map((trim) => (
-                            <li
-                              key={trim.id}
-                              className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-[0.72rem] text-text-muted"
+                      {open && (
+                        <div className="border-t border-border px-3 py-3 animate-fade-in">
+                          {model.trims.length === 0 ? (
+                            <p className="mb-3 text-fluid--1 text-text-faint">
+                              No trims set. The form offers Standard / Mid / Top of the Range instead.
+                            </p>
+                          ) : (
+                            <ul className="mb-3 flex flex-wrap gap-1.5">
+                              {model.trims.map((trim) => (
+                                <li
+                                  key={trim.id}
+                                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-3 py-1 text-[0.78rem] text-text-muted"
+                                >
+                                  {trim.name}
+                                  <button
+                                    type="button"
+                                    aria-label={`Remove trim ${trim.name}`}
+                                    onClick={() => askDelete({ kind: "trim", id: trim.id, name: trim.name })}
+                                    className="text-text-faint transition-colors hover:text-danger"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+
+                          <div className="flex gap-2">
+                            <input
+                              value={trimDrafts[model.id] ?? ""}
+                              onChange={(e) =>
+                                setTrimDrafts((current) => ({ ...current, [model.id]: e.target.value }))
+                              }
+                              onKeyDown={(e) => e.key === "Enter" && void addTrim(model.id)}
+                              placeholder="Add a trim…"
+                              className="h-9 w-full min-w-0 rounded-card border border-border bg-surface-2 px-3 text-fluid--1 text-text outline-none focus:gold-glow focus:border-gold"
+                            />
+                            <Button
+                              variant="outline"
+                              className="shrink-0 px-3"
+                              onClick={() => void addTrim(model.id)}
+                              disabled={busy === model.id || !(trimDrafts[model.id] ?? "").trim()}
+                              title="Add trim"
                             >
-                              {trim.name}
-                              <button
-                                type="button"
-                                aria-label={`Remove trim ${trim.name}`}
-                                onClick={() => askDelete({ kind: "trim", id: trim.id, name: trim.name })}
-                                className="text-text-faint transition-colors hover:text-danger"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
+                              <Plus className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
                       )}
                     </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
+                  );
+                })}
+              </ul>
+            )}
+          </Card>
         )}
-      </Card>
+      </div>
 
       <ConfirmDialog
         open={dialogOpen}
