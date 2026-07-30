@@ -12,17 +12,17 @@ import { cn } from "@/lib/utils";
 // sees in the form's dropdowns.
 //
 // Laid out as master–detail rather than one long grid. The catalog is roughly
-// ten brands, forty models and sixty trims; showing all of it expanded at once
+// ten makes, forty models and sixty trims; showing all of it expanded at once
 // put over a hundred items on screen with wrapping chips that ran into each
-// other, and no way to find anything. Here one brand is in view at a time, its
-// models collapse until opened, and search narrows the brand list as you type.
+// other, and no way to find anything. Here one make is in view at a time, its
+// models collapse until opened, and search narrows the make list as you type.
 //
-// The add forms sit inside the thing they add to — brand at the foot of the
-// brand list, model in the brand's own pane, trim inside the model it belongs
+// The add forms sit inside the thing they add to — make at the foot of the
+// make list, model in the make's own pane, trim inside the model it belongs
 // to. A row of three "add" cards at the top of the page implied you would add a
-// brand, a model and a trim in one sitting, which is not how this gets used.
+// make, a model and a trim in one sitting, which is not how this gets used.
 //
-// Deletes are confirmed because they cascade: removing a brand takes its models
+// Deletes are confirmed because they cascade: removing a make takes its models
 // and all of their trims, and there is no undo.
 
 type Trim = { id: string; name: string };
@@ -75,7 +75,7 @@ export default function AdminCatalogPage() {
     void loadCatalog();
   }, [loadCatalog]);
 
-  // Search matches model names too, so typing "Velar" finds the brand it sits
+  // Search matches model names too, so typing "Velar" finds the make it sits
   // under rather than returning nothing.
   const filteredMakes = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -87,7 +87,7 @@ export default function AdminCatalogPage() {
     );
   }, [makes, search]);
 
-  // Keep a brand in view at all times: fall back to the first available one
+  // Keep a make in view at all times: fall back to the first available one
   // whenever the selection disappears or filters out.
   const selected = makes.find((make) => make.id === selectedMakeId) ?? filteredMakes[0] ?? null;
 
@@ -129,7 +129,7 @@ export default function AdminCatalogPage() {
     const name = newMakeName.trim();
     if (!name) return;
     setBusy("make");
-    if (await post("/api/admin/catalog/makes", { name }, "Couldn't add that brand.")) setNewMakeName("");
+    if (await post("/api/admin/catalog/makes", { name }, "Couldn't add that make.")) setNewMakeName("");
     setBusy(null);
   }
 
@@ -212,7 +212,7 @@ export default function AdminCatalogPage() {
         <h1 className="font-display text-fluid-3 text-text">Vehicle Catalog</h1>
         <p className="mt-1 text-fluid--1 text-text-muted">
           The Make, Model, and Trim options customers choose from in the valuation form. Changes here are live —{" "}
-          {makes.length} brands · {totals.models} models · {totals.trims} trims.
+          {makes.length} makes · {totals.models} models · {totals.trims} trims.
         </p>
       </div>
 
@@ -223,14 +223,14 @@ export default function AdminCatalogPage() {
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[19rem_1fr]">
-        {/* ── Brands ─────────────────────────────────────────────── */}
+        {/* ── Makes ─────────────────────────────────────────────── */}
         <Card className="flex h-fit flex-col p-4">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-faint" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search brand or model…"
+              placeholder="Search make or model…"
               className="h-10 w-full rounded-card border border-border bg-surface-2 pl-9 pr-9 text-fluid--1 text-text outline-none focus:gold-glow focus:border-gold"
             />
             {search && (
@@ -247,7 +247,7 @@ export default function AdminCatalogPage() {
 
           <ul className="mt-3 flex max-h-[26rem] flex-col gap-0.5 overflow-y-auto">
             {filteredMakes.length === 0 && (
-              <li className="px-3 py-6 text-center text-fluid--1 text-text-faint">No brands match that search.</li>
+              <li className="px-3 py-6 text-center text-fluid--1 text-text-faint">No makes match that search.</li>
             )}
             {filteredMakes.map((make) => {
               const active = selected?.id === make.id;
@@ -276,25 +276,25 @@ export default function AdminCatalogPage() {
               value={newMakeName}
               onChange={(e) => setNewMakeName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && void addMake()}
-              placeholder="Add a brand…"
+              placeholder="Add a make…"
               className="h-10 w-full min-w-0 rounded-card border border-border bg-surface-2 px-3 text-fluid--1 text-text outline-none focus:gold-glow focus:border-gold"
             />
             <Button
               className="shrink-0 px-3"
               onClick={() => void addMake()}
               disabled={busy === "make" || !newMakeName.trim()}
-              title="Add brand"
+              title="Add make"
             >
               <Plus className="h-4 w-4" />
             </Button>
           </div>
         </Card>
 
-        {/* ── Selected brand ─────────────────────────────────────── */}
+        {/* ── Selected make ─────────────────────────────────────── */}
         {!selected ? (
           <Card className="flex flex-col items-center justify-center gap-2 p-12 text-center">
-            <p className="text-fluid-0 text-text">No brands yet.</p>
-            <p className="text-fluid--1 text-text-muted">Add your first brand using the box on the left.</p>
+            <p className="text-fluid-0 text-text">No makes yet.</p>
+            <p className="text-fluid--1 text-text-muted">Add your first make using the box on the left.</p>
           </Card>
         ) : (
           <Card className="flex flex-col gap-5 p-5">
@@ -318,7 +318,7 @@ export default function AdminCatalogPage() {
                   })
                 }
               >
-                <Trash2 className="h-4 w-4" /> Remove brand
+                <Trash2 className="h-4 w-4" /> Remove make
               </Button>
             </div>
 
@@ -342,7 +342,7 @@ export default function AdminCatalogPage() {
 
             {selected.models.length === 0 ? (
               <p className="py-6 text-center text-fluid--1 text-text-faint">
-                No models yet. A brand with no models is hidden from the valuation form.
+                No models yet. A make with no models is hidden from the valuation form.
               </p>
             ) : (
               <ul className="flex flex-col gap-2">
@@ -449,7 +449,7 @@ export default function AdminCatalogPage() {
         tone="danger"
         title={
           pending?.kind === "make"
-            ? "Remove this brand?"
+            ? "Remove this make?"
             : pending?.kind === "model"
               ? "Remove this model?"
               : "Remove this trim?"
@@ -459,7 +459,7 @@ export default function AdminCatalogPage() {
             <>
               Removing <span className="text-text">{pending.name}</span> also removes its{" "}
               {pending.modelCount === 1 ? "1 model" : `${pending.modelCount} models`} and every trim under them.
-              Customers will no longer see this brand in the valuation form. This cannot be undone.
+              Customers will no longer see this make in the valuation form. This cannot be undone.
             </>
           ) : pending?.kind === "model" ? (
             <>
