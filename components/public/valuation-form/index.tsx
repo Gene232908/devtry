@@ -4,6 +4,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
+import { useVehicleCatalog } from "@/lib/use-vehicle-catalog";
 import { useValuationForm } from "./use-valuation-form";
 import { StepCarDetails } from "./step-car-details";
 import { StepTrimLocation } from "./step-trim-location";
@@ -25,6 +26,9 @@ const STEPS: Array<{
 export function ValuationForm({ registerCapture }: { registerCapture?: (capture: () => void) => void } = {}) {
   const form = useValuationForm();
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  // Make / model / trim options come from the admin's Catalog page, so what the
+  // client adds there is what a customer actually sees here.
+  const { makes } = useVehicleCatalog();
 
   const isBusy = form.state === "validating" || form.state === "submitting";
   const isLocked = form.state !== "filling";
@@ -111,8 +115,12 @@ export function ValuationForm({ registerCapture }: { registerCapture?: (capture:
               setField={form.setField}
             />
           )}
-          {step === 2 && <StepCarDetails values={form.values} errors={form.errors} setField={form.setField} />}
-          {step === 3 && <StepTrimLocation values={form.values} errors={form.errors} setField={form.setField} />}
+          {step === 2 && (
+            <StepCarDetails values={form.values} errors={form.errors} makes={makes} setField={form.setField} />
+          )}
+          {step === 3 && (
+            <StepTrimLocation values={form.values} errors={form.errors} makes={makes} setField={form.setField} />
+          )}
         </div>
 
         {form.submitError && (

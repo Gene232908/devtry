@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ListChecks, Settings, Ban, FileClock } from "lucide-react";
+import { LayoutDashboard, ListChecks, Settings, Ban, FileClock, Car } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ENABLED = [
@@ -10,6 +10,9 @@ const ENABLED = [
   { href: "/admin/leads", label: "Leads", icon: ListChecks },
   { href: "/admin/incomplete", label: "Incomplete Forms", icon: FileClock },
   { href: "/admin/blocked", label: "Blocked Numbers", icon: Ban },
+  // The catalog page existed but was never linked from anywhere, so the client
+  // had no way to reach the one screen that lets them manage their own car lists.
+  { href: "/admin/catalog", label: "Vehicle Catalog", icon: Car },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 

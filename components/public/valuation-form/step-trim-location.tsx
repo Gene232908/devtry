@@ -2,18 +2,21 @@
 
 import { RadioGroup } from "@/components/ui/Radio";
 import { Select } from "@/components/ui/Select";
-import { EMIRATES, OPTION_LEVELS, getTrims } from "@/config/vehicles";
+import { EMIRATES, OPTION_LEVELS } from "@/config/vehicles";
+import { type CatalogMake, trimsFor } from "@/lib/use-vehicle-catalog";
 import { ValuationFormValues, FormErrors } from "./form.types";
 
 type Props = {
   values: ValuationFormValues;
   errors: FormErrors;
+  /** Live catalog from the admin's Catalog page, falling back to the bundled list. */
+  makes: CatalogMake[];
   setField: <K extends keyof ValuationFormValues>(key: K, value: ValuationFormValues[K]) => void;
 };
 
-export function StepTrimLocation({ values, errors, setField }: Props) {
-  // Trim options are connected to the selected make + model (demo catalog).
-  const trimOptions = getTrims(values.model).map((t) => ({ label: t, value: t }));
+export function StepTrimLocation({ values, errors, makes, setField }: Props) {
+  // Trims come from the admin catalog, narrowed to the selected make + model.
+  const trimOptions = trimsFor(makes, values.make, values.model).map((t) => ({ label: t, value: t }));
 
   return (
     <div className="flex flex-col gap-5 border-b border-border pb-7">
