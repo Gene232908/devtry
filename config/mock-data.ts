@@ -82,12 +82,8 @@ export function computeStats(leads: Lead[]) {
     (l) => l.status === "pending" || l.status === "contacted" || l.status === "inspected",
   ).length;
   const visitorsThisWeek = visitorsSeries.reduce((sum, d) => sum + d.visitors, 0);
-  const valued = leads.filter((l) => l.estimatedValueAed != null);
-  const averageValue = valued.length
-    ? Math.round(valued.reduce((sum, l) => sum + (l.estimatedValueAed ?? 0), 0) / valued.length)
-    : 0;
   const whatsappClicks = 615;
   // Demo-only figure; the live value comes from /api/admin/stats.
   const incompleteForms = 7;
-  return { totalLeads, newToday, activeLeads, visitorsThisWeek, averageValue, whatsappClicks, incompleteForms };
+  return { totalLeads, newToday, activeLeads, visitorsThisWeek, whatsappClicks, incompleteForms };
 }
