@@ -1,19 +1,22 @@
 "use client";
 
 import { Select } from "@/components/ui/Select";
-import { YEARS, MILEAGE_BRACKETS, MAKES } from "@/config/vehicles";
+import { YEARS, MILEAGE_BRACKETS } from "@/config/vehicles";
+import { type CatalogMake, modelsFor } from "@/lib/use-vehicle-catalog";
 import { ValuationFormValues, FormErrors } from "./form.types";
 
 type Props = {
   values: ValuationFormValues;
   errors: FormErrors;
+  /** Live catalog from the admin's Catalog page, falling back to the bundled list. */
+  makes: CatalogMake[];
   setField: <K extends keyof ValuationFormValues>(key: K, value: ValuationFormValues[K]) => void;
 };
 
-export function StepCarDetails({ values, errors, setField }: Props) {
-  const modelOptions = (MAKES.find((m) => m.name === values.make)?.models ?? []).map((name) => ({
-    label: name,
-    value: name,
+export function StepCarDetails({ values, errors, makes, setField }: Props) {
+  const modelOptions = modelsFor(makes, values.make).map((model) => ({
+    label: model.name,
+    value: model.name,
   }));
 
   return (
@@ -30,7 +33,7 @@ export function StepCarDetails({ values, errors, setField }: Props) {
         <Select
           label="Make"
           placeholder="Select make"
-          options={MAKES.map((m) => ({ label: m.name, value: m.name }))}
+          options={makes.map((m) => ({ label: m.name, value: m.name }))}
           value={values.make}
           onChange={(v) => setField("make", v)}
           error={errors.make}
