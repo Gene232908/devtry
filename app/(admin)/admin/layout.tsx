@@ -49,7 +49,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </div>
             )}
 
-            <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+            {/* Keyed on the path so the fade replays on every navigation, not
+                just the first mount — arriving from the login screen and moving
+                between admin pages should feel the same. */}
+            <main key={pathname} className="flex-1 overflow-y-auto p-4 sm:p-6 animate-fade-in motion-reduce:animate-none">
               {ADMIN_PREVIEW && (
                 // Stated on every screen so nobody in the walkthrough mistakes
                 // a sample row for a real customer, or expects a click to stick.
