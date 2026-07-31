@@ -1,6 +1,7 @@
 "use client";
 
 import { type ClipboardEvent, useEffect, useRef, useState } from "react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -9,6 +10,8 @@ import type { PhoneVerification } from "./form.types";
 type Props = {
   phone: string;
   phoneVerification: PhoneVerification;
+  /** True while the verified lead is being saved — keeps this dialog on screen. */
+  submitting: boolean;
   onVerify: (code: string) => Promise<{ ok: boolean }>;
   onResend: () => void;
   onClose: () => void;
@@ -16,14 +19,20 @@ type Props = {
 
 const DEMO_CODE_HINT = "123456";
 
-export function OtpModal({ phone, phoneVerification, onVerify, onResend, onClose }: Props) {
+export function OtpModal({ phone, phoneVerification, submitting, onVerify, onResend, onClose }: Props) {
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [shake, setShake] = useState(false);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
-  const open = ["sending", "code_sent", "verifying", "error"].includes(phoneVerification.status);
+  // Deliberately stays open through submission. Verifying used to close this
+  // dialog the instant the code was accepted, leaving the screen empty while
+  // the lead saved and then snapping the thank-you in — the success had no
+  // visible moment of its own.
+  const open =
+    ["sending", "code_sent", "verifying", "error"].includes(phoneVerification.status) || submitting;
   const verifying = phoneVerification.status === "verifying";
+  const succeeded = submitting || phoneVerification.status === "verified";
   const showTestCodeHint = phoneVerification.devBypass;
 
   // Live 60s resend countdown.
@@ -72,6 +81,28 @@ export function OtpModal({ phone, phoneVerification, onVerify, onResend, onClose
       setDigits(pasted.split(""));
       onVerify(pasted);
     }
+  }
+
+  if (succeeded) {
+    // Same dialog, same position — only the contents change, so verification
+    // and the thank-you read as one continuous step rather than two windows.
+    return (
+      <Dialog open={open} onClose={onClose} title="Number verified" hideClose>
+        <div className="flex flex-col items-center gap-4 py-3 text-center animate-fade-in">
+          <span className="relative flex h-14 w-14 items-center justify-center">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-success/25 animate-ping-ring motion-reduce:hidden" />
+            <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-success/15">
+              <CheckCircle2 className="h-8 w-8 text-success" aria-hidden="true" />
+            </span>
+          </span>
+          <p className="text-fluid-0 text-text">Your number is confirmed.</p>
+          <p className="flex items-center gap-2 text-fluid--1 text-text-muted" aria-live="polite">
+            <Loader2 className="h-4 w-4 animate-spin text-gold" />
+            Sending your request…
+          </p>
+        </div>
+      </Dialog>
+    );
   }
 
   return (
