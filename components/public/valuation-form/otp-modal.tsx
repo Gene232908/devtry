@@ -1,7 +1,6 @@
 "use client";
 
 import { type ClipboardEvent, useEffect, useRef, useState } from "react";
-import { CheckCircle2, Loader2 } from "lucide-react";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
@@ -86,18 +85,25 @@ export function OtpModal({ phone, phoneVerification, submitting, onVerify, onRes
   if (succeeded) {
     // Same dialog, same position — only the contents change, so verification
     // and the thank-you read as one continuous step rather than two windows.
+    //
+    // No tick here on purpose: the work is still in flight, and a success mark
+    // beside "sending" contradicts itself. The tick belongs to the thank-you,
+    // where it is actually true. An indeterminate sweep is used rather than a
+    // filling bar because the wait has no knowable length.
     return (
-      <Dialog open={open} onClose={onClose} title="Number verified" hideClose>
-        <div className="flex flex-col items-center gap-4 py-3 text-center animate-fade-in">
-          <span className="relative flex h-14 w-14 items-center justify-center">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-success/25 animate-ping-ring motion-reduce:hidden" />
-            <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-success/15">
-              <CheckCircle2 className="h-8 w-8 text-success" aria-hidden="true" />
-            </span>
-          </span>
-          <p className="text-fluid-0 text-text">Your number is confirmed.</p>
-          <p className="flex items-center gap-2 text-fluid--1 text-text-muted" aria-live="polite">
-            <Loader2 className="h-4 w-4 animate-spin text-gold" />
+      <Dialog open={open} onClose={onClose} title="Almost done" hideClose>
+        <div className="flex flex-col gap-4 py-2 animate-fade-in">
+          <p className="text-fluid-0 leading-7 text-text">Your number is confirmed.</p>
+
+          <div
+            className="h-1 w-full overflow-hidden rounded-full bg-surface-2"
+            role="progressbar"
+            aria-label="Sending your request"
+          >
+            <div className="h-full w-1/4 rounded-full bg-gold animate-progress-sweep motion-reduce:w-full motion-reduce:animate-none" />
+          </div>
+
+          <p className="text-fluid--1 text-text-muted" aria-live="polite">
             Sending your request…
           </p>
         </div>
