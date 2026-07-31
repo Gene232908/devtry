@@ -92,20 +92,31 @@ export function OtpModal({ phone, phoneVerification, submitting, onVerify, onRes
     // filling bar because the wait has no knowable length.
     return (
       <Dialog open={open} onClose={onClose} title="Almost done" hideClose>
-        <div className="flex flex-col gap-4 py-2 animate-fade-in">
-          <p className="text-fluid-0 leading-7 text-text">Your number is confirmed.</p>
+        <div className="flex flex-col gap-5 py-2 animate-fade-in">
+          <div className="flex flex-col gap-1.5">
+            <p className="text-fluid-0 leading-7 text-text">Your number is confirmed.</p>
+            <p className="text-fluid--1 text-text-muted" aria-live="polite">
+              Sending your request to the CarVibeDubai team…
+            </p>
+          </div>
 
+          {/* A band of light travelling a hairline track. The soft gradient
+              edges are what keep it from reading as a mechanical block. */}
           <div
-            className="h-1 w-full overflow-hidden rounded-full bg-surface-2"
+            className="relative h-[3px] w-full overflow-hidden rounded-full bg-border-gold/25"
             role="progressbar"
             aria-label="Sending your request"
           >
-            <div className="h-full w-1/4 rounded-full bg-gold animate-progress-sweep motion-reduce:w-full motion-reduce:animate-none" />
+            <div
+              aria-hidden="true"
+              className={cn(
+                "absolute inset-0 animate-progress-sweep",
+                "bg-[linear-gradient(90deg,transparent_0%,rgba(243,222,138,.15)_25%,rgba(243,222,138,.95)_50%,rgba(243,222,138,.15)_75%,transparent_100%)]",
+                // Reduced motion still gets a visible indicator, just a still one.
+                "motion-reduce:animate-none motion-reduce:bg-[linear-gradient(90deg,rgba(243,222,138,.5),rgba(243,222,138,.5))]",
+              )}
+            />
           </div>
-
-          <p className="text-fluid--1 text-text-muted" aria-live="polite">
-            Sending your request…
-          </p>
         </div>
       </Dialog>
     );
