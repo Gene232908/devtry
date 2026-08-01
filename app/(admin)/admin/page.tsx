@@ -17,7 +17,6 @@ export default function AdminDashboardPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="font-display text-fluid-3 text-text">Overview</h1>
-        <p className="mt-1 text-fluid--1 text-text-muted">Summary &amp; statistics for {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}</p>
       </div>
 
       {/* MILESTONE 2 BRANCH — the six cards are deliberately unlabelled.
