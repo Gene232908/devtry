@@ -1,26 +1,24 @@
-// MILESTONE 2 BRANCH ONLY — do not merge this file into main as-is.
+// The admin dashboard's demo switch. Currently OFF — the dashboard is live.
 //
-// Milestone 2 covers the customer form, phone verification, and lead storage.
-// The private dashboard is Milestone 3 and is not built yet; it is being shown
-// early, at 25%, purely so the layout and page structure can be walked through
-// and discussed before it is implemented.
+// It was introduced for Milestone 2, when the private dashboard did not exist
+// yet and was shown early, at 25%, purely so the layout could be walked through
+// before it was implemented. Milestone 3 has since built it: inventory,
+// per-sale commission, and monthly statements, with migrations 0014-0016
+// applied to the live database and verified.
 //
-// While this flag is on, the admin area is a DESIGN PREVIEW:
+// While this flag is ON, the admin area is a DESIGN PREVIEW:
 //   * every screen renders from a fixed demo dataset, never from the database
 //   * nothing an admin does writes anything anywhere
 //
-// Both halves matter. Reading live data would put real customer details on a
-// screen whose access rules are not finished, and writing would let a
-// walkthrough click permanently change a real lead — or block a real customer's
-// phone number — while discussing a page that does not exist yet.
+// It is kept rather than deleted because it is still the right tool for a
+// client walkthrough: turning it back on shows the full dashboard, with every
+// screen populated, without putting a single real customer's name or phone
+// number on a shared screen and without a demo click altering a real lead.
+// `config/demo-admin-data.ts` holds that dataset.
 //
-// The public side is unaffected: the valuation form, OTP verification, and lead
-// storage are Milestone 2 deliverables and run fully live against Supabase.
-//
-// To turn this off (once Milestone 3 begins), set it to false — every guard in
-// the admin reads from here, so there is a single switch and no scattered
-// conditionals to hunt down.
-export const ADMIN_PREVIEW = true;
+// One switch — every guard in the admin and every admin write endpoint reads
+// from here, so there are no scattered conditionals to hunt down.
+export const ADMIN_PREVIEW = false;
 
 /** Copy shown wherever a disabled control needs to explain itself. */
 export const PREVIEW_NOTICE = "Design preview — changes are not saved.";
