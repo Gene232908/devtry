@@ -11,6 +11,11 @@
 
 # next.js
 /.next/
+# Verification-only build output. `next build` and `next dev` share /.next and
+# clobber each other — running a build while the dev server is up strips its
+# compiled CSS and the site renders as unstyled HTML. Use `npm run build:check`
+# to verify a build without touching a running dev server.
+/.next-build/
 /out/
 
 # production

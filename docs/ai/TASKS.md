@@ -2,9 +2,33 @@
 
 ## Current objective
 
-Run the one remaining manual database migration for the just-restored Supabase backend, then verify a real end-to-end valuation submission.
+Milestone 3 — the private dashboard. Both phases are code-complete: inventory,
+per-sale 2% commission, the two missing pipeline statuses, and monthly
+statements grouped into quarters for payment. Nothing has run against the real
+database yet. Run migrations 0014-0016, verify one full purchase → sale →
+statement cycle, then take the dashboard out of preview mode.
 
 ## In progress
+
+- [x] 2026-08-03 Ran migrations 0014, 0015 and 0016 against the live Supabase project and verified the schema and all four functions directly (`KNOWN_ISSUES.md` ISSUE-005).
+- [x] 2026-08-03 Set `ADMIN_PREVIEW = false`. The dashboard now reads and writes the real database.
+
+- [ ] Drive one full cycle through the browser on a real (test) lead.
+  - Related feature: Inventory, commission, pipeline statuses
+  - Acceptance criteria: marking a lead as Deal with a purchase price creates an `inventory` row and the car appears in Inventory; marking it sold writes one `commission_entries` row whose `commission_aed` matches the figure the dialog previewed; `/admin/commission` shows that sale in its month and the quarter total equals the sum of its months.
+  - Risks: the SQL is proven, but nothing has exercised the UI → API → SQL path end to end. This is the only untested layer left.
+  - Next action: sign in at `/admin/login` and run the cycle.
+
+- [ ] Sanity-check the live Leads screen now that preview mode is off — real leads, real counts, and the two new statuses selectable in Customer Details.
+
+## Deferred (raised, deliberately not built yet)
+
+- [ ] Confirm whether the repo build plan's other M3 items are in scope: `/api/notify` Gmail alerts on a new lead, wiring the Settings page (currently a non-functional mockup — local state only, never calls its own working API), and security headers/CSP (`next.config.mjs` sets only `distDir`). The client's own milestone document does not mention any of them.
+- [ ] Decide whether manager accounts should see commission figures at all (RLS currently restricts `commission_entries` and `commission_statements` to `is_admin()`).
+- [ ] Statement export (PDF/CSV) for the developer's own invoicing, and VAT/TRN formatting if the developer's side becomes VAT-registered — deliberately out of scope, per the client's choice of a plain commission statement.
+- [ ] Allow inventory not sourced from a website lead (auction, walk-in, trade-in) — scoped out by the client; see `DECISIONS.md` ADR-002 for what it would take.
+
+## Previously in progress
 
 - [ ] Run `supabase/migrations/0006_trim_and_option_level.sql` in the Supabase SQL Editor.
   - Related feature: Public valuation form + Admin leads
