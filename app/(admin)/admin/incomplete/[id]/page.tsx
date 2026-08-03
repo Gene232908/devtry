@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { PartialLeadDetail } from "@/components/admin/PartialLeadDetail";
 import type { PartialLead } from "@/lib/admin/partial-lead";
+import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
+import { demoPartialLeads } from "@/config/demo-admin-data";
 
 export default function IncompleteDetailPage() {
   const params = useParams<{ id: string }>();
@@ -15,6 +17,14 @@ export default function IncompleteDetailPage() {
   // small, rarely visited, and nothing else in the admin needs it in memory.
   useEffect(() => {
     let cancelled = false;
+
+    // Milestone 2: design preview — served from the demo rows so the detail
+    // layout can be walked through without loading a real captured number.
+    if (ADMIN_PREVIEW) {
+      setPartial(demoPartialLeads.find((row) => row.id === params.id) ?? null);
+      setLoading(false);
+      return;
+    }
 
     async function load() {
       try {

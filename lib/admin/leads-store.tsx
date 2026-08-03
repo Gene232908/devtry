@@ -2,6 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Lead, LeadStatus, mockLeads } from "@/config/mock-data";
+import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
+import { demoNewLeads } from "@/config/demo-admin-data";
 
 const STORAGE_KEY = "cvd_admin_leads_v1";
 
@@ -38,6 +40,10 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
   // dataset whenever the database isn't configured yet (or the request fails
   // for any reason) so the dashboard never breaks in demo mode.
   const loadLive = useCallback(async () => {
+    // Milestone 2: the dashboard is a design preview, so it never reads real
+    // customer data. Returning false drops through to the demo dataset below.
+    if (ADMIN_PREVIEW) return false;
+
     try {
       const res = await fetch("/api/admin/leads", { cache: "no-store" });
       if (!res.ok) return false;
@@ -58,6 +64,19 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
     // Signed-out screens (login, set password) mount the provider but have no
     // business asking the server for leads.
     if (!enabled) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Milestone 2: the preview always shows the same fixed demo dataset. The
+    // cached copy below is deliberately bypassed — a walkthrough must look
+    // identical every time it is opened, and a row left over from an earlier
+    // session (or saved under an older shape) would either confuse the
+    // discussion or crash the detail page on a field that no longer exists.
+    if (ADMIN_PREVIEW) {
+      // Fresh, untouched leads first so the dashboard has something to show in
+      // Recent Leads and New-first ordering has something to lift to the top.
+      setLeads([...demoNewLeads, ...mockLeads]);
       setIsLoading(false);
       return;
     }
@@ -103,6 +122,10 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
   }, [loadLive]);
 
   useEffect(() => {
+    // Milestone 2: the preview writes nothing, not even locally — otherwise a
+    // change made during one walkthrough would still be there at the start of
+    // the next, and the demo would drift away from the fixed dataset.
+    if (ADMIN_PREVIEW) return;
     if (isLive || isLoading) return; // real data persists in Supabase, not localStorage
     localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
   }, [leads, isLive, isLoading]);
@@ -128,6 +151,14 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
       // status looked saved until the page was reloaded — the worst possible
       // outcome, because nothing on screen suggested anything was wrong.
       updateLead: async (id, patch) => {
+        // Milestone 2: the preview must never write. The change is still shown
+        // locally so a walkthrough can demonstrate what the screen does, but it
+        // is discarded on reload and never reaches the database.
+        if (ADMIN_PREVIEW) {
+          setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+          return true;
+        }
+
         const previous = leads.find((l) => l.id === id);
         setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
         if (!isLive) return true;

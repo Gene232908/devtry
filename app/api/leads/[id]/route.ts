@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
+import { ADMIN_PREVIEW, PREVIEW_NOTICE } from "@/lib/admin/preview-mode";
 
 // "deal" = the customer agreed to sell; "closed" = met but no agreement.
 // "valuation_sent" stays accepted so historical rows can still be written back,
@@ -9,6 +10,16 @@ const STATUSES = new Set(["new", "pending", "contacted", "inspected", "deal", "c
 type LeadEventInsert = { lead_id: string; type: string; meta: Record<string, unknown> };
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  // Milestone 2: the dashboard is a design preview, so admin writes are refused
+  // at the server too — the UI guard alone would still leave this endpoint open
+  // to anything holding a session.
+  if (ADMIN_PREVIEW) {
+    return NextResponse.json(
+      { ok: false, error: { message: PREVIEW_NOTICE } },
+      { status: 403 },
+    );
+  }
+
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ ok: false, error: { message: "Database is not configured." } }, { status: 503 });
   }
