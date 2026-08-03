@@ -7,10 +7,24 @@ import { demoNewLeads } from "@/config/demo-admin-data";
 
 const STORAGE_KEY = "cvd_admin_leads_v1";
 
+/**
+ * Everything editable on a lead, plus the two purchase figures.
+ *
+ * Those two are not fields on `Lead` on purpose: the money lives on the
+ * `inventory` record, not the lead (see migration 0014). They travel with this
+ * patch because recording a deal is a single action for the owner — one Save on
+ * the lead screen — even though the server splits it across two tables.
+ */
+export type LeadPatch = Partial<Lead> & {
+  purchasePriceAed?: number;
+  /** ISO date. Defaults to now on the server when omitted. */
+  purchasedAt?: string;
+};
+
 type LeadsContextValue = {
   leads: Lead[];
   /** Resolves false when the change could not be persisted (local state is rolled back). */
-  updateLead: (id: string, patch: Partial<Lead>) => Promise<boolean>;
+  updateLead: (id: string, patch: LeadPatch) => Promise<boolean>;
   getLead: (id: string) => Lead | undefined;
   /** True once real Supabase-backed leads loaded successfully; false = demo/mock data. */
   isLive: boolean;
@@ -168,6 +182,9 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
         if (patch.estimatedValueAed !== undefined) body.estimated_value_aed = patch.estimatedValueAed;
         if (patch.notes !== undefined) body.notes = patch.notes;
         if (patch.isSpam !== undefined) body.is_spam = patch.isSpam;
+        // Sent alongside a "deal" status; the route writes them to `inventory`.
+        if (patch.purchasePriceAed !== undefined) body.purchase_price_aed = patch.purchasePriceAed;
+        if (patch.purchasedAt !== undefined) body.purchased_at = patch.purchasedAt;
         if (Object.keys(body).length === 0) return true;
 
         try {

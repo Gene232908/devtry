@@ -2,11 +2,16 @@ import { cn } from "@/lib/utils";
 import { LeadStatus } from "@/config/mock-data";
 import { STATUS_LABEL } from "@/lib/format";
 
+// Colour tracks progress through the pipeline: blue on arrival, amber while
+// waiting, green once contact is made, then warming into gold as the car gets
+// closer to being bought.
 const STATUS_STYLE: Record<LeadStatus, string> = {
   new: "bg-info/15 text-info",
   pending: "bg-warning/15 text-warning",
   contacted: "bg-success/15 text-success",
+  inspection_scheduled: "bg-success/15 text-success",
   inspected: "bg-gold/15 text-gold",
+  negotiating: "bg-gold/15 text-gold",
   // The win state — the only one given the solid gold treatment.
   deal: "bg-gold/25 text-gold",
   closed: "bg-text-faint/15 text-text-muted",
@@ -17,7 +22,9 @@ const STATUS_DOT: Record<LeadStatus, string> = {
   new: "bg-info",
   pending: "bg-warning",
   contacted: "bg-success",
+  inspection_scheduled: "bg-success",
   inspected: "bg-gold",
+  negotiating: "bg-gold",
   deal: "bg-gold",
   closed: "bg-text-faint",
   valuation_sent: "bg-gold",
