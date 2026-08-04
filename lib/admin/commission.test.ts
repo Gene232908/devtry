@@ -2,7 +2,9 @@ import { describe, it, expect } from "vitest";
 import {
   formatMonth,
   groupIntoQuarters,
+  isCarriedForward,
   monthsToBuild,
+  nextMonth,
   quarterOf,
   type CommissionStatement,
 } from "./commission";
@@ -18,6 +20,7 @@ function stmt(periodMonth: string, over: Partial<CommissionStatement> = {}): Com
     issuedAt: null,
     paidAt: null,
     paymentNote: "",
+    carriedCount: 0,
     ...over,
   };
 }
@@ -128,5 +131,36 @@ describe("monthsToBuild", () => {
 
   it("is bounded, so one bad date cannot generate thousands of months", () => {
     expect(monthsToBuild("1990-01-01T00:00:00Z").length).toBeLessThanOrEqual(60);
+  });
+});
+
+describe("nextMonth", () => {
+  it("steps to the following month", () => {
+    expect(nextMonth("2026-08-01")).toBe("2026-09-01");
+  });
+
+  it("rolls December into the next January rather than month 13", () => {
+    expect(nextMonth("2026-12-01")).toBe("2027-01-01");
+  });
+
+  it("always lands on the first of the month", () => {
+    expect(nextMonth("2026-01-31T12:00:00Z")).toBe("2026-02-01");
+  });
+});
+
+describe("isCarriedForward", () => {
+  // A sale that arrives after its own month was settled has to be billed
+  // somewhere later. This is what tells the UI to explain that, rather than
+  // showing a month with more cars than were sold in it.
+  it("is false when the sale happened in the month billing it", () => {
+    expect(isCarriedForward("2026-08-04T10:00:00Z", "2026-08-01")).toBe(false);
+  });
+
+  it("is true when the sale happened before the month billing it", () => {
+    expect(isCarriedForward("2026-08-04T10:00:00Z", "2026-09-01")).toBe(true);
+  });
+
+  it("does not confuse the same month in different years", () => {
+    expect(isCarriedForward("2025-08-04T10:00:00Z", "2026-08-01")).toBe(true);
   });
 });

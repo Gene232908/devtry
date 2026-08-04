@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, FileText, RefreshCw } from "lucide-react";
+import { CheckCircle2, Download, FileText, Printer, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -36,6 +36,21 @@ const QUARTER_LABEL: Record<Quarter["status"], string> = {
 };
 
 type PendingAction = { quarter: Quarter; status: "issued" | "paid" } | null;
+
+/**
+ * Opens the statement for a quarter in a new tab.
+ *
+ * The HTML version is a print-ready document — the browser's own Save-as-PDF
+ * turns it into a file, which is why no PDF library is bundled for it. The CSV
+ * downloads directly.
+ */
+function openStatement(quarterKey: string, format: "html" | "csv") {
+  window.open(
+    `/api/admin/commission/statement?quarter=${encodeURIComponent(quarterKey)}&format=${format}`,
+    "_blank",
+    "noopener,noreferrer",
+  );
+}
 
 export default function CommissionPage() {
   const [statements, setStatements] = useState<CommissionStatement[]>([]);
@@ -217,6 +232,13 @@ export default function CommissionPage() {
                         <td className="py-3 pr-1 text-text-muted">
                           {STATEMENT_STATUS_LABEL[m.status]}
                           {m.paidAt && <span className="block text-text-faint">{formatDate(m.paidAt)}</span>}
+                          {/* Says why a month can bill more cars than were sold
+                              in it — the alternative is an unexplained number. */}
+                          {m.carriedCount > 0 && (
+                            <span className="block text-warning">
+                              includes {m.carriedCount} carried forward
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -224,29 +246,41 @@ export default function CommissionPage() {
                 </table>
               </div>
 
-              {q.status !== "paid" && (
-                <div className="mt-5 flex flex-wrap gap-3 border-t border-border pt-4">
-                  {q.status !== "issued" && (
+              {/* The statement is downloadable at any point, paid or not — a
+                  draft quarter is exactly what the developer wants to see when
+                  checking what is accruing. */}
+              <div className="mt-5 flex flex-wrap gap-3 border-t border-border pt-4">
+                <Button variant="outline" onClick={() => openStatement(q.key, "html")}>
+                  <Printer className="h-4 w-4" /> Statement (PDF)
+                </Button>
+                <Button variant="outline" onClick={() => openStatement(q.key, "csv")}>
+                  <Download className="h-4 w-4" /> CSV
+                </Button>
+
+                {q.status !== "paid" && (
+                  <>
+                    {q.status !== "issued" && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setActionError(null);
+                          setPending({ quarter: q, status: "issued" });
+                        }}
+                      >
+                        <FileText className="h-4 w-4" /> Issue this quarter
+                      </Button>
+                    )}
                     <Button
-                      variant="outline"
                       onClick={() => {
                         setActionError(null);
-                        setPending({ quarter: q, status: "issued" });
+                        setPending({ quarter: q, status: "paid" });
                       }}
                     >
-                      <FileText className="h-4 w-4" /> Issue this quarter
+                      <CheckCircle2 className="h-4 w-4" /> Mark quarter paid
                     </Button>
-                  )}
-                  <Button
-                    onClick={() => {
-                      setActionError(null);
-                      setPending({ quarter: q, status: "paid" });
-                    }}
-                  >
-                    <CheckCircle2 className="h-4 w-4" /> Mark quarter paid
-                  </Button>
-                </div>
-              )}
+                  </>
+                )}
+              </div>
             </Card>
           ))}
         </div>

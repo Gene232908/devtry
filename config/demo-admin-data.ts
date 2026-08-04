@@ -298,6 +298,7 @@ export const demoCommissionStatements: CommissionStatement[] = [
     issuedAt: null,
     paidAt: null,
     paymentNote: "",
+    carriedCount: 0,
   },
   {
     id: "CS-0003",
@@ -309,6 +310,7 @@ export const demoCommissionStatements: CommissionStatement[] = [
     issuedAt: monthsBack(0),
     paidAt: monthsBack(0),
     paymentNote: "Bank transfer ref 88213",
+    carriedCount: 0,
   },
   {
     id: "CS-0002",
@@ -320,6 +322,7 @@ export const demoCommissionStatements: CommissionStatement[] = [
     issuedAt: monthsBack(1),
     paidAt: monthsBack(0),
     paymentNote: "Bank transfer ref 88213",
+    carriedCount: 0,
   },
   {
     id: "CS-0001",
@@ -331,5 +334,6 @@ export const demoCommissionStatements: CommissionStatement[] = [
     issuedAt: monthsBack(2),
     paidAt: monthsBack(2),
     paymentNote: "Bank transfer ref 87004",
+    carriedCount: 0,
   },
 ];
