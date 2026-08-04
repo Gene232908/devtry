@@ -149,6 +149,14 @@ const config: Config = {
           "0%": { opacity: "1", transform: "translateY(0) scale(1)" },
           "100%": { opacity: "0", transform: "translateY(8px) scale(.97)" },
         },
+        // Indeterminate progress: a soft band of light travelling the track.
+        // Used where the wait has no knowable length, so a filling bar would be
+        // a lie. Soft-edged rather than a hard block, which reads as designed
+        // rather than mechanical.
+        "progress-sweep": {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" },
+        },
       },
       animation: {
         "pulse-glow": "pulse-glow 2.4s ease-out infinite",
@@ -172,6 +180,7 @@ const config: Config = {
         "overlay-out": "overlay-out 160ms ease-in both",
         "pop-in": "pop-in 260ms cubic-bezier(.16,.84,.44,1) both",
         "pop-out": "pop-out 160ms cubic-bezier(.4,0,1,1) both",
+        "progress-sweep": "progress-sweep 1.4s cubic-bezier(.45,0,.25,1) infinite",
       },
     },
   },

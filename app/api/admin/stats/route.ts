@@ -19,7 +19,12 @@ export async function GET() {
   const [total, today, active, visitors, whatsapp, incomplete] = await Promise.all([
     supabase.from("leads").select("id", { count: "exact", head: true }),
     supabase.from("leads").select("id", { count: "exact", head: true }).gte("created_at", startOfToday.toISOString()),
-    supabase.from("leads").select("id", { count: "exact", head: true }).in("status", ["pending", "contacted", "inspected"]),
+    // "Active" = still being worked. Excludes 'new' (nobody has picked it up),
+    // 'deal' (bought — it is a car in Inventory now) and 'closed' (finished).
+    supabase
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["pending", "contacted", "inspection_scheduled", "inspected", "negotiating"]),
     supabase.from("events").select("id", { count: "exact", head: true }).eq("type", "page_view").gte("created_at", weekAgo),
     supabase.from("events").select("id", { count: "exact", head: true }).eq("type", "whatsapp_click"),
     // Abandoned forms still waiting on someone. Converted rows are excluded, so

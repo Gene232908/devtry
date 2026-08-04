@@ -1,25 +1,30 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Ban, MessageCircle, Phone, Save } from "lucide-react";
+import { ArrowLeft, MessageCircle, Phone, Save } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { StatusPill } from "@/components/ui/Pill";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { MarkSpamAction } from "@/components/admin/MarkSpamAction";
 import { useLeads } from "@/lib/admin/leads-store";
 import { useUnsavedGuard } from "@/lib/admin/use-unsaved-guard";
 import { mockLeadEvents, Lead, LeadStatus } from "@/config/mock-data";
 import {
   DETAIL_STATUS_OPTIONS,
+  formatAed,
   formatDate,
   formatPhoneDisplay,
-  requiresEstimatedValue,
+  requiresPurchasePrice,
   STATUS_HINT,
   STATUS_LABEL,
 } from "@/lib/format";
+import { INVENTORY_STATUS_LABEL, type InventoryItem } from "@/lib/admin/inventory";
+import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
+import { demoInventory } from "@/config/demo-admin-data";
 import { whatsappLink } from "@/config/brand";
 
 // Forward moves only. "New" and "Pending" are both reached automatically —
@@ -33,14 +38,24 @@ const STATUS_OPTIONS = DETAIL_STATUS_OPTIONS.map((s) => ({
 
 const SELECTABLE = new Set<string>(DETAIL_STATUS_OPTIONS);
 
-type Draft = { status: LeadStatus; notes: string; value: string };
+type Draft = { status: LeadStatus; notes: string; purchasePrice: string; purchasedAt: string };
+
+/** `yyyy-mm-dd` in local time, for a native date input. */
+function todayInputValue(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
 
 function draftFromLead(lead: Lead): Draft {
   return {
     // A lead being viewed is by definition no longer New.
     status: lead.status === "new" ? "pending" : lead.status,
     notes: lead.notes ?? "",
-    value: lead.estimatedValueAed != null ? String(lead.estimatedValueAed) : "",
+    // Both are filled in from the inventory record once it loads — the purchase
+    // figures live on the car, not the lead. See migration 0014.
+    purchasePrice: "",
+    purchasedAt: todayInputValue(),
   };
 }
 
@@ -51,17 +66,19 @@ export function LeadDetail({ lead }: { lead: Lead }) {
   // a half-typed value or a mis-clicked status must not reach the database.
   const [draft, setDraft] = useState<Draft>(() => draftFromLead(lead));
   const [saved, setSaved] = useState<Draft>(() => draftFromLead(lead));
-  const [errors, setErrors] = useState<{ status?: string; notes?: string; value?: string }>({});
+  const [errors, setErrors] = useState<{ status?: string; notes?: string; purchasePrice?: string }>({});
+  // The car bought from this lead, if the deal has already been recorded.
+  const [car, setCar] = useState<InventoryItem | null>(null);
   const [justSaved, setJustSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const [spamOpen, setSpamOpen] = useState(false);
-  const [spamReason, setSpamReason] = useState("");
-  const [blocking, setBlocking] = useState(false);
-
   const dirty = useMemo(
-    () => draft.status !== saved.status || draft.notes !== saved.notes || draft.value !== saved.value,
+    () =>
+      draft.status !== saved.status ||
+      draft.notes !== saved.notes ||
+      draft.purchasePrice !== saved.purchasePrice ||
+      draft.purchasedAt !== saved.purchasedAt,
     [draft, saved],
   );
 
@@ -83,7 +100,46 @@ export function LeadDetail({ lead }: { lead: Lead }) {
     void updateLead(lead.id, { status: "pending" });
   }, [lead.id, lead.status, updateLead]);
 
-  const valueRequired = requiresEstimatedValue(draft.status);
+  // What was paid lives on the inventory record, so it is fetched rather than
+  // read off the lead. Loading it also fills the form, letting the owner
+  // correct a mistyped price by editing the figure already shown.
+  const loadCar = useCallback(async () => {
+    if (ADMIN_PREVIEW) {
+      setCar(demoInventory.find((i) => i.leadId === lead.id) ?? null);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/admin/inventory?leadId=${encodeURIComponent(lead.id)}`, { cache: "no-store" });
+      const body = await res.json();
+      if (res.ok && body.ok) setCar(body.data.items[0] ?? null);
+    } catch {
+      // Non-fatal: the rest of the lead still works without it.
+    }
+  }, [lead.id]);
+
+  useEffect(() => {
+    void loadCar();
+  }, [loadCar]);
+
+  // Seeds the form from the saved purchase once, without marking it dirty.
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (!car || seededRef.current) return;
+    seededRef.current = true;
+    const next: Draft = {
+      ...draftFromLead(lead),
+      notes: lead.notes ?? "",
+      purchasePrice: String(car.purchasePriceAed),
+      purchasedAt: car.purchasedAt.slice(0, 10),
+    };
+    setDraft(next);
+    setSaved(next);
+  }, [car, lead]);
+
+  const priceRequired = requiresPurchasePrice(draft.status);
+  // A sold car's purchase price is frozen into its commission entry; changing
+  // it afterwards would leave the ledger disagreeing with what was invoiced.
+  const priceLocked = car?.status === "sold";
 
   function validate(): boolean {
     const next: typeof errors = {};
@@ -91,12 +147,12 @@ export function LeadDetail({ lead }: { lead: Lead }) {
     if (!draft.status) next.status = "Choose a status.";
     if (!draft.notes.trim()) next.notes = "Notes are required before saving.";
 
-    if (valueRequired) {
-      const parsed = Number(draft.value);
-      if (!draft.value.trim()) {
-        next.value = "Estimated value is required for this status.";
+    if (priceRequired && !priceLocked) {
+      const parsed = Number(draft.purchasePrice);
+      if (!draft.purchasePrice.trim()) {
+        next.purchasePrice = "Enter what you actually paid for this car.";
       } else if (!Number.isFinite(parsed) || parsed <= 0) {
-        next.value = "Enter a valid amount.";
+        next.purchasePrice = "Enter a valid amount.";
       }
     }
 
@@ -110,12 +166,19 @@ export function LeadDetail({ lead }: { lead: Lead }) {
     setSaving(true);
     setSaveError(null);
 
+    const recordingPurchase = priceRequired && !priceLocked;
+
     const ok = await updateLead(lead.id, {
       status: draft.status,
       notes: draft.notes,
-      // Cleared when the status means no sale happened, so a stale figure never
-      // lingers on a lead that ended without one.
-      estimatedValueAed: valueRequired ? Number(draft.value) : null,
+      // Only sent at Deal. The server writes these to the car's inventory
+      // record, not to the lead, and creates that record if it is the first time.
+      ...(recordingPurchase
+        ? {
+            purchasePriceAed: Number(draft.purchasePrice),
+            purchasedAt: new Date(draft.purchasedAt).toISOString(),
+          }
+        : {}),
     });
 
     setSaving(false);
@@ -125,61 +188,15 @@ export function LeadDetail({ lead }: { lead: Lead }) {
       return;
     }
 
+    // Pick up the car that recording the deal just created, so the link to
+    // Inventory appears without a reload.
+    if (recordingPurchase) void loadCar();
+
     setSaved(draft);
     setErrors({});
     setJustSaved(true);
     if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
     savedTimerRef.current = setTimeout(() => setJustSaved(false), 2200);
-  }
-
-  /**
-   * Marking spam does two things, and the blocklist entry is the one that
-   * actually protects the account: every OTP that reaches WhatsApp is billed,
-   * so flagging the lead alone would leave the same number free to keep
-   * requesting codes. /api/otp/send refuses blocked numbers before contacting
-   * Meta, so from here on this sender costs nothing.
-   */
-  async function confirmSpam() {
-    const reason = spamReason.trim();
-    if (!reason) return;
-
-    setBlocking(true);
-    try {
-      await fetch("/api/admin/blocked-numbers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: lead.phoneE164,
-          reason: "manual_spam",
-          fullName: lead.fullName,
-          note: reason,
-          sourceLeadId: lead.id,
-        }),
-      });
-    } catch {
-      // Non-fatal: still flag the lead below so the admin sees it took effect.
-    } finally {
-      setBlocking(false);
-    }
-
-    // Keep the reason on the lead too, so the timeline explains the block.
-    const notes = `${draft.notes}\nMarked as spam: ${reason}`.trim();
-    // The API closes the lead automatically when is_spam flips to true.
-    const ok = await updateLead(lead.id, { isSpam: true, notes });
-
-    if (!ok) {
-      // The number is already blocked at this point — say so rather than
-      // implying nothing happened.
-      setSaveError("The number was blocked, but the lead could not be updated. Please try again.");
-      setSpamOpen(false);
-      return;
-    }
-
-    const next: Draft = { ...draft, notes, status: "closed" };
-    setDraft(next);
-    setSaved(next);
-    setSpamOpen(false);
-    setSpamReason("");
   }
 
   const events = mockLeadEvents[lead.id] ?? [
@@ -292,7 +309,7 @@ export function LeadDetail({ lead }: { lead: Lead }) {
           </Card>
 
           <Card className="flex flex-col gap-4 p-5">
-            <h3 className="text-fluid-0 text-text">Status &amp; value</h3>
+            <h3 className="text-fluid-0 text-text">Status &amp; purchase</h3>
 
             {/* The current status shows as the placeholder while it is one of
                 the automatic states (New/Pending), so the field still reads
@@ -305,15 +322,47 @@ export function LeadDetail({ lead }: { lead: Lead }) {
               error={errors.status}
               onChange={(v) => setDraft((d) => ({ ...d, status: v as LeadStatus }))}
             />
-            <Input
-              label={valueRequired ? "Estimated Value (AED) *" : "Estimated Value (AED)"}
-              inputMode="numeric"
-              value={draft.value}
-              error={errors.value}
-              disabled={!valueRequired}
-              onChange={(e) => setDraft((d) => ({ ...d, value: e.target.value }))}
-              placeholder={valueRequired ? "e.g. 185000" : "Not needed for a closed lead"}
-            />
+
+            {/* Money is asked for at Deal and nowhere else — that is the moment
+                the car was actually bought. Saving here also puts the car into
+                Inventory, so the owner never re-types the vehicle. */}
+            {priceRequired && (
+              <>
+                <Input
+                  label="Purchase Price (AED) *"
+                  inputMode="numeric"
+                  value={draft.purchasePrice}
+                  error={errors.purchasePrice}
+                  disabled={priceLocked}
+                  onChange={(e) => setDraft((d) => ({ ...d, purchasePrice: e.target.value }))}
+                  placeholder="e.g. 185000"
+                />
+                <Input
+                  label="Purchase date"
+                  type="date"
+                  value={draft.purchasedAt}
+                  disabled={priceLocked}
+                  onChange={(e) => setDraft((d) => ({ ...d, purchasedAt: e.target.value }))}
+                />
+                <p className="-mt-1 text-fluid--1 text-text-faint">
+                  {priceLocked
+                    ? "This car has been sold, so the price it was bought for can no longer be changed."
+                    : "Exactly what you paid the customer. Saving adds this car to your Inventory."}
+                </p>
+              </>
+            )}
+
+            {car && (
+              <Link
+                href="/admin/inventory"
+                className="flex items-center justify-between gap-3 rounded-card border border-border px-3 py-2.5 text-fluid--1 hover:border-gold/50"
+              >
+                <span className="text-text-muted">
+                  In Inventory · <span className="text-text">{INVENTORY_STATUS_LABEL[car.status]}</span>
+                </span>
+                <span className="text-gold">{formatAed(car.purchasePriceAed)}</span>
+              </Link>
+            )}
 
             <Button
               className="w-full"
@@ -331,61 +380,19 @@ export function LeadDetail({ lead }: { lead: Lead }) {
               </p>
             )}
 
-            <div className="border-t border-border pt-4">
-              <Button
-                variant="outline"
-                className="w-full text-danger hover:bg-danger/10"
-                disabled={blocking || lead.isSpam === true}
-                onClick={() => setSpamOpen(true)}
-              >
-                <Ban className="h-4 w-4" />
-                {lead.isSpam === true ? "Marked as spam" : "Mark as spam"}
-              </Button>
-              <p className="mt-2 text-fluid--1 text-text-faint">
-                Also blocks {formatPhoneDisplay(lead.phoneE164)} from requesting new verification codes. Undo it from{" "}
-                <Link href="/admin/blocked" className="text-gold hover:underline">
-                  Blocked Numbers
-                </Link>
-                .
-              </p>
-            </div>
+            <MarkSpamAction
+              lead={lead}
+              notes={draft.notes}
+              onMarked={(notes) => {
+                const next: Draft = { ...draft, notes, status: "closed" };
+                setDraft(next);
+                setSaved(next);
+              }}
+              onError={setSaveError}
+            />
           </Card>
         </div>
       </div>
-
-      <ConfirmDialog
-        open={spamOpen}
-        tone="danger"
-        title="Mark this lead as spam?"
-        description={
-          <>
-            This closes the lead and blocks <span className="text-text">{formatPhoneDisplay(lead.phoneE164)}</span> from
-            requesting any further verification codes. A reason is required so the block can be explained later.
-          </>
-        }
-        confirmLabel="Mark as spam"
-        cancelLabel="Cancel"
-        busy={blocking}
-        confirmDisabled={spamReason.trim().length === 0}
-        onConfirm={() => void confirmSpam()}
-        onCancel={() => {
-          setSpamOpen(false);
-          setSpamReason("");
-        }}
-      >
-        <label className="flex flex-col gap-1.5">
-          <span className="text-fluid--1 font-medium uppercase tracking-[0.14em] text-text-faint">
-            Reason <span className="text-danger">*</span>
-          </span>
-          <textarea
-            value={spamReason}
-            onChange={(e) => setSpamReason(e.target.value)}
-            rows={3}
-            placeholder="e.g. Repeated fake submissions, number not reachable."
-            className="w-full rounded-card border border-border bg-surface-2 p-3 text-fluid--1 text-text outline-none focus:gold-glow focus:border-gold"
-          />
-        </label>
-      </ConfirmDialog>
 
       <ConfirmDialog
         open={guard.pendingHref !== null}

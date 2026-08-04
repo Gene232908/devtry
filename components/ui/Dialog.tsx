@@ -1,8 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Stays mounted for the length of its exit animation before unmounting. A
+// dialog that vanishes the instant its `open` prop flips reads as a glitch —
+// especially in the valuation flow, where one dialog closing is immediately
+// followed by another opening.
+
+const EXIT_MS = 160;
 
 type DialogProps = {
   open: boolean;
@@ -10,9 +17,30 @@ type DialogProps = {
   title?: string;
   children: React.ReactNode;
   className?: string;
+  /** Hides the close button for steps the visitor should not dismiss mid-flight. */
+  hideClose?: boolean;
 };
 
-export function Dialog({ open, onClose, title, children, className }: DialogProps) {
+export function Dialog({ open, onClose, title, children, className, hideClose }: DialogProps) {
+  const [mounted, setMounted] = useState(open);
+  const [closing, setClosing] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      setMounted(true);
+      setClosing(false);
+      return;
+    }
+    if (!mounted) return;
+    setClosing(true);
+    timerRef.current = setTimeout(() => setMounted(false), EXIT_MS);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [open, mounted]);
+
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -26,11 +54,14 @@ export function Dialog({ open, onClose, title, children, className }: DialogProp
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!mounted) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 animate-fade-in"
+      className={cn(
+        "fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4",
+        closing ? "animate-overlay-out" : "animate-overlay-in",
+      )}
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -38,17 +69,26 @@ export function Dialog({ open, onClose, title, children, className }: DialogProp
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className={cn("w-full max-w-md rounded-card border border-border-gold/70 bg-bg-elev/95 p-6 card-shadow", className)}>
+      <div
+        className={cn(
+          "w-full max-w-md rounded-card border border-border-gold/70 bg-bg-elev/95 p-6 card-shadow",
+          closing ? "animate-pop-out" : "animate-pop-in",
+          "motion-reduce:animate-none",
+          className,
+        )}
+      >
         <div className="mb-4 flex items-center justify-between">
           {title && <h3 className="font-display text-fluid-2 text-text">{title}</h3>}
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="rounded-full p-1.5 text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          {!hideClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="ml-auto rounded-full p-1.5 text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          )}
         </div>
         {children}
       </div>

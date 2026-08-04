@@ -153,6 +153,7 @@ export function ValuationForm({ registerCapture }: { registerCapture?: (capture:
       <OtpModal
         phone={form.values.whatsapp}
         phoneVerification={form.phoneVerification}
+        submitting={form.state === "submitting"}
         onVerify={form.verifyPhoneOtp}
         onResend={form.resendOtp}
         onClose={form.cancelOtp}
