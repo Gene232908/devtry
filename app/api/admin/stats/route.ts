@@ -16,11 +16,15 @@ export async function GET() {
   const startOfToday = startOfUaeDayUtc();
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-  const [total, today, active, valued, visitors, whatsapp, incomplete] = await Promise.all([
+  const [total, today, active, visitors, whatsapp, incomplete] = await Promise.all([
     supabase.from("leads").select("id", { count: "exact", head: true }),
     supabase.from("leads").select("id", { count: "exact", head: true }).gte("created_at", startOfToday.toISOString()),
-    supabase.from("leads").select("id", { count: "exact", head: true }).in("status", ["pending", "contacted", "inspected"]),
-    supabase.from("leads").select("estimated_value_aed").not("estimated_value_aed", "is", null),
+    // "Active" = still being worked. Excludes 'new' (nobody has picked it up),
+    // 'deal' (bought — it is a car in Inventory now) and 'closed' (finished).
+    supabase
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["pending", "contacted", "inspection_scheduled", "inspected", "negotiating"]),
     supabase.from("events").select("id", { count: "exact", head: true }).eq("type", "page_view").gte("created_at", weekAgo),
     supabase.from("events").select("id", { count: "exact", head: true }).eq("type", "whatsapp_click"),
     // Abandoned forms still waiting on someone. Converted rows are excluded, so
@@ -28,16 +32,12 @@ export async function GET() {
     supabase.from("partial_leads").select("id", { count: "exact", head: true }).is("converted_lead_id", null),
   ]);
 
-  const values = (valued.data ?? []).map((r) => Number(r.estimated_value_aed)).filter((n) => !Number.isNaN(n));
-  const averageValue = values.length ? Math.round(values.reduce((s, n) => s + n, 0) / values.length) : 0;
-
   return NextResponse.json({
     ok: true,
     data: {
       totalLeads: total.count ?? 0,
       newToday: today.count ?? 0,
       activeLeads: active.count ?? 0,
-      averageValue,
       visitorsThisWeek: visitors.count ?? 0,
       whatsappClicks: whatsapp.count ?? 0,
       incompleteForms: incomplete.count ?? 0,

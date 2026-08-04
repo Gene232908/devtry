@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { brand } from "@/config/brand";
+import { randomId } from "@/lib/random-id";
 
 type Manager = { id: string; email: string };
 
@@ -25,7 +26,7 @@ export default function AdminSettingsPage() {
 
   function addManager() {
     if (!newManagerEmail.trim()) return;
-    setManagers((m) => [...m, { id: crypto.randomUUID(), email: newManagerEmail.trim() }]);
+    setManagers((m) => [...m, { id: randomId(), email: newManagerEmail.trim() }]);
     setNewManagerEmail("");
   }
 
