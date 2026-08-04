@@ -2,12 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ListChecks, Settings, Ban, FileClock } from "lucide-react";
+import { LayoutDashboard, ListChecks, Settings, Ban, FileClock, Car, Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Ordered to follow the car itself: leads come in, a deal turns one into stock,
+// stock is sold. Inventory sits directly after Leads because that is the
+// handover point between the two.
 const ENABLED = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/leads", label: "Leads", icon: ListChecks },
+  { href: "/admin/inventory", label: "Inventory", icon: Car },
+  { href: "/admin/commission", label: "Commission", icon: Percent },
   { href: "/admin/incomplete", label: "Incomplete Forms", icon: FileClock },
   { href: "/admin/blocked", label: "Blocked Numbers", icon: Ban },
   { href: "/admin/settings", label: "Settings", icon: Settings },

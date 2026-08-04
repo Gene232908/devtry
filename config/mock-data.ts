@@ -2,7 +2,16 @@
 // "closed" = the meet-up happened and no deal was reached.
 // "valuation_sent" is retired from the UI but still typed, so historical rows
 // loaded from the database remain valid.
-export type LeadStatus = "new" | "pending" | "contacted" | "inspected" | "deal" | "closed" | "valuation_sent";
+export type LeadStatus =
+  | "new"
+  | "pending"
+  | "contacted"
+  | "inspection_scheduled"
+  | "inspected"
+  | "negotiating"
+  | "deal"
+  | "closed"
+  | "valuation_sent";
 
 export type Lead = {
   id: string;
@@ -82,12 +91,8 @@ export function computeStats(leads: Lead[]) {
     (l) => l.status === "pending" || l.status === "contacted" || l.status === "inspected",
   ).length;
   const visitorsThisWeek = visitorsSeries.reduce((sum, d) => sum + d.visitors, 0);
-  const valued = leads.filter((l) => l.estimatedValueAed != null);
-  const averageValue = valued.length
-    ? Math.round(valued.reduce((sum, l) => sum + (l.estimatedValueAed ?? 0), 0) / valued.length)
-    : 0;
   const whatsappClicks = 615;
   // Demo-only figure; the live value comes from /api/admin/stats.
   const incompleteForms = 7;
-  return { totalLeads, newToday, activeLeads, visitorsThisWeek, averageValue, whatsappClicks, incompleteForms };
+  return { totalLeads, newToday, activeLeads, visitorsThisWeek, whatsappClicks, incompleteForms };
 }

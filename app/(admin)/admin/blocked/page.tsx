@@ -1,10 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Ban, RefreshCw, ShieldOff } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
+import { demoBlockedNumbers, demoSuspiciousNumbers } from "@/config/demo-admin-data";
 
 // Numbers that are refused before any WhatsApp message is sent, so a blocked
 // sender costs nothing. Also surfaces numbers that tripped the automatic OTP
@@ -16,6 +19,8 @@ type BlockedNumber = {
   reason: string;
   note: string | null;
   full_name: string | null;
+  /** Present when the block came from "Mark as spam" on a lead — makes the name a link back to it. */
+  source_lead_id: string | null;
   created_at: string;
 };
 
@@ -60,6 +65,16 @@ export default function BlockedNumbersPage() {
 
   const load = useCallback(async () => {
     setError(null);
+
+    // Milestone 2: design preview — demo rows only, so the real blocklist is
+    // never exposed and never altered from a walkthrough.
+    if (ADMIN_PREVIEW) {
+      setBlocked(demoBlockedNumbers);
+      setSuspicious(demoSuspiciousNumbers);
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch("/api/admin/blocked-numbers", { cache: "no-store" });
       const body = await res.json();
@@ -114,6 +129,34 @@ export default function BlockedNumbersPage() {
 
   async function runPending() {
     if (!pending) return;
+
+    // Milestone 2: nothing is written. The lists update so the flow can be
+    // demonstrated, but no number is actually blocked or unblocked.
+    if (ADMIN_PREVIEW) {
+      if (pending.kind === "block") {
+        const row = suspicious.find((s) => s.phone_e164 === pending.phone);
+        setSuspicious((current) => current.filter((s) => s.phone_e164 !== pending.phone));
+        if (row) {
+          setBlocked((current) => [
+            {
+              phone_e164: row.phone_e164,
+              reason: "otp_abuse",
+              note: "Blocked after repeated unverified code requests.",
+              full_name: null,
+              // Raised by the automatic guards, so there is no lead behind it.
+              source_lead_id: null,
+              created_at: new Date().toISOString(),
+            },
+            ...current,
+          ]);
+        }
+      } else {
+        setBlocked((current) => current.filter((b) => b.phone_e164 !== pending.phone));
+      }
+      setDialogOpen(false);
+      return;
+    }
+
     if (pending.kind === "block") {
       await blockNumber(pending.phone, "otp_abuse", "Blocked after repeated unverified code requests.");
     } else {
@@ -123,17 +166,15 @@ export default function BlockedNumbersPage() {
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-fluid-2 font-light text-text">Blocked Numbers</h1>
-          <p className="mt-1 text-fluid--1 text-text-muted">
-            Blocked numbers are refused before any WhatsApp message is sent, so they cost nothing.
-          </p>
-        </div>
-        <Button variant="outline" onClick={() => void load()}>
-          <RefreshCw className="h-4 w-4" /> Refresh
-        </Button>
+    // Header, spacing, card padding and table rhythm all mirror the Leads
+    // Directory. These are sibling pages in the same dashboard; anything that
+    // reads as a different design language just looks unfinished.
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="font-display text-fluid-3 text-text">Blocked Numbers</h1>
+        <p className="mt-1 text-fluid--1 text-text-muted">
+          Blocked numbers are refused before any WhatsApp message is sent, so they cost nothing.
+        </p>
       </div>
 
       {error && (
@@ -143,7 +184,7 @@ export default function BlockedNumbersPage() {
       )}
 
       {suspicious.length > 0 && (
-        <Card className="flex flex-col gap-3 p-5">
+        <Card className="p-5">
           <div>
             <h2 className="text-fluid-0 text-text">Suspicious in the last 24 hours</h2>
             <p className="mt-1 text-fluid--1 text-text-muted">
@@ -151,7 +192,7 @@ export default function BlockedNumbersPage() {
               real customer can trip this by mistake.
             </p>
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="mt-5 flex flex-col gap-2">
             {suspicious.map((row) => (
               <div
                 key={row.phone_e164}
@@ -178,7 +219,9 @@ export default function BlockedNumbersPage() {
       )}
 
       {loading ? (
-        <p className="text-fluid--1 text-text-muted">Loading…</p>
+        <Card className="p-5">
+          <p className="text-fluid--1 text-text-muted">Loading…</p>
+        </Card>
       ) : blocked.length === 0 ? (
         <Card className="p-8 text-center">
           <p className="text-fluid-0 text-text">No blocked numbers.</p>
@@ -187,42 +230,64 @@ export default function BlockedNumbersPage() {
           </p>
         </Card>
       ) : (
-        <Card className="overflow-x-auto p-0">
-          <table className="w-full min-w-[640px] border-collapse text-fluid--1">
-            <thead>
-              <tr className="border-b border-border text-left text-text-faint">
-                <th className="px-4 py-3 font-medium">Number</th>
-                <th className="px-4 py-3 font-medium">Name</th>
-                <th className="px-4 py-3 font-medium">Reason</th>
-                <th className="px-4 py-3 font-medium">Blocked</th>
-                <th className="px-4 py-3 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {blocked.map((row) => (
-                <tr key={row.phone_e164} className="border-b border-border/60 last:border-0">
-                  <td className="px-4 py-3 text-text">{row.phone_e164}</td>
-                  <td className="px-4 py-3 text-text-muted">{row.full_name || "—"}</td>
-                  <td className="px-4 py-3 text-text-muted">
-                    {REASON_LABELS[row.reason] ?? row.reason}
-                    {row.note && <span className="block text-text-faint">{row.note}</span>}
-                  </td>
-                  <td className="px-4 py-3 text-text-muted">{formatDate(row.created_at)}</td>
-                  <td className="px-4 py-3 text-right">
-                    <Button
-                      variant="outline"
-                      className="px-3"
-                      disabled={busy === row.phone_e164}
-                      onClick={() => ask({ kind: "unblock", phone: row.phone_e164 })}
-                      title="Allow this number to request codes again"
-                    >
-                      <ShieldOff className="h-4 w-4" /> Unblock
-                    </Button>
-                  </td>
+        <Card className="p-5">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-fluid--1 text-text-muted">
+              {blocked.length} blocked {blocked.length === 1 ? "number" : "numbers"}
+            </p>
+            <Button variant="outline" onClick={() => void load()}>
+              <RefreshCw className="h-4 w-4" /> Refresh
+            </Button>
+          </div>
+
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left text-fluid--1">
+              <thead>
+                <tr className="border-b border-border text-text-faint">
+                  <th className="py-2 pr-4 font-normal">Client Name</th>
+                  <th className="py-2 pr-4 font-normal">Number</th>
+                  <th className="py-2 pr-4 font-normal">Reason</th>
+                  <th className="py-2 pr-4 font-normal">Blocked</th>
+                  <th className="py-2 pr-1 font-normal text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {blocked.map((row) => (
+                  <tr key={row.phone_e164} className="border-b border-border last:border-0 hover:bg-surface-2/50">
+                    <td className="py-3 pr-4">
+                      {/* Linked back to the lead it was blocked from, where there
+                          is one — a block raised from the automatic guards has no
+                          lead behind it, so there is nowhere to go. */}
+                      {row.source_lead_id ? (
+                        <Link href={`/admin/leads/${row.source_lead_id}`} className="text-text hover:text-gold">
+                          {row.full_name || "Unnamed contact"}
+                        </Link>
+                      ) : (
+                        <span className="text-text-muted">{row.full_name || "—"}</span>
+                      )}
+                    </td>
+                    <td className="py-3 pr-4 text-text-muted">{row.phone_e164}</td>
+                    <td className="py-3 pr-4 text-text-muted">
+                      {REASON_LABELS[row.reason] ?? row.reason}
+                      {row.note && <span className="block text-text-faint">{row.note}</span>}
+                    </td>
+                    <td className="py-3 pr-4 text-text-muted">{formatDate(row.created_at)}</td>
+                    <td className="py-3 pl-2 pr-1 text-right">
+                      <Button
+                        variant="outline"
+                        className="px-3"
+                        disabled={busy === row.phone_e164}
+                        onClick={() => ask({ kind: "unblock", phone: row.phone_e164 })}
+                        title="Allow this number to request codes again"
+                      >
+                        <ShieldOff className="h-4 w-4" /> Unblock
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Card>
       )}
 

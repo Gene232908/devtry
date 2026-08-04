@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { computeStats, mockLeads, visitorsSeries, submissionsSeries } from "@/config/mock-data";
+import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 
 export type AdminStats = {
   totalLeads: number;
   newToday: number;
   activeLeads: number;
   visitorsThisWeek: number;
-  averageValue: number;
   whatsappClicks: number;
   /** Valuation forms started but never submitted, and not since converted. */
   incompleteForms: number;
@@ -38,6 +38,13 @@ export function useAdminStats() {
 
   useEffect(() => {
     let cancelled = false;
+
+    // Milestone 2: the dashboard is a design preview, so the summary cards and
+    // charts are rendered from the demo dataset rather than live counts.
+    if (ADMIN_PREVIEW) {
+      setState({ ...MOCK_STATE, isLoading: false });
+      return;
+    }
 
     async function load() {
       try {

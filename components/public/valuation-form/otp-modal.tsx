@@ -9,6 +9,8 @@ import type { PhoneVerification } from "./form.types";
 type Props = {
   phone: string;
   phoneVerification: PhoneVerification;
+  /** True while the verified lead is being saved — keeps this dialog on screen. */
+  submitting: boolean;
   onVerify: (code: string) => Promise<{ ok: boolean }>;
   onResend: () => void;
   onClose: () => void;
@@ -16,14 +18,20 @@ type Props = {
 
 const DEMO_CODE_HINT = "123456";
 
-export function OtpModal({ phone, phoneVerification, onVerify, onResend, onClose }: Props) {
+export function OtpModal({ phone, phoneVerification, submitting, onVerify, onResend, onClose }: Props) {
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [shake, setShake] = useState(false);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
-  const open = ["sending", "code_sent", "verifying", "error"].includes(phoneVerification.status);
+  // Deliberately stays open through submission. Verifying used to close this
+  // dialog the instant the code was accepted, leaving the screen empty while
+  // the lead saved and then snapping the thank-you in — the success had no
+  // visible moment of its own.
+  const open =
+    ["sending", "code_sent", "verifying", "error"].includes(phoneVerification.status) || submitting;
   const verifying = phoneVerification.status === "verifying";
+  const succeeded = submitting || phoneVerification.status === "verified";
   const showTestCodeHint = phoneVerification.devBypass;
 
   // Live 60s resend countdown.
@@ -72,6 +80,46 @@ export function OtpModal({ phone, phoneVerification, onVerify, onResend, onClose
       setDigits(pasted.split(""));
       onVerify(pasted);
     }
+  }
+
+  if (succeeded) {
+    // Same dialog, same position — only the contents change, so verification
+    // and the thank-you read as one continuous step rather than two windows.
+    //
+    // No tick here on purpose: the work is still in flight, and a success mark
+    // beside "sending" contradicts itself. The tick belongs to the thank-you,
+    // where it is actually true. An indeterminate sweep is used rather than a
+    // filling bar because the wait has no knowable length.
+    return (
+      <Dialog open={open} onClose={onClose} title="Almost done" hideClose>
+        <div className="flex flex-col gap-5 py-2 animate-fade-in">
+          <div className="flex flex-col gap-1.5">
+            <p className="text-fluid-0 leading-7 text-text">Your number is confirmed.</p>
+            <p className="text-fluid--1 text-text-muted" aria-live="polite">
+              Sending your request to the CarVibeDubai team…
+            </p>
+          </div>
+
+          {/* A band of light travelling a hairline track. The soft gradient
+              edges are what keep it from reading as a mechanical block. */}
+          <div
+            className="relative h-[3px] w-full overflow-hidden rounded-full bg-border-gold/25"
+            role="progressbar"
+            aria-label="Sending your request"
+          >
+            <div
+              aria-hidden="true"
+              className={cn(
+                "absolute inset-0 animate-progress-sweep",
+                "bg-[linear-gradient(90deg,transparent_0%,rgba(243,222,138,.15)_25%,rgba(243,222,138,.95)_50%,rgba(243,222,138,.15)_75%,transparent_100%)]",
+                // Reduced motion still gets a visible indicator, just a still one.
+                "motion-reduce:animate-none motion-reduce:bg-[linear-gradient(90deg,rgba(243,222,138,.5),rgba(243,222,138,.5))]",
+              )}
+            />
+          </div>
+        </div>
+      </Dialog>
+    );
   }
 
   return (
