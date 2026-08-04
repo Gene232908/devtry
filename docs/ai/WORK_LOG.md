@@ -4,6 +4,77 @@ This is the factual source for reports.
 
 Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
+## 2026-08-03
+
+### Completed
+
+- Task: Milestone 3 Phase 1 — bought-car inventory and the developer's 2% commission ledger, built from the client's milestone document (which differs from `CARVIBE_BUILD_PLAN.md` §18 M3; the client's document governs).
+- What changed:
+  - New migration `0014_inventory_and_commission.sql`: `inventory` and `commission_entries` tables, an `inventory_status` enum (`in_stock`/`reserved`/`sold`/`withdrawn`), RLS, grants, and two security-definer functions. `record_lead_deal()` moves a lead to `deal` and creates its inventory row in one transaction; `sell_inventory_item()` marks a car sold and writes its frozen commission entry in one transaction. Both are atomic on purpose — see `DECISIONS.md` ADR-001.
+  - `lib/admin/inventory.ts`: types, DB mapper, and `previewCommission()` for the live figure shown while the owner types a sale price. `lib/admin/inventory.test.ts` covers the agreed commercial rules (2% of profit, purchase price the only deduction, loss earns zero, no negative commission, fils rounding).
+  - `PATCH /api/leads/[id]` now accepts `purchase_price_aed`/`purchased_at` and routes the Deal transition through `record_lead_deal()`. Fixed an early return in that route that would have discarded timeline events when a request changed nothing else.
+  - New `GET /api/admin/inventory` (list, optional `?leadId=`) and `PATCH /api/admin/inventory/[id]` (`action: "sell"`, or plain status/notes). "Sold" is rejected as a plain status — a sale can only be recorded with its price.
+  - `LeadDetail.tsx`: "Estimated Value" replaced by "Purchase Price (AED)" plus a purchase date, shown only at Deal. The figures are read back from the car's inventory record, and are locked once it has sold.
+  - New `/admin/inventory` page and `SellCarDialog`, plus an Inventory entry in the sidebar and `demoInventory` rows for the preview walkthrough.
+  - `lib/format.ts`: `requiresEstimatedValue()` replaced by `requiresPurchasePrice()`. The `estimated_value_aed` column is untouched and all historical figures remain — it is simply no longer shown or collected.
+- Why it matters: this is the revenue mechanism of the milestone. It turns a lead that ended in a purchase into a tracked asset, and produces the auditable per-sale record the developer is paid against.
+
+### Verification
+
+- Type check: `npx tsc --noEmit` passed, no output.
+- Lint: `npm run lint` passed — "No ESLint warnings or errors".
+- Tests: `npm test` — 39 passed across 4 files, including 12 new commission/mapper tests.
+- Build: `npm run build` passed; `/admin/inventory`, `/api/admin/inventory` and `/api/admin/inventory/[id]` all present in the route table.
+- **Not verified:** nothing has been run against a real database. Migration 0014 has not been applied, so `record_lead_deal()` and `sell_inventory_item()` have never executed. No browser check either — `/admin/*` is behind Supabase Auth. See `KNOWN_ISSUES.md` ISSUE-005.
+
+### Decisions confirmed with the client this session
+
+- A car sold at a loss earns no commission, and that loss is not carried against other cars in the same period.
+- Only the vehicle purchase price is deducted from the selling price; repairs, registration and transport are not.
+- Inventory holds only cars that came from a website lead (no manual entry for now).
+- Purchase Price is a new field and Estimated Value is removed from the UI.
+
+### Also completed same day — Phase 2 and the pipeline statuses
+
+- Migration `0015_pipeline_statuses.sql`: adds `inspection_scheduled` and `negotiating`, the two stages the client's brief lists that the enum lacked. Wired through `STATUS_LABEL`, `STATUS_HINT`, `LEAD_PIPELINE`, `DETAIL_STATUS_OPTIONS`, `FILTER_STATUS_OPTIONS`, `Pill.tsx`, the `LeadStatus` type and the leads PATCH allowlist. `closed` is now labelled "Not Purchased" to match the brief's wording. The "active leads" stat was widened to include both new stages, or leads in them would have vanished from the count.
+- Migration `0016_commission_statements.sql`: monthly `commission_statements` (draft → issued → paid), `commission_entries.statement_id`, and two functions — `build_commission_statement()` (idempotent, refuses to touch an issued or paid month) and `set_commission_statement_status()` (forward-only).
+- The quarter is derived, not stored: `lib/admin/commission.ts` groups months into quarters and sums them. Storing quarter totals would create a second place claiming to know the number, and a backdated sale would eventually make the two disagree.
+- `GET /api/admin/commission` rebuilds open months on read, so the current month's total stays live without a scheduled job. `PATCH` accepts several ids so a whole quarter settles in one action, and reports how many months landed if one fails midway.
+- New `/admin/commission` page: quarters as cards, months as rows, outstanding vs paid-to-date, and "Issue quarter" / "Mark quarter paid".
+- `lib/admin/commission.test.ts`: 13 tests covering quarter grouping, year boundaries, roll-up status, and a timezone bug — `formatMonth` parses the date string by hand because `new Date("2026-08-01")` is UTC midnight and renders as 31 July anywhere behind UTC, mislabelling a statement by a whole month.
+
+### Verification (both phases)
+
+- Type check: `npx tsc --noEmit` clean. One real error was caught and fixed: iterating a `Map` directly is invalid at this project's TS target, so `groupIntoQuarters` uses `Array.from(...entries())`.
+- Lint: `npm run lint` — no warnings or errors.
+- Tests: `npm test` — 52 passed across 5 files.
+- Build: `npm run build:check` compiled successfully; `/admin/commission`, `/admin/inventory` and all three new API routes present.
+
+### Incident — dev server broken twice by running a build
+
+Ran `npm run build` while the user's `next dev` was serving on :3000. Both write
+to `/.next`, so the build replaced the dev server's compiled CSS chunks and every
+admin page rendered as unstyled HTML. Fixed by stopping dev, clearing `.next`
+and restarting — then caused the same failure a second time an hour later.
+
+Root-caused properly rather than relying on remembering: `next.config.mjs` now
+reads `distDir` from `NEXT_DIST_DIR`, and `npm run build:check`
+(`scripts/build-check.mjs`) runs a verification build against `.next-build`,
+leaving a running dev server untouched. Verified by building with the dev server
+up and confirming its CSS response was byte-identical afterwards. Recorded as
+`KNOWN_ISSUES.md` ISSUE-006, since the same failure appears repeatedly in this
+log's history.
+
+### Remaining work
+
+- Run migrations 0014, 0015 and 0016, then one real purchase → sale → statement cycle.
+- Set `ADMIN_PREVIEW = false` once that passes — but only after, or the owner's first click is an error.
+- Confirm whether the repo build plan's other M3 items (Gmail lead alerts, wiring the Settings page, security headers) are in scope; the client's milestone document does not mention them.
+
+### Non-technical explanation
+
+> When you agree a price and buy someone's car, you now mark that lead as a Deal and type what you paid. The car moves into a new "Inventory" tab by itself — you never re-type the car's details. When you later sell it, you press "Mark sold" and type the sale price; the system works out the profit and the developer's 2% right there on screen before you save, so there are no surprises. If a car sells for less than you paid, the profit shows as a loss and no 2% is charged on it. One database update still needs to be run before any of this works on the live site.
+
 ## 2026-07-17
 
 ### Completed

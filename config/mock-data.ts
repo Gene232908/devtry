@@ -2,7 +2,16 @@
 // "closed" = the meet-up happened and no deal was reached.
 // "valuation_sent" is retired from the UI but still typed, so historical rows
 // loaded from the database remain valid.
-export type LeadStatus = "new" | "pending" | "contacted" | "inspected" | "deal" | "closed" | "valuation_sent";
+export type LeadStatus =
+  | "new"
+  | "pending"
+  | "contacted"
+  | "inspection_scheduled"
+  | "inspected"
+  | "negotiating"
+  | "deal"
+  | "closed"
+  | "valuation_sent";
 
 export type Lead = {
   id: string;

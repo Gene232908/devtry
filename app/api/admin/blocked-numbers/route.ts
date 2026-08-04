@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { normalizeWhatsappPhone } from "@/lib/whatsapp/phone";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
+import { blockedByPreview } from "@/lib/admin/preview-guard";
 
 // Admin-only (gated by middleware.ts). Manages the hard blocklist that
 // /api/otp/send checks before sending anything, so a blocked number can never
@@ -67,6 +68,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const blocked = blockedByPreview();
+  if (blocked) return blocked;
+
   if (!isSupabaseConfigured()) return bad("Database is not configured.", 503);
 
   let body: { phone?: unknown; reason?: unknown; note?: unknown; fullName?: unknown; sourceLeadId?: unknown };
@@ -103,6 +107,9 @@ export async function POST(req: NextRequest) {
 
 /** Unblocks a number — the recovery path for a customer blocked by mistake. */
 export async function DELETE(req: NextRequest) {
+  const blocked = blockedByPreview();
+  if (blocked) return blocked;
+
   if (!isSupabaseConfigured()) return bad("Database is not configured.", 503);
 
   let body: { phone?: unknown };

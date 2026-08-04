@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/Select";
 import { StatusPill } from "@/components/ui/Pill";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useUnsavedGuard } from "@/lib/admin/use-unsaved-guard";
+import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 import {
   formatPartialDate,
   partialCarSummary,
@@ -83,6 +84,8 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
     if (promotedRef.current || partial.status !== "new") return;
     promotedRef.current = true;
     setStatus("pending");
+    // Milestone 2: shown but not persisted.
+    if (ADMIN_PREVIEW) return;
     void fetch(`/api/admin/partial-leads/${partial.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -101,6 +104,18 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
     setErrors({});
     setSaving(true);
     setError(null);
+
+    // Milestone 2: the preview never writes. The screen still behaves normally
+    // so the flow can be demonstrated; the change is simply not persisted.
+    if (ADMIN_PREVIEW) {
+      setSaved(draft);
+      setStatus(draft.status);
+      setJustSaved(true);
+      setSaving(false);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setJustSaved(false), 2200);
+      return;
+    }
 
     try {
       const res = await fetch(`/api/admin/partial-leads/${partial.id}`, {
@@ -131,6 +146,14 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
   }
 
   async function runPending() {
+    // Milestone 2: nothing is written — no number is blocked, nothing deleted.
+    if (ADMIN_PREVIEW) {
+      setSaved(draft);
+      setDialogOpen(false);
+      router.push("/admin/incomplete");
+      return;
+    }
+
     setBusy(true);
     setError(null);
 

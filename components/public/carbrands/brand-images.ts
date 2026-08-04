@@ -128,7 +128,7 @@ import b122 from "./carbrands123.png";
 import b123 from "./carbrands124.png";
 import b124 from "./carbrands125.png";
 import b125 from "./carbrands126.png";
-import b126 from "./carbrands127.jpg";
+import b126 from "./carbrands127.png";
 import b127 from "./carbrands128.png";
 import b128 from "./carbrands129.png";
 import b129 from "./carbrands130.png";
@@ -284,7 +284,7 @@ export const brandLogos: BrandLogo[] = [
   { img: b123, svg: false, file: "carbrands124.png" },
   { img: b124, svg: false, file: "carbrands125.png" },
   { img: b125, svg: false, file: "carbrands126.png" },
-  { img: b126, svg: false, file: "carbrands127.jpg" },
+  { img: b126, svg: false, file: "carbrands127.png" },
   { img: b127, svg: false, file: "carbrands128.png" },
   { img: b128, svg: false, file: "carbrands129.png" },
   { img: b129, svg: false, file: "carbrands130.png" },
