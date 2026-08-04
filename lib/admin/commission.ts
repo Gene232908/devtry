@@ -19,6 +19,15 @@ export type CommissionStatement = {
   issuedAt: string | null;
   paidAt: string | null;
   paymentNote: string;
+  /**
+   * How many of this statement's sales happened in an EARLIER month.
+   *
+   * A sale that lands after its own month has been issued or paid cannot be
+   * added to that settled figure, so it is billed here instead. Surfacing the
+   * count matters: without it, a month would quietly show more cars than were
+   * sold in it and nobody could explain the difference.
+   */
+  carriedCount: number;
 };
 
 export type Quarter = {
@@ -76,6 +85,12 @@ const MONTH_NAMES = [
 function parseMonth(iso: string): { year: number; month: number } {
   const [y, m] = iso.slice(0, 10).split("-").map(Number);
   return { year: y, month: m };
+}
+
+/** The first of the following month, `yyyy-mm-01`. Rolls the year over. */
+export function nextMonth(iso: string): string {
+  const { year, month } = parseMonth(iso);
+  return month === 12 ? `${year + 1}-01-01` : `${year}-${String(month + 1).padStart(2, "0")}-01`;
 }
 
 /** "August 2026" */
@@ -154,7 +169,7 @@ export type DbStatement = {
   payment_note: string | null;
 };
 
-export function mapDbStatement(r: DbStatement): CommissionStatement {
+export function mapDbStatement(r: DbStatement, carriedCount = 0): CommissionStatement {
   return {
     id: r.id,
     periodMonth: r.period_month.slice(0, 10),
@@ -165,7 +180,13 @@ export function mapDbStatement(r: DbStatement): CommissionStatement {
     issuedAt: r.issued_at,
     paidAt: r.paid_at,
     paymentNote: r.payment_note ?? "",
+    carriedCount,
   };
+}
+
+/** True when this sale happened outside the month billing it. */
+export function isCarriedForward(soldAt: string, periodMonth: string): boolean {
+  return soldAt.slice(0, 7) !== periodMonth.slice(0, 7);
 }
 
 /**
