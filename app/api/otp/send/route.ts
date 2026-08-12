@@ -13,6 +13,15 @@ const OTP_TTL_MS = 5 * 60 * 1000;
 const RESEND_COOLDOWN_SEC = 60;
 const MAX_ATTEMPTS = 5;
 
+/**
+ * Lead statuses that let the same number verify again.
+ *
+ * Both mean the conversation ENDED: 'deal' — the car was bought; 'closed' —
+ * they met and it was not purchased. Anything else is still open, and someone
+ * whose enquiry is open does not need to prove their number a second time.
+ */
+const REOPENABLE_STATUSES = new Set(["deal", "closed"]);
+
 function err(kind: string, message: string, status: number) {
   return NextResponse.json({ ok: false, error: { kind, message } }, { status });
 }
@@ -75,6 +84,64 @@ export async function POST(req: NextRequest) {
       // nothing about why, and a wrongly-blocked customer still gets a route in.
       void logOtpAttempt({ phone, ip, action: "send", success: false });
       return err("daily_limit", "Too many verification requests. Our team will contact you shortly.", 429);
+    }
+    // A number that has already been through the form is not asked to verify
+    // again. Their details are with the business; another code proves nothing
+    // and costs a billed WhatsApp message every time they revisit the site.
+    //
+    // The exception is a lead that has REACHED AN END: 'deal' (the car was
+    // bought) and 'closed' (met, not purchased). Those conversations are
+    // finished, so the same person selling a second car is a genuinely new
+    // enquiry and must be able to verify again.
+    //
+    // Deliberately a distinct error kind rather than reusing the rate-limit
+    // copy: this is not a refusal to be worked around, it is an answer — "we
+    // have your details" — and the form says exactly that instead of showing a
+    // code box that can never be satisfied.
+    // BOTH tables count as "we have your details".
+    //
+    // Checking `leads` alone missed the more common case: someone who filled in
+    // their number and car and then closed the tab has a `partial_leads` row and
+    // no lead at all. Their information is sitting in Incomplete Forms — the
+    // business can already call them — so asking them to verify again on their
+    // next visit is exactly the loop this is meant to stop.
+    //
+    // Converted captures are skipped because the lead they became is authoritative
+    // and is checked directly.
+    const [leadRes, partialRes] = await Promise.all([
+      supabase
+        .from("leads")
+        .select("status")
+        .eq("phone_e164", phone)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("partial_leads")
+        .select("status")
+        .eq("phone_e164", phone)
+        .is("converted_lead_id", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+    const onFile = leadRes.data ?? partialRes.data;
+
+    if (onFile && !REOPENABLE_STATUSES.has(onFile.status)) {
+      // Deliberately NOT logged as a failed attempt.
+      //
+      // `otp_attempts` feeds the "Hit a limit" table, which exists to surface
+      // abuse. This is the opposite: a customer whose details the business
+      // already has, being told so. Logging it put well-behaved people into an
+      // abuse list with a Block button next to their name — and since their
+      // record is already visible under Incomplete Forms or Leads, the entry
+      // added nothing except the suggestion that they had done something wrong.
+      return err(
+        "already_submitted",
+        "Your information has already been received by our management. We will get back to you as soon as possible.",
+        409,
+      );
     }
   } catch {
     // non-fatal

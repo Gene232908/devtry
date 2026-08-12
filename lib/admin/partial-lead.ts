@@ -33,15 +33,22 @@ export const PARTIAL_LEAD_COLUMNS =
  * two different status lists would make the two screens read as if they
  * described different processes.
  *
- * Only forward moves are offered. 'new' and 'pending' are both valid states in
- * the database — a capture starts on 'new' and becomes 'pending' the moment
- * someone opens it — but neither is selectable, because choosing them would
- * mean claiming a record had gone backwards to "not looked at yet".
+ * Every state is selectable, including moving back to 'new'.
+ *
+ * This used to offer forward moves only, on the reasoning that a record could
+ * not honestly go back to "nobody has looked at this". That reasoning depended
+ * on 'pending' being reached AUTOMATICALLY when the record was opened — so the
+ * status was a fact about the system, not a judgement, and reversing it would
+ * have been a lie.
+ *
+ * Opening a record no longer changes anything, so the status is now entirely a
+ * human judgement about where the conversation stands. A judgement made by
+ * mistake has to be reversible, which means 'new' has to be offered.
  */
-export const PARTIAL_STATUSES = ["contacted", "inspected", "deal", "closed"] as const;
+export const PARTIAL_STATUSES = ["new", "pending", "contacted", "inspected", "deal", "closed"] as const;
 
-/** Everything the database will accept, including the two states reached automatically. */
-export const PARTIAL_STATUSES_ALLOWED = ["new", "pending", ...PARTIAL_STATUSES] as const;
+/** Everything the database will accept. Identical to the selectable list. */
+export const PARTIAL_STATUSES_ALLOWED = PARTIAL_STATUSES;
 
 export const PARTIAL_STEP_LABELS: Record<number, string> = {
   1: "Contact only",

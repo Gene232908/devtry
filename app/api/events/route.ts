@@ -3,7 +3,10 @@ import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { isRateLimited } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/server/ip";
 
-const ALLOWED_TYPES = new Set(["page_view", "whatsapp_click"]);
+// "call_click" and "whatsapp_click" are the two contact buttons in the navbar.
+// Both were previously untracked — whatsapp_click was accepted here and counted
+// on the Overview, but nothing ever sent one.
+const ALLOWED_TYPES = new Set(["page_view", "whatsapp_click", "call_click"]);
 
 export async function POST(req: NextRequest) {
   // Always succeed silently for the client; analytics must never disrupt UX.

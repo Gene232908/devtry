@@ -18,6 +18,26 @@ export function getSupabaseAdmin(): SupabaseClient {
 
   cached = createClient(url, secret, {
     auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      /**
+       * Every query goes to the database, never to Next's Data Cache.
+       *
+       * Next patches the global `fetch` inside Server Components and caches
+       * responses by default. supabase-js sets no `cache` option of its own, so
+       * admin queries were being served from that cache: `router.refresh()`
+       * re-ran the render, the render "fetched" again, and Next returned the
+       * stored response. The figures only moved on a hard reload, which is a
+       * new process with an empty cache — exactly the symptom.
+       *
+       * `force-dynamic` on each page was not enough on its own, and relying on
+       * it was the mistake: it governs the ROUTE, while this governs the
+       * REQUEST, and this is the layer that was serving stale rows.
+       *
+       * There is nothing to lose by disabling it. Admin data is live by
+       * definition — a cached count is not a saving, it is a wrong answer.
+       */
+      fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+    },
   });
   return cached;
 }

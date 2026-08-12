@@ -36,8 +36,22 @@
   --text-faint-rgb: 110 103 92;
   --success: #34c77b;
   --success-rgb: 52 199 123;
-  --warning: #e0b341;
-  --warning-rgb: 224 179 65;
+  /* A real orange, not a second gold.
+   *
+   * This was #e0b341 — rgb(224,179,65) — against a --gold of #d4af4e —
+   * rgb(212,175,78). Two values that close read as the same colour, which made
+   * the "Pending" status pill indistinguishable from "Deal", the one status
+   * that is supposed to stand out because it means a car was actually bought.
+   * It also flattened every genuine warning ("Unsaved changes", a partly-issued
+   * commission quarter) into the brand's own accent, so nothing announced
+   * itself.
+   *
+   * #f0883c sits at roughly 25° hue against gold's 44°, and drops the green
+   * channel from 175 to 136 — separated by hue AND by weight, so the two stay
+   * distinct in dark mode and for red-green colour blindness, where a pure
+   * hue shift alone would not be enough. */
+  --warning: #f0883c;
+  --warning-rgb: 240 136 60;
   --info: #5aa9e6;
   --info-rgb: 90 169 230;
   --danger: #e5484d;

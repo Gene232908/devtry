@@ -10,9 +10,13 @@ export function useLeadsFilter(leads: Lead[]) {
   // filtering, so typing doesn't re-filter/re-sort/re-render on every keystroke.
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<LeadStatus | "all">("all");
-  const [make, setMake] = useState<string>("all");
-  const [emirate, setEmirateState] = useState<string>("all");
+  // Status, make and emirate are multi-select. An EMPTY array means "no filter"
+  // rather than "match nothing" — an untouched control should show everything,
+  // and unticking the last box has to return the full list rather than strand
+  // the user on an empty table.
+  const [statuses, setStatuses] = useState<LeadStatus[]>([]);
+  const [makes, setMakes] = useState<string[]>([]);
+  const [emirates, setEmirates] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
@@ -29,9 +33,15 @@ export function useLeadsFilter(leads: Lead[]) {
       const q = search.trim().toLowerCase();
       result = result.filter((l) => l.fullName.toLowerCase().includes(q) || l.phoneE164.includes(q));
     }
-    if (status !== "all") result = result.filter((l) => l.status === status);
-    if (make !== "all") result = result.filter((l) => l.make === make);
-    if (emirate !== "all") result = result.filter((l) => l.location === emirate);
+    // Within one filter the ticked options are OR'd (show New *or* Pending);
+    // across filters they are AND'd (a New lead *and* a Toyota). That is what
+    // stacking filters is normally taken to mean, and it is the only reading
+    // where adding a tick can never remove a row you could already see.
+    if (statuses.length) result = result.filter((l) => statuses.includes(l.status));
+    if (makes.length) result = result.filter((l) => makes.includes(l.make));
+    // `location` is optional on a lead, and a lead with no emirate recorded
+    // matches no emirate box — it is unknown, not universal.
+    if (emirates.length) result = result.filter((l) => l.location != null && emirates.includes(l.location));
 
     const sorted = [...result].sort((a, b) => {
       // New always floats to the top, whatever else is selected — untouched
@@ -47,7 +57,7 @@ export function useLeadsFilter(leads: Lead[]) {
       return sortDir === "asc" ? cmp : -cmp;
     });
     return sorted;
-  }, [leads, search, status, make, emirate, sortKey, sortDir]);
+  }, [leads, search, statuses, makes, emirates, sortKey, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -72,19 +82,27 @@ export function useLeadsFilter(leads: Lead[]) {
       setSearchInput(v);
       setPage(1);
     },
-    status,
-    setStatus: (v: LeadStatus | "all") => {
-      setStatus(v);
+    statuses,
+    setStatuses: (v: LeadStatus[]) => {
+      setStatuses(v);
       setPage(1);
     },
-    make,
-    setMake: (v: string) => {
-      setMake(v);
+    makes,
+    setMakes: (v: string[]) => {
+      setMakes(v);
       setPage(1);
     },
-    emirate,
-    setEmirate: (v: string) => {
-      setEmirateState(v);
+    emirates,
+    setEmirates: (v: string[]) => {
+      setEmirates(v);
+      setPage(1);
+    },
+    /** True when any of the three multi-selects is narrowing the list. */
+    hasFilters: statuses.length > 0 || makes.length > 0 || emirates.length > 0,
+    clearFilters: () => {
+      setStatuses([]);
+      setMakes([]);
+      setEmirates([]);
       setPage(1);
     },
     sortKey,

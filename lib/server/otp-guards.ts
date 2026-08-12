@@ -29,6 +29,32 @@ function capFromEnv(name: string, fallback: number): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+export type OtpCaps = {
+  global: number;
+  phone: number;
+  ip: number;
+  unverified: number;
+};
+
+/**
+ * The caps in force, read from the same env overrides the guards use.
+ *
+ * Exported so the Blocked Numbers screen can report "4 of 5 sends used" against
+ * the real ceiling rather than a hard-coded guess that drifts the moment an
+ * override is set.
+ */
+export function getOtpCaps(): OtpCaps {
+  return {
+    global: capFromEnv("OTP_GLOBAL_DAILY_CAP", 300),
+    phone: capFromEnv("OTP_PHONE_DAILY_CAP", 5),
+    ip: capFromEnv("OTP_IP_DAILY_CAP", 10),
+    unverified: capFromEnv("OTP_UNVERIFIED_STREAK_CAP", 3),
+  };
+}
+
+/** The window every guard measures over. */
+export const OTP_GUARD_WINDOW_MS = WINDOW_MS;
+
 export type OtpGuardDenial = {
   /**
    * Deliberately distinct from "rate_limited" (the 60-second resend cooldown).

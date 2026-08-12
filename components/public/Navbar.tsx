@@ -6,6 +6,7 @@ import { Menu, MessageCircle, Phone, X } from "lucide-react";
 import { Logo } from "./Logo";
 import { cn } from "@/lib/utils";
 import { openValuationModal } from "./open-valuation-modal";
+import { trackContactClick } from "@/lib/track-click";
 
 const COMING_SOON_LABELS = ["Buy"];
 
@@ -128,7 +129,10 @@ export function Navbar() {
         <div className="hidden items-center gap-3 lg:flex">
           <button
             type="button"
-            onClick={openValuationModal}
+            onClick={() => {
+              trackContactClick("call_click");
+              openValuationModal();
+            }}
             className="inline-flex h-10 items-center gap-2 rounded-full border border-gold bg-black/35 px-4 text-[0.8rem] font-medium text-gold transition-colors hover:bg-gold hover:text-black"
           >
             Call Now
@@ -136,7 +140,10 @@ export function Navbar() {
           </button>
           <button
             type="button"
-            onClick={openValuationModal}
+            onClick={() => {
+              trackContactClick("whatsapp_click");
+              openValuationModal();
+            }}
             className="inline-flex h-10 items-center gap-2 rounded-full bg-gold px-4 text-[0.8rem] font-semibold text-black transition-colors hover:bg-gold-hi"
           >
             Message Us

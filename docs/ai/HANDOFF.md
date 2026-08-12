@@ -3,13 +3,14 @@
 ## Current state
 
 - Phase: backend finalization in progress (`FINISH THE PRODUCT` sent 2026-07-17).
-- Backend: Supabase + Twilio code restored and adapted on `main`, code-complete. One manual step open — see below.
+- Backend: Supabase with Meta WhatsApp Cloud API OTP is the active valuation-form path; the older Twilio configuration remains only as legacy reference. One manual step open — see below.
 - Supabase: live project, credentials configured in `.env.local`. Migrations 0001-0005 already applied previously; 0006 (new this session: trim/description/option_level columns, BMW catalog seed) still needs to be run manually in the Supabase SQL Editor.
 - Client milestone package: generated under `docs/client/` and aligned with the signed proposal PDF plus `CARVIBE_BUILD_PLAN.md`.
 - Milestone 1 public landing page is on `main`, merged from the `milestone-1` branch's UI work, now with the real backend wired underneath (graceful fallback to demo/mock mode when Supabase/Twilio aren't reachable).
 - Weekly report: `CALLME`.
 - Five-part presentation: `DAY5REPORT`.
 - Backend finalization: `FINISH THE PRODUCT` (already sent — see 2026-07-17 in `WORK_LOG.md` for the full breakdown).
+- WhatsApp OTP production onboarding: when Sir Nyash has supplied and authorized the real business number, send `NABIGAY NA NI SIR NYASH ANG WHATSAPP BUSINESS NUMBER`. `AGENTS.md` will require the next AI to read `docs/ai/WHATSAPP_OTP_PRODUCTION_SETUP.md` and guide the setup one safe checkpoint at a time.
 
 ## Last completed work
 
@@ -19,7 +20,7 @@ Final Milestone 1 landing polish is in place: the approved hero section was pres
 
 Milestone 1 meeting materials were generated under `docs/meetings/`: `Milestone1_Report_2026-07-12.md` and `Milestone1_Report_2026-07-12.docx`. The Word file includes a simple non-technical script, live demo walkthrough, and likely client question scenarios.
 
-Git for Windows was installed via `winget` during release preparation. The Milestone 1 landing package was committed and pushed to `origin/main` (`bdd265a`). The current shell PATH has not refreshed, so use `C:\Program Files\Git\cmd\git.exe` directly if needed.
+The active local workspace is `E:\Github\carvibe`. Use `E:\Github\Open-CarVibe.cmd` for the isolated VS Code profile or `E:\Github\CarVibe-Shell.cmd` for a terminal; both route CarVibe project caches and temporary data to `E:\Github\.carvibe-dev`. Git, Node.js, and VS Code executables remain installed on `C:`, but project files, `.git`, dependencies, build output, npm cache, Git global identity, and isolated editor data are on `E:`. The former `D:\github\carvibe` data was moved to the backup `E:\Github\.carvibe-d-backup-20260804`; no CarVibe files remain on `D:`.
 
 Tightened "Why Choose Us" sizing after the client said it took up more than a full screen's height - swapped the spacious `py-section` padding token for an explicit compact `min-h-[540px]/[580px]`, cut the statement text size roughly in half (`text-fluid-2/3` instead of `text-fluid-4/5`), and tightened all the internal spacing/button sizes for a leaner, more minimalist proportion.
 

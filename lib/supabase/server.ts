@@ -17,6 +17,12 @@ export function getSupabaseServer(): SupabaseClient {
   const cookieStore = cookies();
 
   return createServerClient(url, anon, {
+    // Same reason as the admin client: Next caches `fetch` inside Server
+    // Components, and "who is logged in" must never be answered from a stored
+    // response.
+    global: {
+      fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+    },
     cookies: {
       getAll() {
         return cookieStore.getAll();

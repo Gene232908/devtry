@@ -39,6 +39,21 @@ export type InventoryItem = {
   notes: string;
   /** Present only once the car has been sold. */
   commission: CommissionEntry | null;
+  /**
+   * True when nobody has established that the seller owns the phone number.
+   *
+   * Keyed on `leads.phone_verified`, NOT on where the lead came from. Those are
+   * different facts: origin never changes, but trust does — an admin who ticks
+   * "I have spoken to this customer on this number" while recording a purchase
+   * has verified it just as surely as an OTP would, and the badge has to stop
+   * accusing them at that point.
+   *
+   * Read from the lead rather than snapshotted here, so it stays right when the
+   * lead is corrected later. Only an explicit `false` shows the badge: if the
+   * relation could not be read there is no evidence of anything, and silence is
+   * better than an accusation drawn from a missing join.
+   */
+  fromUnverifiedLead: boolean;
 };
 
 export const INVENTORY_STATUS_LABEL: Record<InventoryStatus, string> = {
@@ -56,13 +71,26 @@ export const INVENTORY_STATUS_HINT: Record<InventoryStatus, string> = {
 };
 
 /**
- * Statuses selectable before a sale. "Sold" is missing on purpose: it is not a
- * status you pick, it is the result of recording a sale price, which happens
- * through its own action so the figures can never be skipped.
+ * Statuses an admin may set directly.
+ *
+ * "sold" is absent on purpose: it is not a status you pick, it is the result of
+ * recording a sale price, which happens through its own action so the money can
+ * never be skipped.
+ *
+ * "reserved" and "withdrawn" were removed from the interface. Both were fully
+ * implemented server-side and offered in the filter, but nothing in the admin
+ * could ever put a car into either state — so the filter offered two options
+ * that could never match a row, and the API accepted two statuses no screen
+ * could send. A control that cannot do anything is worse than a missing one: it
+ * implies a capability the product does not have.
+ *
+ * They remain in the database enum and in `InventoryStatus`. Removing them
+ * there would need a migration, and leaving them costs nothing — a car that
+ * somehow held one would still render its label rather than a blank.
  */
-export const INVENTORY_STATUS_OPTIONS: InventoryStatus[] = ["in_stock", "reserved", "withdrawn"];
+export const INVENTORY_STATUS_OPTIONS: InventoryStatus[] = ["in_stock"];
 
-export const INVENTORY_FILTER_OPTIONS: InventoryStatus[] = ["in_stock", "reserved", "sold", "withdrawn"];
+export const INVENTORY_FILTER_OPTIONS: InventoryStatus[] = ["in_stock", "sold"];
 
 function round2(n: number): number {
   return Math.round((n + Number.EPSILON) * 100) / 100;
@@ -104,6 +132,8 @@ export type DbInventory = {
   // array when it cannot prove uniqueness. Both are accepted so a schema-cache
   // quirk degrades to "commission not shown" instead of a crash on a money screen.
   commission_entries?: DbCommissionEntry | DbCommissionEntry[] | null;
+  /** Embedded from the parent lead. Same one-or-array shape caveat as above. */
+  leads?: { phone_verified?: boolean | null } | Array<{ phone_verified?: boolean | null }> | null;
 };
 
 export type DbCommissionEntry = {
@@ -122,6 +152,9 @@ function num(v: number | string | null | undefined): number | null {
 export function mapDbInventory(r: DbInventory): InventoryItem {
   const raw = r.commission_entries;
   const entry = Array.isArray(raw) ? raw[0] : raw;
+
+  const leadRel = Array.isArray(r.leads) ? r.leads[0] : r.leads;
+  const leadPhoneVerified = leadRel?.phone_verified ?? null;
 
   return {
     id: r.id,
@@ -145,6 +178,7 @@ export function mapDbInventory(r: DbInventory): InventoryItem {
           soldAt: entry.sold_at,
         }
       : null,
+    fromUnverifiedLead: leadPhoneVerified === false,
   };
 }
 

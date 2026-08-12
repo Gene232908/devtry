@@ -112,6 +112,46 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (!STATUSES.has(body.status)) {
       return NextResponse.json({ ok: false, error: { message: "Invalid status." } }, { status: 400 });
     }
+
+    // A lead that has a car cannot leave "deal".
+    //
+    // record_lead_deal() guarantees a lead at 'deal' has an inventory row, but
+    // nothing guarded the way back out — so moving the lead to any other status
+    // left the car stranded: still in Inventory, still holding the money paid
+    // for it, but no longer reachable from a lead anyone would look at. If that
+    // car is later sold, its commission is calculated against a purchase the
+    // lead no longer claims to have made.
+    //
+    // This is not hypothetical. It happened twice in ten seconds on one lead in
+    // production, because the detail form could silently re-seed its status
+    // field from a stale copy of the lead and the next Save wrote that stale
+    // value back. The form bug is fixed too, but the invariant belongs here:
+    // this is the only place every client has to come through.
+    //
+    // Undoing a purchase is a real thing an owner may need, but it means
+    // removing a car from stock and unwinding money — a deliberate action with
+    // its own confirmation, not a side effect of changing a dropdown.
+    if (current.status === "deal" && body.status !== "deal") {
+      const { data: car } = await supabase
+        .from("inventory")
+        .select("id, status")
+        .eq("lead_id", id)
+        .maybeSingle();
+
+      if (car) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: {
+              message:
+                "This lead has a car recorded against it in Inventory, so it cannot be moved out of Deal. Withdraw the car from Inventory first if the purchase did not go ahead.",
+            },
+          },
+          { status: 409 },
+        );
+      }
+    }
+
     if (body.status !== current.status) {
       update.status = body.status;
       events.push({ lead_id: id, type: "status_change", meta: { from: current.status, to: body.status } });

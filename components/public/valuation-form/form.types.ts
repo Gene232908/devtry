@@ -26,6 +26,14 @@ export type PhoneVerificationStatus =
   | "code_sent"
   | "verifying"
   | "verified"
+  /**
+   * This number already has an open enquiry, so no code was sent.
+   *
+   * Deliberately its own state rather than an "error": nothing went wrong and
+   * there is nothing to retry. Showing the code box here would present a field
+   * that can never be satisfied, which reads as the site being broken.
+   */
+  | "already_submitted"
   | "error";
 
 export type PhoneVerification = {

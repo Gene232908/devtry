@@ -8,10 +8,19 @@ import { brand } from "@/config/brand";
 import { copy } from "@/config/copy";
 import { cn } from "@/lib/utils";
 
+// The "Admin" link was removed deliberately. It advertised the existence and
+// exact location of the staff login to every visitor and every crawler, which
+// is free reconnaissance for anyone probing the site.
+//
+// To be clear about what this does and does not buy: the dashboard is protected
+// by Supabase Auth and middleware.ts, not by the URL being hard to guess.
+// Removing the link cuts down drive-by scanning and casual poking; it is not a
+// security control, and /admin/login still answers if it is requested directly.
+// The real defences are the session check, the password policy and the rate
+// limiting, and those are unchanged.
 const FOOTER_LINKS = [
   { label: "Privacy", href: "/privacy" },
   { label: "Terms", href: "/terms" },
-  { label: "Admin", href: "/admin" },
 ];
 
 const CONTACT_ROWS: Array<{ label: string; value: string; icon: LucideIcon; href?: string }> = [

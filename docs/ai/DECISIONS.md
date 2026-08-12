@@ -69,6 +69,140 @@ A separate `inventory` table owns all the money, linked to the lead by a
   the money onto a different table. The client scoped that out for now.
 - Costs one extra fetch on the lead detail page to show what was paid.
 
+## ADR-003 — Middleware verifies the session JWT locally, not against the auth server
+
+**Date:** 2026-08-06
+**Status:** Accepted
+
+### Context
+
+Every `/admin/*` page and every `/api/admin/*` request passes through
+`middleware.ts`, which called `supabase.auth.getUser()`. That is not a local
+check: it sends a request to Supabase's auth server on every single invocation.
+Measured from the development machine, one round trip to this project is
+**~450ms** (TCP 35–73ms, TLS 105–166ms, TTFB ~410–425ms warm, 1.09s cold).
+
+The middleware then ran a second, sequential query for `must_change_password`,
+so each request cost ~900ms before any real work began. Because every admin
+page is a client component that fetches its data after hydration, one sidebar
+click paid that toll twice — once for the navigation, once for the API call it
+triggers — for **~2,250ms of strictly sequential network** before a row painted:
+
+```
+click → nav middleware (900ms) → hydrate → API middleware (900ms) → query (450ms)
+```
+
+### Decision
+
+Use `supabase.auth.getClaims()` instead. This project signs its JWTs with an
+**asymmetric ES256 key** (confirmed: `/auth/v1/.well-known/jwks.json` returns an
+ES256 key, and the anon key is a new-style `sb_...` publishable key), so
+`getClaims()` fetches the JWKS once and verifies each token's signature locally
+with WebCrypto.
+
+Separately, the `must_change_password` query is now gated to `isAdminPage`.
+Both of its outcomes are redirects and an API route cannot be redirected, so on
+`/api/admin/*` the query was executed and its result discarded, unread.
+
+### Alternatives
+
+- Keep `getUser()` and accept the latency.
+- Cache the profile flag in a cookie — adds a staleness failure mode.
+- Move `must_change_password` into the JWT via a Custom Access Token Hook.
+  Still the best long-term answer; needs a migration and dashboard config.
+
+### Consequences
+
+- One sidebar click drops from ~2,250ms to ~900ms of network (~60% less).
+- **The JWKS is fetched once per server process, not per request.** This matters
+  because middleware constructs a new client per request. `GLOBAL_JWKS` in
+  `auth-js` is module-level and shared across all instances with the same
+  storage key; the constructor's apparent reset is dead code, since the getter
+  returns a truthy `{ keys: [] }` fallback.
+- **Session refresh is unchanged.** `getClaims()` calls `getSession()`
+  internally, which refreshes an about-to-expire token before validating it, so
+  the `setAll()` cookie handler still writes refreshed cookies as before.
+- This remains real cryptographic verification, not a decode. A tampered,
+  unsigned, or expired token is rejected; `exp` is validated by default.
+- **The cost:** a session revoked server-side mid-token is no longer detected.
+  A signed-out or deleted account keeps access until its access token expires —
+  Supabase default **1 hour**. Shorten the project's JWT expiry to tighten that
+  window. This was accepted deliberately for an admin dashboard with a small,
+  known set of operators.
+- Dropping the profile query on API routes changes no authorization:
+  `must_change_password` never gated API access, only which page you land on.
+  A first-login account calling the API directly was, and still is, allowed —
+  pre-existing behaviour, not introduced here.
+
+## ADR-004 — An abandoned form becomes a real lead when it is marked as a Deal
+
+**Date:** 2026-08-09
+**Status:** Accepted
+
+### Context
+
+`partial_leads` holds people who entered a phone number and then stopped. They
+are kept out of `leads` on purpose: nobody proved the number belongs to them, so
+treating them as leads would let anyone fill the pipeline with numbers they do
+not own.
+
+But the owner needs to record a car bought from one of these people. The
+scenario is ordinary: someone starts the form, cannot be bothered to finish, is
+called on the number they left, and agrees to sell. The car is real and the
+money is real; only the form is incomplete.
+
+The database forces the question. `inventory.lead_id` is `not null unique
+references leads(id)`, and `record_lead_deal()` takes a lead id — so a car
+cannot be recorded against a partial lead at all. The only alternatives were to
+convert, or to not record purchases made this way.
+
+### Decision
+
+Marking a partial lead as **Deal** converts it into a real lead first, then
+records the purchase through the existing `record_lead_deal()` path.
+
+The converted lead is written with `source = 'recovered'` and
+`phone_verified = false`, and the partial's `converted_lead_id` is set so it
+disappears from Incomplete Forms — a person is never in both places.
+
+**The admin supplies whatever the form never captured.** `leads` requires
+`full_name`, `make`, `model` and `year`; a partial lead that stopped at step 1
+has none of the car fields, since those are only captured at step 2. Rather than
+refusing to convert, the Deal form asks for the missing values — the owner has
+them, because they just agreed the purchase over the phone.
+
+Provenance is read from `leads.source`, which already exists, rather than
+snapshotted onto `inventory`. Inventory shows it as **"Unverified number"**,
+because that — not which admin screen the record came from — is the fact that
+changes what someone does next.
+
+### Alternatives
+
+- **Refuse to convert unless the form reached step 2.** Rejected: it reopens the
+  same hole one step further along — a genuine purchase, agreed on the phone,
+  still could not be recorded.
+- **Let inventory reference a partial lead.** Rejected: it would mean two kinds
+  of owner for a car, and every query that joins a car to its customer would
+  have to handle both.
+- **Add an `origin` column to `inventory`.** Rejected: two places stating the
+  same fact, with no way to tell which is right when they disagree.
+
+### Consequences
+
+- A number that was never verified can now reach the `leads` table. This is
+  acceptable **only** because the trigger is a purchase the business has already
+  made — not a form submission — and it is marked as such rather than hidden.
+- `phone_verified` becomes meaningful: it separates "proved they own this
+  number" from "we bought their car".
+- The OTP gate treats a converted lead like any other, so the same number is
+  refused a new code until that lead reaches `deal` or `closed`.
+- No migration is required. `leads.source` and `partial_leads.converted_lead_id`
+  both already exist.
+- Activity history stays unavailable while a record is still partial:
+  `lead_events.lead_id` references `leads(id)`, so a timeline before conversion
+  would need a new table. Deferred deliberately — the audit trail matters most
+  after the money moves, and that is after conversion.
+
 ## Template
 
 ## ADR-XXX — Decision title
