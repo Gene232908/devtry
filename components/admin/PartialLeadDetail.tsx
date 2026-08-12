@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Ban, MessageCircle, Phone, Save, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { StatusPill } from "@/components/ui/Pill";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -35,18 +36,58 @@ const SELECTABLE = new Set<string>(PARTIAL_STATUSES);
 type Draft = { status: string; notes: string };
 type PendingAction = "block" | "delete";
 
+/** `yyyy-mm-dd` in local time, for a native date input. */
+function todayInputValue(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
   const router = useRouter();
 
-  // Opening the record is the act of picking it up, so New becomes Pending —
-  // matching how a lead behaves, and why "new" is not a selectable option.
-  const initialStatus = partial.status === "new" ? "pending" : partial.status;
+  // Shown exactly as stored. Opening this record used to flip New to Pending,
+  // which destroyed the one signal that says nobody has picked it up yet — a
+  // glance, or a mis-click from the list, permanently marked it as worked.
+  // Moving it on is now a deliberate choice from the dropdown, which offers
+  // "New" so the change can also be undone.
+  const initialStatus = partial.status;
 
   // Edits are held here until Save, exactly as on the lead detail screen —
   // nothing on this page writes through on blur or on change.
   const [draft, setDraft] = useState<Draft>({ status: initialStatus, notes: partial.notes ?? "" });
   const [saved, setSaved] = useState<Draft>({ status: initialStatus, notes: partial.notes ?? "" });
-  const [errors, setErrors] = useState<{ notes?: string }>({});
+  const [errors, setErrors] = useState<{
+    notes?: string;
+    purchasePrice?: string;
+    fullName?: string;
+    make?: string;
+    model?: string;
+    year?: string;
+  }>({});
+
+  const isDeal = draft.status === "deal";
+
+  /**
+   * Everything `leads` needs that this capture may not have.
+   *
+   * Pre-filled from whatever the form did manage to collect, so the common case
+   * — abandoned at step 2 or 3, car details already there — is just a purchase
+   * price. A capture that stopped at step 1 arrives with blanks, which the
+   * owner fills from the call where they agreed the purchase.
+   */
+  const [deal, setDeal] = useState({
+    purchasePrice: "",
+    purchasedAt: todayInputValue(),
+    fullName: partial.full_name ?? "",
+    make: partial.make ?? "",
+    model: partial.model ?? "",
+    year: partial.year ? String(partial.year) : "",
+    trim: "",
+    mileageKm: partial.mileage_km ? String(partial.mileage_km) : "",
+    emirate: "",
+    markVerified: false,
+  });
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,29 +117,45 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
     if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
   }, []);
 
-  // Persist the promotion to Pending immediately. This is the one field on the
-  // page that saves itself, because it records that the record was opened
-  // rather than anything the admin typed.
-  const promotedRef = useRef(false);
-  useEffect(() => {
-    if (promotedRef.current || partial.status !== "new") return;
-    promotedRef.current = true;
-    setStatus("pending");
-    // Milestone 2: shown but not persisted.
-    if (ADMIN_PREVIEW) return;
-    void fetch(`/api/admin/partial-leads/${partial.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "pending" }),
-    }).catch(() => {
-      // Non-fatal: the next explicit Save writes the status anyway.
-    });
-  }, [partial.id, partial.status]);
+  // Opening this record used to write `status: "pending"` to the database right
+  // here, before the admin had touched anything. That destroyed the one signal
+  // saying nobody had picked the capture up yet — a glance, or a mis-click from
+  // the list, marked it as worked forever.
+  //
+  // Removed to match the lead detail screen: the status now only ever changes
+  // because someone chose a new one and pressed Save.
 
   async function save() {
     if (!draft.notes.trim()) {
       setErrors({ notes: "Notes are required before saving." });
       return;
+    }
+
+    // Recording a Deal converts this capture into a real lead and creates the
+    // car in Inventory (ADR-004), so it needs the things `leads` cannot be
+    // written without. A form abandoned at step 1 has no car at all, which is
+    // why these are asked for here rather than refused.
+    if (isDeal) {
+      const price = Number(deal.purchasePrice);
+      const next: typeof errors = {};
+
+      if (!deal.purchasePrice.trim()) next.purchasePrice = "Enter what you actually paid for this car.";
+      else if (!Number.isFinite(price) || price <= 0) next.purchasePrice = "Enter a valid amount.";
+
+      if (!deal.fullName.trim()) next.fullName = "The customer's name is required.";
+      if (!deal.make.trim()) next.make = "Required.";
+      if (!deal.model.trim()) next.model = "Required.";
+
+      const year = Number(deal.year);
+      if (!deal.year.trim()) next.year = "Required.";
+      else if (!Number.isInteger(year) || year < 1980 || year > new Date().getFullYear() + 1) {
+        next.year = "Enter a valid year.";
+      }
+
+      if (Object.keys(next).length > 0) {
+        setErrors(next);
+        return;
+      }
     }
 
     setErrors({});
@@ -121,7 +178,24 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
       const res = await fetch(`/api/admin/partial-leads/${partial.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: draft.status, notes: draft.notes }),
+        body: JSON.stringify(
+          isDeal
+            ? {
+                status: "deal",
+                notes: draft.notes,
+                purchase_price_aed: Number(deal.purchasePrice),
+                purchased_at: new Date(deal.purchasedAt).toISOString(),
+                full_name: deal.fullName,
+                make: deal.make,
+                model: deal.model,
+                year: Number(deal.year),
+                trim: deal.trim,
+                mileage_km: deal.mileageKm ? Number(deal.mileageKm) : undefined,
+                emirate: deal.emirate,
+                phone_verified: deal.markVerified,
+              }
+            : { status: draft.status, notes: draft.notes },
+        ),
       });
 
       // Surface what the server actually said. Collapsing every failure into
@@ -130,6 +204,20 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
       const body = await res.json().catch(() => null);
       if (!res.ok || !body?.ok) {
         setError(body?.error?.message ?? "Couldn't save. Please try again.");
+        return;
+      }
+
+      // A Deal is no longer an incomplete form — it is a lead with a car in
+      // Inventory. Staying on this page would show a record that has left the
+      // list it belongs to, so hand over to the lead it became.
+      if (isDeal && body.data?.leadId) {
+        // Drop the cached render of every other admin screen first. This one
+        // save created a lead, a car and a commission row, so Leads, Inventory,
+        // Commission and the Overview are all wrong until their payloads are
+        // invalidated — navigating without this shows the new lead beside an
+        // Inventory that has never heard of its car.
+        router.refresh();
+        router.push(`/admin/leads/${body.data.leadId}`);
         return;
       }
 
@@ -298,6 +386,102 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
               value={SELECTABLE.has(draft.status) ? draft.status : ""}
               onChange={(v) => setDraft((d) => ({ ...d, status: v }))}
             />
+
+            {/* Only at Deal. Recording a purchase turns this capture into a real
+                lead and creates the car in Inventory (ADR-004), and `leads`
+                cannot be written without a name, make, model and year — none of
+                which a form abandoned at step 1 ever collected. Asking here
+                keeps a genuine purchase recordable instead of refusing it. */}
+            {isDeal && (
+              <div className="flex flex-col gap-4 rounded-card border border-gold/40 bg-gold/5 p-4">
+                <div>
+                  <p className="text-fluid--1 font-medium text-gold">Recording a purchase</p>
+                  <p className="mt-1 text-fluid--1 text-text-muted">
+                    Saving will move this person into Leads and add the car to Inventory. Their number was never
+                    verified, so the lead is marked as such.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <Input
+                    label="Purchase price (AED) *"
+                    inputMode="numeric"
+                    value={deal.purchasePrice}
+                    error={errors.purchasePrice}
+                    onChange={(e) => setDeal((d) => ({ ...d, purchasePrice: e.target.value }))}
+                  />
+                  <Input
+                    label="Purchase date"
+                    type="date"
+                    value={deal.purchasedAt}
+                    onChange={(e) => setDeal((d) => ({ ...d, purchasedAt: e.target.value }))}
+                  />
+                  <Input
+                    label="Customer name *"
+                    value={deal.fullName}
+                    error={errors.fullName}
+                    onChange={(e) => setDeal((d) => ({ ...d, fullName: e.target.value }))}
+                  />
+                  <Input
+                    label="Emirate"
+                    value={deal.emirate}
+                    onChange={(e) => setDeal((d) => ({ ...d, emirate: e.target.value }))}
+                  />
+                  <Input
+                    label="Make *"
+                    value={deal.make}
+                    error={errors.make}
+                    onChange={(e) => setDeal((d) => ({ ...d, make: e.target.value }))}
+                  />
+                  <Input
+                    label="Model *"
+                    value={deal.model}
+                    error={errors.model}
+                    onChange={(e) => setDeal((d) => ({ ...d, model: e.target.value }))}
+                  />
+                  <Input
+                    label="Year *"
+                    inputMode="numeric"
+                    value={deal.year}
+                    error={errors.year}
+                    onChange={(e) => setDeal((d) => ({ ...d, year: e.target.value }))}
+                  />
+                  <Input
+                    label="Trim"
+                    value={deal.trim}
+                    onChange={(e) => setDeal((d) => ({ ...d, trim: e.target.value }))}
+                  />
+                  <Input
+                    label="Mileage (km)"
+                    inputMode="numeric"
+                    value={deal.mileageKm}
+                    onChange={(e) => setDeal((d) => ({ ...d, mileageKm: e.target.value }))}
+                  />
+                </div>
+
+                {/* The customer never entered a code, so the number is unverified
+                    by default. But buying a car means someone spoke to them on
+                    it — that is stronger evidence than an OTP, and the person
+                    ticking this is the one who made the call.
+
+                    Left unticked by default on purpose: it must be an assertion
+                    someone makes, not a side effect of recording a purchase. */}
+                <label className="flex cursor-pointer items-start gap-2.5 text-fluid--1 text-text-muted">
+                  <input
+                    type="checkbox"
+                    checked={deal.markVerified}
+                    onChange={(e) => setDeal((d) => ({ ...d, markVerified: e.target.checked }))}
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-border-gold bg-surface-2 accent-[--gold]"
+                  />
+                  <span>
+                    I have spoken to this customer on this number — mark it as verified.
+                    <span className="block text-text-faint">
+                      Leave unticked if the purchase was arranged some other way.
+                    </span>
+                  </span>
+                </label>
+              </div>
+            )}
 
             <Button
               className="w-full"

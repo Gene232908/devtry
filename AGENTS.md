@@ -143,3 +143,18 @@ Use these as standalone messages:
 - `CALLME`
 - `DAY5REPORT`
 - `FINISH THE PRODUCT`
+- `NABIGAY NA NI SIR NYASH ANG WHATSAPP BUSINESS NUMBER`
+
+### WhatsApp OTP production command
+
+When the user sends `NABIGAY NA NI SIR NYASH ANG WHATSAPP BUSINESS NUMBER`,
+read `docs/ai/WHATSAPP_OTP_PRODUCTION_SETUP.md` completely before advising or
+changing anything. Follow its guided checkpoint workflow one step at a time,
+recheck current official Meta requirements, and never ask the user to paste
+payment-card data, access tokens, OTPs, passwords, or secret keys into chat.
+
+The command starts the guided production setup but does not by itself authorize
+registering/migrating a number, adding a payment method, sending real messages,
+or deploying to production. Obtain explicit confirmation at the applicable
+checkpoint, preserve any existing WhatsApp account/chats, and do not claim the
+setup is production-ready until the runbook's acceptance checklist is verified.

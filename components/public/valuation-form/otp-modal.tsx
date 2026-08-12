@@ -24,12 +24,19 @@ export function OtpModal({ phone, phoneVerification, submitting, onVerify, onRes
   const [nowMs, setNowMs] = useState(() => Date.now());
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Deliberately stays open through submission. Verifying used to close this
+  // Every state this dialog has something to say about.
+  //
+  // It stays open through submission deliberately: verifying used to close the
   // dialog the instant the code was accepted, leaving the screen empty while
   // the lead saved and then snapping the thank-you in — the success had no
   // visible moment of its own.
-  const open =
-    ["sending", "code_sent", "verifying", "error"].includes(phoneVerification.status) || submitting;
+  //
+  // "already_submitted" belongs here for the opposite reason. Leaving it out
+  // meant the dialog silently vanished the moment the server answered "we
+  // already have your details": the one state with a message the customer
+  // needs was the one state that closed the window it would have appeared in.
+  const OPEN_STATES = ["sending", "code_sent", "verifying", "error", "already_submitted"];
+  const open = OPEN_STATES.includes(phoneVerification.status) || submitting;
   const verifying = phoneVerification.status === "verifying";
   const succeeded = submitting || phoneVerification.status === "verified";
   const showTestCodeHint = phoneVerification.devBypass;
@@ -117,6 +124,26 @@ export function OtpModal({ phone, phoneVerification, submitting, onVerify, onRes
               )}
             />
           </div>
+        </div>
+      </Dialog>
+    );
+  }
+
+  // Already on file — no code was sent, so there is nothing to type. Showing
+  // the code boxes here would present a field that can never be satisfied, and
+  // a customer who has already given their details would read that as the site
+  // being broken rather than as an answer.
+  if (phoneVerification.status === "already_submitted") {
+    return (
+      <Dialog open={open} onClose={onClose} title="We already have your details">
+        <p className="text-fluid--1 leading-6 text-text-muted">
+          {phoneVerification.errorMessage ??
+            "Your information has already been received by our management. We will get back to you as soon as possible."}
+        </p>
+        <div className="mt-6 flex justify-end">
+          <Button type="button" onClick={onClose}>
+            Close
+          </Button>
         </div>
       </Dialog>
     );

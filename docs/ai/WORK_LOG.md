@@ -4,6 +4,108 @@ This is the factual source for reports.
 
 Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
+## 2026-08-07
+
+### Completed
+
+- Replaced the single-select filters on Leads (status, makes, emirates) and Inventory (status) with a new checkbox multi-select, `components/ui/MultiSelect.tsx`. An empty selection means "no filter"; within a filter the ticked options are OR'd and across filters AND'd. Audited every other dropdown in the app and deliberately left all eight unchanged — the lead and partial-lead status fields are setters, and the public valuation form's make/model/year/trim/emirate are customer inputs. None are filters, and a checkbox on a setter would allow states the database cannot store.
+- Removed the automatic `new → pending` promotion that fired when a lead detail page rendered. Opening a lead is now recorded as a view in its timeline instead of overwriting the one signal that says nobody has picked it up.
+- Changed `--warning` from `#e0b341` to `#f0883c`. The old value was within a few points of `--gold` (`#d4af4e`) on every channel, which made the "Pending" pill indistinguishable from "Deal" and flattened every genuine warning into the brand accent.
+- Wired the lead Activity card to the real `lead_events` rows instead of `mockLeadEvents`, added a deduped `lead_viewed` event (30-minute window) with an "Opened N× · last …" summary, gave `car_purchased` an actual sentence instead of printing its raw type, and replaced the events route's stale private copy of the status labels with the shared `STATUS_LABEL`.
+- Investigated the reported commission problem by auditing the live `leads → inventory → commission_entries → commission_statements` chain with a read-only script rather than reasoning from the code. Found two inconsistencies: one lead at `deal` with no inventory row (legacy — its events show `value_updated`, so it predates migration 0014), and one lead at `pending` that owned a AED 111,111 inventory row. Reconstructing the second lead's event history showed it had gone `deal → pending` twice within three minutes.
+- Traced that to `LeadDetail`'s purchase-seeding effect, which rebuilt the entire draft via `...draftFromLead(lead)` when the inventory record finished loading, silently resetting the status field from a stale `lead` prop so the next Save wrote the old status back. Narrowed the effect to the two purchase fields, and added a server-side guard: `PATCH /api/leads/[id]` now returns 409 when a lead with an inventory row is moved out of `deal`.
+- Fixed website visitor counting. "Visitors this week" and the Overview chart counted `page_view` rows rather than distinct `session_id`, so one person browsing several pages was counted several times. Also made `PageViewTracker` reuse a per-tab id when `sessionStorage` is blocked (it previously minted a fresh id per call, counting privacy-mode visitors as a new person on every page) and guarded against React StrictMode's double-invoked effects. Extracted the arithmetic into `lib/admin/visitor-count.ts` so it could be unit tested away from the database.
+
+- Found and fixed a regression introduced by the Server Component move: Inventory showed "Cars owned 0 / AED 0" while the database held two `in_stock` cars worth AED 121,111. The screens used to fetch on mount, which was always fresh by accident; as Server Components their payload is held in the App Router's client-side cache, so arriving there straight after recording a deal could show a render from before the car existed. Added `router.refresh()` after saving a lead and after recording a sale. Confirmed by running the exact `fetchInventory` query and recomputing the four summary cards against live data.
+- Cleared the test dataset at the owner's request, and with it the OTP guard history that was blocking the valuation form. 255 rows across 10 tables (leads, inventory, commission entries and statements, lead_events, partial_leads, events, whatsapp_otp_verifications, otp_attempts, blocked_numbers). Run as a dry run first, with a full JSON backup written before any delete, deletion ordered children-first, and an explicit protected list — `profiles`, `car_makes`, `car_models`, `car_trims`, `settings` — that the script refuses to run if it ever overlaps the wipe list. All five protected tables verified intact afterwards (2 admin accounts, 116 catalogue rows, 1 settings row).
+
+- Chased a reported 3–5 second delay when switching sidebar tabs and found the measurements were being taken against the wrong server. Port 3000 was held by a **different project** (`E:\Github\gene\genePortfolio`, up for 17 hours), so `next dev` had auto-incremented CarVibe to **3001** — which is why `/privacy` and `/admin/login` returned 404 on 3000 while `/` returned 200. Three Node servers were running at once.
+- With the right ports compared: dev (3001) cold `/privacy` 805 ms → warm 82 ms; production (3100) 3.1 ms. `/admin/login` 472 ms cold, 68 ms warm, **3.3 ms** in production. Production is 140–260× faster on the same routes, and none of the delay survives a production build.
+- Took the one real finding out of that investigation: `recharts` was statically imported into the Overview, making `/admin` 223 kB of First Load JS against 102–116 kB everywhere else — the heaviest route, therefore the slowest dev compile and the slowest to hydrate. Moved both charts behind `next/dynamic` with a same-height placeholder. `/admin` dropped to 3.81 kB / 114 kB.
+- Removed `framer-motion` after confirming with a repo-wide search across every file type that nothing imported it.
+
+### Verification
+
+- `npx tsc --noEmit` passed with no output (exit 0).
+- `npm run lint` passed with no warnings or errors.
+- Re-ran the OTP guard arithmetic from `lib/server/otp-guards.ts` against the live tables afterwards: global 0/300, phone 0/5, unverified streak 0/3, not on the blocklist — the valuation form will send a code again.
+- `npm test` passed: **67 tests across 6 files**, up from 58 — 9 new tests covering distinct-session counting, including sessions spanning midnight, rows outside the window, and rows with no session id.
+- `NEXT_DIST_DIR=.next-build npx next build` passed (exit 0) with no warnings.
+- The visitor fix was measured against live data, not assumed: the dashboard was reporting **147 visitors for the last 7 days when 45 distinct people had actually visited**. Two sessions accounted for 30 and 28 page loads on their own, and 32 of the 45 people had opened more than one page.
+- Established that every lead in the database is test data before proposing any repair: six of seven share the developer's own phone number, the seventh uses the UAE dummy `+971501234567`, and the descriptions and notes are keyboard mashing. This changed the question from "what really happened to this car" to "what should happen to test rows", and was put to the owner rather than assumed.
+- Repaired lead `c9d5ad7a` at the owner's direction: status set back to `deal` so it agrees with the inventory row it owns. Run as a dry run first, then committed — one column on one row, with a JSON backup of the lead and car taken beforehand and a `lead_events` row written so the repair appears in the timeline instead of looking like an unexplained state change. Re-running the audit afterwards dropped it from 2 problems to 1.
+- Lead `b14e7b55` was left alone — it is legacy pre-migration-0014 data, earns no commission, and the owner has not said what it should become. Tracked in `KNOWN_ISSUES.md` ISSUE-009.
+- Not verified end to end in a browser: the new view-recording round trip, the 409 on moving a lead out of Deal, and the multi-select panels were exercised through type-checking, unit tests and a production build only.
+
+## 2026-08-06
+
+### Completed
+
+- Investigated a reported lag where the first click on any admin sidebar link took several seconds to render while returning to the same page was fast. Measured the actual round-trip latency to the Supabase project rather than assuming it: TCP connect 35–73ms, TLS 105–166ms, TTFB to `/auth/v1/health` ~410–425ms warm and 1.09s cold, and ~430–620ms for a REST query. Supabase itself was not the fault; the number of sequential calls was.
+- Traced the cost to `middleware.ts`, which ran on `/admin/*`, `/api/admin/*` and `/api/leads/*` and made two sequential Supabase calls per request: `auth.getUser()` (a network call to the auth server, not a local check) followed by a `profiles` lookup. Since every admin page except `/admin/leads` is a client component that fetches after hydration, a single sidebar click paid that ~900ms toll twice — once for the navigation and once for the API call it triggers — totalling roughly 2,250ms of strictly sequential network before any data painted.
+- Replaced `getUser()` with `getClaims()`. Verified first, in the installed `@supabase/auth-js` source, that this was safe: the project signs JWTs with an asymmetric ES256 key (`/auth/v1/.well-known/jwks.json` returns one, and the anon key is a new-style `sb_...` publishable key), so verification happens locally via WebCrypto; `GLOBAL_JWKS` is module-level and shared across client instances, so the JWKS is fetched once per server process rather than per request, which matters because middleware constructs a new client each time; and `getClaims()` calls `getSession()` internally, so an about-to-expire token is still refreshed and the `setAll()` cookie handler still writes refreshed cookies.
+- Gated the `must_change_password` query to page navigations. Both of its outcomes are redirects and an API route cannot be redirected, so on `/api/admin/*` and the lead-update route the query ran and its result was discarded unread. This removes a round trip from every admin API call and changes no authorization behaviour.
+- Added `app/(admin)/admin/loading.tsx`. The app had no loading boundary anywhere, so the browser stayed on the previous page for the whole navigation instead of showing progress, and Next had no static shell to prefetch for these dynamic routes.
+- Recorded the reasoning and the accepted trade-off as `DECISIONS.md` ADR-003. The trade-off: local verification does not detect a session revoked server-side, so a signed-out or deleted account retains access until its access token expires (Supabase default 1 hour).
+- Diagnosed and cleared a machine-level blocker found while verifying. The `C:` drive had 251 MB free of 223 GB, which pinned the Windows commit limit at 0.62 GB available and made `tsc` fail with `FATAL ERROR: JavaScript heap out of memory` at only ~90–417 MB. PowerShell could not load its own `Microsoft.PowerShell.Utility` module. Moved the page file to `E:` (8 GB), turned off hibernation (removing `hiberfil.sys`), and deleted a stale, orphaned `C:\Users\genem\AppData\Local\npm-cache` (2.77 GB) that nothing referenced, since both the project and user `.npmrc` already point npm's cache at `E:` and `D:` respectively.
+
+- Established that the reported lag was being observed against `next dev`, not a production build (confirmed by a live dev server on port 3000 and the presence of `.next/static/development`). This matters: in development Next compiles each route on first visit, which is itself a direct explanation of "first click slow, second click instant". Measured a cold `/privacy` at 0.96s against 0.09s warm; the admin screens import `recharts` and `framer-motion` and are heavier still. Added `npm run dev:turbo` as an opt-in alongside `dev`. Checked whether `lucide-react` or `recharts` could be added to `optimizePackageImports` and found both are already in Next 14.2's default list, so there was nothing to gain there.
+- Moved the read logic for Overview, Inventory, Commission, Incomplete Forms and Blocked Numbers out of the route handlers into a new `lib/admin/queries.ts`, then converted each screen into a Server Component `page.tsx` that runs the query in-process and passes the result to a client half (`*-client.tsx`) holding all the interaction. The route handlers remain and are unchanged for callers; they are now thin wrappers over the same functions and are still what Refresh and every post-write reload use, so there is one implementation rather than two. Preview mode is preserved on every converted screen: the server component returns the demo dataset and never queries.
+- Seeded `useAdminStats()` with a server-rendered result rather than deleting the hook, so preview mode and any client-side refresh still behave exactly as before. Recent Leads was deliberately left on `useLeads()`, since that provider is mounted once by the admin layout and shared across every admin route — moving it would save no round trip and would break the sharing.
+
+### Verification
+
+- `npx tsc --noEmit` passed with no output (exit 0), after the disk/commit issue was cleared.
+- `npm run lint` passed with no warnings or errors after the Server/Client split.
+- `npm test` passed again after the split: 58 tests across 5 files.
+- A clean `next build` (exit 0, no warnings) confirmed all five converted screens moved from `○` static to `ƒ` server-rendered on demand.
+- Confirmed the type-only import of `AdminStats`/`ChartPoint` from the server-only `lib/admin/queries.ts` into the client `use-admin-stats.ts` is erased as intended: `SUPABASE_SERVICE_ROLE` appears in `.next-build/server/**` and in **no** file under `.next-build/static/**`, so the service-role client does not reach the browser bundle. It could not be run before that; the earlier failures were environmental, not code.
+- `npm test` passed: 58 tests across 5 files.
+- `NEXT_DIST_DIR=.next-build npx next build` passed (exit 0) with no warnings or errors, writing to `.next-build` so no running dev server was disturbed.
+- Free space on `C:` went from 251 MB to 33 GB; Windows commit available went from 0.62 GB to 13.03 GB.
+- The latency improvement is a calculated projection from measured per-round-trip cost and the number of round trips removed. It has **not** been confirmed end to end against the running dashboard, and the sign-in, first-login password redirect, and session-refresh paths have not been exercised in a browser since the change.
+
+## 2026-08-05
+
+### Completed
+
+- Added `docs/ai/WHATSAPP_OTP_PRODUCTION_SETUP.md`, a beginner-friendly and resumable production runbook for the existing Meta WhatsApp Cloud API OTP flow. It covers authority and prerequisites, existing-number migration/coexistence safety, Meta Business/WABA setup, production phone registration, billing and payment-method attachment, Authentication template approval, least-privilege system-user tokens, Vercel secrets, spend caps, UAE-only code cutover, database/RLS checks, controlled canary testing, monitoring, and emergency rollback.
+- Added the standalone command `NABIGAY NA NI SIR NYASH ANG WHATSAPP BUSINESS NUMBER` to `AGENTS.md`. Future sessions must read the runbook first and guide one checkpoint at a time in plain language.
+- Added explicit protections against putting card data, Meta/Supabase tokens, OTPs, passwords, and secret keys in AI chat, screenshots, source code, or Git. The guide also prevents unapproved deletion/migration of an existing WhatsApp account and requires confirmation before billing, real messages, or deployment.
+- Rechecked the current OTP implementation and current official Meta onboarding, Authentication-template, and system-user-token references before writing the runbook.
+
+### Verification
+
+- Documentation references to affected local files were checked.
+- `git diff --check` passed; only line-ending notices for existing Windows working-copy files were reported.
+- No application code or external Meta/Vercel/Supabase state changed, so lint, type-check, tests, build, and real-message checks were not run for this documentation-only task.
+
+## 2026-08-04
+
+### Completed
+
+- Relocated the active local repository from `D:\github\carvibe` to `E:\Github\carvibe`. Verified that the worktree, `.git` directory, common Git directory, and Git object storage are all self-contained on `E:` with no worktree override or object alternates.
+- Added machine-local launchers outside the repository: `E:\Github\Open-CarVibe.cmd` opens an isolated VS Code profile, and `E:\Github\CarVibe-Shell.cmd` opens an isolated PowerShell session. Both route CarVibe temporary data, npm/global package data, Git global identity, editor user data/extensions, and common Node tool caches to `E:\Github\.carvibe-dev`.
+- Added an ignored, machine-local `E:\Github\carvibe\.npmrc` so ordinary project-level npm installs use the `E:` cache even when they are not started through the launcher. The file is excluded through `.git/info/exclude` and is not a shared repository change.
+- Reinstalled dependencies from the lockfile under the isolated environment. Removed stale `.next`, `.tmp`, and root development-error logs that contained historical paths from the old machine location.
+- Moved the complete old `D:` copy to the recoverable backup `E:\Github\.carvibe-d-backup-20260804`. No CarVibe files remain on `D:`. The now-empty old directory is held open by the current Codex workspace process; a guarded background helper will remove it after the process releases it and will refuse to remove it if the directory is no longer empty.
+
+### Verification
+
+- `npm ci` passed: 509 packages installed from `package-lock.json`, with cache/log/temp locations on `E:`.
+- Git integrity passed with `git fsck --full --no-dangling`; active repository status was clean before this documentation entry.
+- `npm run lint` passed with no warnings or errors.
+- `npx tsc --noEmit` passed with no output.
+- `npm test` passed: 58 tests across 5 files.
+- `npm run build:check` passed and wrote its generated output on `E:`.
+- npm reported 6 existing high-severity dependency advisories. No automatic `npm audit fix` was run because dependency changes require a separate compatibility review.
+
+### Storage scope
+
+- Git, Node.js, and VS Code executables remain installed on `C:` and Windows itself can still write small operating-system metadata there, so literal zero activity on the system drive cannot be guaranteed. When CarVibe is opened through the provided launchers, its repository, dependencies, generated builds, temporary files, tool caches, Git global config, and isolated VS Code data are routed to `E:`.
+- The shared `D:\npm-cache` was intentionally not deleted because other projects may use it. CarVibe's local npm configuration overrides that shared location with `E:\Github\.carvibe-dev\npm-cache`, so future CarVibe installs do not grow the `D:` cache.
+- The initial read-only npm-location audit created two debug logs in the old `D:` cache (842 and 844 bytes); those two exact files were removed after the isolated configuration was verified. The system `C:` audit showed current writes from the running Codex/VS Code applications rather than the CarVibe npm cache. Those shared application stores were not moved or deleted because doing so would affect other workspaces.
+
 ## 2026-08-03
 
 ### Completed

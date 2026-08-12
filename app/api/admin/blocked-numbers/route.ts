@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { normalizeWhatsappPhone } from "@/lib/whatsapp/phone";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { blockedByPreview } from "@/lib/admin/preview-guard";
+import { fetchBlockedNumbers } from "@/lib/admin/queries";
 
 // Admin-only (gated by middleware.ts). Manages the hard blocklist that
 // /api/otp/send checks before sending anything, so a blocked number can never
@@ -15,56 +16,15 @@ function bad(message: string, status = 400) {
   return NextResponse.json({ ok: false, error: { message } }, { status });
 }
 
+// The read lives in lib/admin/queries.ts so the Blocked Numbers page can run it
+// during its own server render instead of loading empty and calling this route
+// over HTTP. Unchanged for callers; still the path used by Refresh and by every
+// block/unblock action that reloads the list afterwards.
 export async function GET() {
-  if (!isSupabaseConfigured()) return bad("Database is not configured.", 503);
+  const result = await fetchBlockedNumbers();
+  if (!result.ok) return bad(result.message, result.status);
 
-  const supabase = getSupabaseAdmin();
-
-  const { data: blocked, error } = await supabase
-    .from("blocked_numbers")
-    .select("phone_e164, reason, note, full_name, source_lead_id, created_at")
-    .order("created_at", { ascending: false });
-
-  if (error) return bad(error.message, 500);
-
-  // Numbers that tripped an automated OTP guard in the last 24h but have NOT
-  // been permanently blocked. Surfaced separately and never auto-added: a real
-  // customer can hit a cap by accident, so promoting to the blocklist stays a
-  // deliberate admin action.
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  let recentSuspicious: Array<{ phone_e164: string; attempts: number; last_attempt: string }> = [];
-
-  try {
-    const { data: recent } = await supabase
-      .from("whatsapp_otp_verifications")
-      .select("phone_number, created_at, verified_at")
-      .gte("created_at", since)
-      .order("created_at", { ascending: false });
-
-    if (recent) {
-      const blockedSet = new Set((blocked ?? []).map((b) => b.phone_e164));
-      const byPhone = new Map<string, { attempts: number; verified: number; last: string }>();
-
-      for (const row of recent as Array<{ phone_number: string; created_at: string; verified_at: string | null }>) {
-        const entry = byPhone.get(row.phone_number) ?? { attempts: 0, verified: 0, last: row.created_at };
-        entry.attempts += 1;
-        if (row.verified_at) entry.verified += 1;
-        if (row.created_at > entry.last) entry.last = row.created_at;
-        byPhone.set(row.phone_number, entry);
-      }
-
-      recentSuspicious = Array.from(byPhone.entries())
-        // Three or more requests with nothing ever verified is the same signal
-        // the send-side guard uses (OTP_UNVERIFIED_STREAK_CAP).
-        .filter(([phone, e]) => e.verified === 0 && e.attempts >= 3 && !blockedSet.has(phone))
-        .map(([phone, e]) => ({ phone_e164: phone, attempts: e.attempts, last_attempt: e.last }))
-        .sort((a, b) => b.attempts - a.attempts);
-    }
-  } catch {
-    // non-fatal — the blocklist itself still renders
-  }
-
-  return NextResponse.json({ ok: true, data: { blocked: blocked ?? [], recentSuspicious } });
+  return NextResponse.json({ ok: true, data: result.data });
 }
 
 export async function POST(req: NextRequest) {

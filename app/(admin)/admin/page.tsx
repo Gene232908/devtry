@@ -1,63 +1,44 @@
-"use client";
+import AdminDashboardClient from "./dashboard-client";
+import { fetchAdminStats, fetchAdminCharts } from "@/lib/admin/queries";
+import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 
-import { CircleDashed } from "lucide-react";
-import { StatCard } from "@/components/admin/StatCard";
-import { VisitorsChart } from "@/components/admin/VisitorsChart";
-import { SubmissionsChart } from "@/components/admin/SubmissionsChart";
-import { RecentLeads } from "@/components/admin/RecentLeads";
-import { useLeads } from "@/lib/admin/leads-store";
-import { useAdminStats } from "@/lib/admin/use-admin-stats";
-import { formatNumber } from "@/lib/format";
+export const dynamic = "force-dynamic";
 
-export default function AdminDashboardPage() {
-  const { leads, isLoading: leadsLoading } = useLeads();
-  const { stats, visitors, submissions, isLoading: statsLoading } = useAdminStats();
+/**
+ * Server half of the Overview.
+ *
+ * The six counters and the two chart series used to be fetched by the browser
+ * after this page had already mounted and painted skeletons — two more HTTP
+ * calls, each re-entering middleware, before any real number appeared.
+ *
+ * Both now run here, in parallel, during this render. The client half keeps the
+ * hook, so preview mode and any future client-side refresh still work unchanged.
+ */
+export default async function AdminDashboardPage() {
+  // Preview mode renders from the demo dataset inside the hook — handing it a
+  // seed of real database figures is exactly what that flag exists to prevent.
+  if (ADMIN_PREVIEW) {
+    return <AdminDashboardClient />;
+  }
+
+  const [statsResult, chartsResult] = await Promise.all([fetchAdminStats(), fetchAdminCharts()]);
+
+  // If either half failed, fall through with no seed and let the hook do what
+  // it always did — fetch on mount, and drop to the mock dataset if that fails
+  // too. A half-populated Overview would be worse than a brief skeleton.
+  if (!statsResult.ok || !chartsResult.ok) {
+    return <AdminDashboardClient />;
+  }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-display text-fluid-3 text-text">Overview</h1>
-      </div>
+    <AdminDashboardClient
 
-      {/* MILESTONE 2 BRANCH — the six cards are deliberately unlabelled.
-          Which figures belong on the Overview depends entirely on what the
-          owner checks each morning, and that has not been agreed yet. Naming
-          them now would present a decision as already made and quietly close a
-          conversation that is the whole point of this walkthrough.
-
-          The layout is the part being reviewed: six slots, filling evenly at
-          every breakpoint — three rows of two on tablet, two rows of three on
-          desktop, no orphan card on a row of its own. The sample values are
-          there so the card design reads properly at a glance. */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {[
-          formatNumber(stats.totalLeads),
-          formatNumber(stats.newToday),
-          formatNumber(stats.activeLeads),
-          formatNumber(stats.incompleteForms),
-          formatNumber(stats.visitorsThisWeek),
-          formatNumber(stats.whatsappClicks),
-        ].map((value, index) => (
-          <StatCard
-            key={index}
-            label={`Metric ${index + 1}`}
-            value={value}
-            sublabel="To be confirmed"
-            icon={CircleDashed}
-            // One accent card so the highlighted treatment is still visible in
-            // the design being reviewed.
-            accent={index === 0}
-            isLoading={statsLoading}
-          />
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <VisitorsChart data={visitors} isLoading={statsLoading} />
-        <SubmissionsChart data={submissions} isLoading={statsLoading} />
-      </div>
-
-      <RecentLeads leads={leads} isLoading={leadsLoading} />
-    </div>
+      seed={{
+        stats: statsResult.data,
+        visitors: chartsResult.data.visitors,
+        submissions: chartsResult.data.submissions,
+        isLive: true,
+      }}
+    />
   );
 }

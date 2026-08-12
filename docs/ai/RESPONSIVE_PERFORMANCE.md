@@ -38,6 +38,18 @@ Check approximately:
 - Optimize vehicle images and thumbnails.
 - Avoid heavy dependencies for simple behavior.
 - Avoid loading all records at once.
+- Know which "checks" are secretly network calls. `supabase.auth.getUser()` is
+  not a local read — it calls Supabase's auth server every time. In middleware
+  that lands on every page AND every API request. Prefer `getClaims()`, which
+  verifies the JWT locally (this project uses ES256 keys). See ADR-003.
+- Never run a query in middleware whose result only a redirect can use, on a
+  path that cannot redirect. API routes cannot redirect.
+- Count round trips per user action, not per function. A client component that
+  fetches after hydration turns one navigation into two serial trips through
+  middleware. Server-render the initial data instead where the page allows it.
+- Give every route group a `loading.tsx`. Without one the browser sits on the
+  previous page for the whole navigation, which reads as frozen rather than
+  busy, and Next has no static shell to prefetch for dynamic routes.
 
 ## Design system changelog
 

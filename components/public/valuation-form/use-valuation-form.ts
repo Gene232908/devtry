@@ -197,6 +197,18 @@ export function useValuationForm() {
         return { ok: true as const };
       }
 
+      // Already on file: an answer, not a failure. The modal shows the message
+      // and no code box, because there is no code and nothing to retry.
+      if (body?.error?.kind === "already_submitted") {
+        setState("filling");
+        setPhoneVerification((pv) => ({
+          ...pv,
+          status: "already_submitted",
+          errorMessage: body?.error?.message ?? null,
+        }));
+        return { ok: false as const };
+      }
+
       setState("filling");
       setPhoneVerification((pv) => ({ ...pv, status: "error", errorMessage: messageForKind(body?.error?.kind) }));
       return { ok: false as const };

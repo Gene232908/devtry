@@ -1,3 +1,5 @@
+import { LEAD_PIPELINE } from "@/lib/format";
+
 // "deal" = the customer agreed to sell at the agreed price (the win).
 // "closed" = the meet-up happened and no deal was reached.
 // "valuation_sent" is retired from the UI but still typed, so historical rows
@@ -90,9 +92,21 @@ export function computeStats(leads: Lead[]) {
   const activeLeads = leads.filter(
     (l) => l.status === "pending" || l.status === "contacted" || l.status === "inspected",
   ).length;
-  const visitorsThisWeek = visitorsSeries.reduce((sum, d) => sum + d.visitors, 0);
+  // Demo figure only. The live value counts distinct visitors for the current
+  // UAE day; here the last point of the sample series stands in for "today".
+  const visitorsToday = visitorsSeries[visitorsSeries.length - 1]?.visitors ?? 0;
   const whatsappClicks = 615;
+  // Demo-only figures; the live values come from the events table.
+  const callClicks = 208;
   // Demo-only figure; the live value comes from /api/admin/stats.
   const incompleteForms = 7;
-  return { totalLeads, newToday, activeLeads, visitorsThisWeek, whatsappClicks, incompleteForms };
+
+  // Tallied from the sample leads so the pipeline cards read consistently with
+  // the rows below them in a walkthrough. Every stage is seeded at zero first,
+  // matching the live query — an empty stage still has to appear.
+  const byStatus: Record<string, number> = {};
+  for (const status of LEAD_PIPELINE) byStatus[status] = 0;
+  for (const lead of leads) byStatus[lead.status] = (byStatus[lead.status] ?? 0) + 1;
+
+  return { totalLeads, newToday, activeLeads, visitorsToday, whatsappClicks, callClicks, incompleteForms, byStatus };
 }

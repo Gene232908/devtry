@@ -1,5 +1,6 @@
 import { Search, Download, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { MultiSelect } from "@/components/ui/MultiSelect";
 import { LeadStatus } from "@/config/mock-data";
 import { FILTER_STATUS_OPTIONS, STATUS_LABEL } from "@/lib/format";
 import { MAKES } from "@/config/vehicles";
@@ -11,12 +12,14 @@ const EMIRATES = Object.keys(AREAS_BY_EMIRATE);
 type Props = {
   search: string;
   onSearch: (v: string) => void;
-  status: LeadStatus | "all";
-  onStatus: (v: LeadStatus | "all") => void;
-  make: string;
-  onMake: (v: string) => void;
-  emirate: string;
-  onEmirate: (v: string) => void;
+  statuses: LeadStatus[];
+  onStatuses: (v: LeadStatus[]) => void;
+  makes: string[];
+  onMakes: (v: string[]) => void;
+  emirates: string[];
+  onEmirates: (v: string[]) => void;
+  hasFilters: boolean;
+  onClearFilters: () => void;
   onExport: () => void;
   count: number;
   isLive?: boolean;
@@ -27,17 +30,25 @@ type Props = {
 // "valuation_sent" is retired and deliberately absent — it is no longer a state
 // a lead can be moved into, so offering it as a filter would only ever return
 // historical rows.
-const STATUSES: (LeadStatus | "all")[] = ["all", ...FILTER_STATUS_OPTIONS];
+//
+// There is no "all" entry any more: with checkboxes, "all" is simply nothing
+// ticked, so an explicit option for it would be a second way to express the
+// same state and could contradict the boxes below it.
+const STATUS_OPTIONS = FILTER_STATUS_OPTIONS.map((s) => ({ value: s, label: STATUS_LABEL[s] }));
+const MAKE_OPTIONS = MAKES.map((m) => ({ value: m.name, label: m.name }));
+const EMIRATE_OPTIONS = EMIRATES.map((e) => ({ value: e, label: e }));
 
 export function LeadsToolbar({
   search,
   onSearch,
-  status,
-  onStatus,
-  make,
-  onMake,
-  emirate,
-  onEmirate,
+  statuses,
+  onStatuses,
+  makes,
+  onMakes,
+  emirates,
+  onEmirates,
+  hasFilters,
+  onClearFilters,
   onExport,
   count,
   isLive,
@@ -57,43 +68,44 @@ export function LeadsToolbar({
           />
         </div>
 
-        <select
-          value={status}
-          onChange={(e) => onStatus(e.target.value as LeadStatus | "all")}
-          className="h-10 rounded-card border border-border bg-surface-2 px-3 text-fluid--1 text-text outline-none focus:border-gold"
-        >
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {s === "all" ? "All statuses" : STATUS_LABEL[s]}
-            </option>
-          ))}
-        </select>
+        <MultiSelect
+          className="sm:w-44"
+          options={STATUS_OPTIONS}
+          selected={statuses}
+          onChange={(v) => onStatuses(v as LeadStatus[])}
+          allLabel="All statuses"
+          noun="statuses"
+        />
 
-        <select
-          value={make}
-          onChange={(e) => onMake(e.target.value)}
-          className="h-10 rounded-card border border-border bg-surface-2 px-3 text-fluid--1 text-text outline-none focus:border-gold"
-        >
-          <option value="all">All makes</option>
-          {MAKES.map((m) => (
-            <option key={m.name} value={m.name}>
-              {m.name}
-            </option>
-          ))}
-        </select>
+        <MultiSelect
+          className="sm:w-40"
+          options={MAKE_OPTIONS}
+          selected={makes}
+          onChange={onMakes}
+          allLabel="All makes"
+          noun="makes"
+        />
 
-        <select
-          value={emirate}
-          onChange={(e) => onEmirate(e.target.value)}
-          className="h-10 rounded-card border border-border bg-surface-2 px-3 text-fluid--1 text-text outline-none focus:border-gold"
-        >
-          <option value="all">All emirates</option>
-          {EMIRATES.map((e) => (
-            <option key={e} value={e}>
-              {e}
-            </option>
-          ))}
-        </select>
+        <MultiSelect
+          className="sm:w-44"
+          options={EMIRATE_OPTIONS}
+          selected={emirates}
+          onChange={onEmirates}
+          allLabel="All emirates"
+          noun="emirates"
+        />
+
+        {hasFilters && (
+          // One reset for all three, so clearing a stacked filter is not three
+          // separate trips into three separate panels.
+          <button
+            type="button"
+            onClick={onClearFilters}
+            className="h-10 shrink-0 whitespace-nowrap px-1 text-fluid--1 text-text-muted transition-colors hover:text-gold"
+          >
+            Clear filters
+          </button>
+        )}
       </div>
 
       <div className="flex items-center gap-3">

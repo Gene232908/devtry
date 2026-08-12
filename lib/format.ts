@@ -49,13 +49,20 @@ export const LEAD_PIPELINE = [
 ] as const;
 
 /**
- * Statuses selectable inside Customer Details. Only forward moves are offered.
- * "new" and "pending" are both real states — a lead arrives as New and becomes
- * Pending the moment someone opens it — but neither can be chosen, because
- * picking them would mean claiming a lead had gone backwards to "not looked at
- * yet". The current state is still shown; it just cannot be re-selected.
+ * Statuses selectable inside Customer Details — all of them, including "new".
+ *
+ * This used to offer forward moves only, because "pending" was reached
+ * AUTOMATICALLY the moment someone opened the lead: the status was a fact about
+ * the system rather than a judgement, so reversing it would have been a lie.
+ *
+ * Opening a lead no longer changes anything. The status is now purely a human
+ * judgement about where the conversation stands, and a judgement made by
+ * mistake has to be reversible — so a lead marked Contacted in error can be put
+ * back to New.
  */
 export const DETAIL_STATUS_OPTIONS = [
+  "new",
+  "pending",
   "contacted",
   "inspection_scheduled",
   "inspected",
@@ -70,7 +77,7 @@ export const DETAIL_STATUS_OPTIONS = [
  * wrong one misreports whether a car was actually bought.
  */
 export const STATUS_HINT: Record<string, string> = {
-  new: "Nobody has opened this lead yet.",
+  new: "New data coming from the valuation form.",
   pending: "Opened and being worked on, but not contacted yet.",
   contacted: "You have reached out to the customer.",
   inspection_scheduled: "A viewing is booked but has not happened yet.",

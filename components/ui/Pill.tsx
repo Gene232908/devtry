@@ -2,9 +2,14 @@ import { cn } from "@/lib/utils";
 import { LeadStatus } from "@/config/mock-data";
 import { STATUS_LABEL } from "@/lib/format";
 
-// Colour tracks progress through the pipeline: blue on arrival, amber while
+// Colour tracks progress through the pipeline: blue on arrival, orange while
 // waiting, green once contact is made, then warming into gold as the car gets
 // closer to being bought.
+//
+// Gold is reserved for the late, valuable stages and is at its most solid on
+// "deal". Nothing early in the pipeline may use it — "pending" in particular
+// used to render in a --warning that was almost the same value as --gold, so
+// an untouched lead looked like a bought car at a glance.
 const STATUS_STYLE: Record<LeadStatus, string> = {
   new: "bg-info/15 text-info",
   pending: "bg-warning/15 text-warning",

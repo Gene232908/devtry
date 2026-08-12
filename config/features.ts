@@ -6,7 +6,7 @@ export const features = {
     "totalLeads",
     "newToday",
     "activeLeads",
-    "visitorsThisWeek",
+    "visitorsToday",
     "averageValue",
     "whatsappClicks",
   ] as const,

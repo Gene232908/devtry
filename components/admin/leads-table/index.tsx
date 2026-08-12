@@ -27,12 +27,14 @@ export function LeadsTable() {
       <LeadsToolbar
         search={filter.search}
         onSearch={filter.setSearch}
-        status={filter.status}
-        onStatus={filter.setStatus}
-        make={filter.make}
-        onMake={filter.setMake}
-        emirate={filter.emirate}
-        onEmirate={filter.setEmirate}
+        statuses={filter.statuses}
+        onStatuses={filter.setStatuses}
+        makes={filter.makes}
+        onMakes={filter.setMakes}
+        emirates={filter.emirates}
+        onEmirates={filter.setEmirates}
+        hasFilters={filter.hasFilters}
+        onClearFilters={filter.clearFilters}
         onExport={() => exportLeadsCsv(filter.allFiltered)}
         count={filter.totalCount}
         isLive={isLive}

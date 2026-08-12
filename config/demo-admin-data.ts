@@ -187,6 +187,7 @@ export const demoInventory: InventoryItem[] = [
   {
     id: "INV-0005",
     leadId: "L-400868",
+    fromUnverifiedLead: false,
     make: "Rolls-Royce",
     model: "Phantom",
     trim: "Extended Wheelbase",
@@ -203,6 +204,7 @@ export const demoInventory: InventoryItem[] = [
   {
     id: "INV-0004",
     leadId: "L-400867",
+    fromUnverifiedLead: false,
     make: "Nissan",
     model: "Patrol",
     trim: "XE",
@@ -219,6 +221,7 @@ export const demoInventory: InventoryItem[] = [
   {
     id: "INV-0003",
     leadId: "L-400872",
+    fromUnverifiedLead: false,
     make: "Nissan",
     model: "Patrol",
     trim: "LE Platinum",
@@ -235,6 +238,7 @@ export const demoInventory: InventoryItem[] = [
   {
     id: "INV-0002",
     leadId: "L-400865",
+    fromUnverifiedLead: false,
     make: "Toyota",
     model: "Land Cruiser",
     trim: "VXR",
@@ -251,6 +255,7 @@ export const demoInventory: InventoryItem[] = [
   {
     id: "INV-0001",
     leadId: "L-400866",
+    fromUnverifiedLead: false,
     make: "Porsche",
     model: "Cayenne",
     trim: "S",
