@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 /**
@@ -42,7 +42,22 @@ export function useFreshServerData() {
   const router = useRouter();
 
   useEffect(() => {
-    router.refresh();
+    // Deliberately does NOT refresh on mount.
+    //
+    // It used to, and that single line was the reason the dashboard felt slow:
+    // arriving at a page rendered it on the server for the navigation and then
+    // immediately rendered it again for the refresh. Every sidebar click paid
+    // twice — on Commission, twice for ~560ms.
+    //
+    // The staleness it was there to fix is now prevented instead of corrected:
+    // `experimental.staleTimes.dynamic = 0` in next.config.mjs stops the client
+    // Router Cache serving a previously visited admin route from memory, so the
+    // navigation itself always reaches the server and what it brings back is
+    // already current. Refreshing on top of that re-fetched data nobody had had
+    // time to read.
+    //
+    // The listeners below still do the rest of the job: coming BACK to the tab,
+    // and sitting watching an open page.
 
     function refreshIfVisible() {
       if (document.visibilityState === "visible") router.refresh();
@@ -91,4 +106,72 @@ export function useServerState<T>(serverValue: T): [T, React.Dispatch<React.SetS
   }, [serverValue]);
 
   return [value, setValue];
+}
+
+/**
+ * The same freshness guarantee as `useFreshServerData`, for screens that fetch
+ * their own data in the browser rather than rendering it on the server.
+ *
+ * Leads and the Vehicle Catalog are the two admin screens built that way. They
+ * were left behind when the others were fixed, because the fix that worked
+ * there cannot work here: `useFreshServerData` calls `router.refresh()`, which
+ * re-runs a SERVER render. These components fetch from `/api/...` inside a
+ * `useEffect`, so a server re-render produces the same shell and re-runs no
+ * fetch at all — applying that hook to them would have looked like a fix and
+ * changed nothing.
+ *
+ * What they were left with instead:
+ *   Leads    re-fetched on focus, but never while you sat watching it, so a
+ *            lead arriving on an open list stayed invisible indefinitely.
+ *   Catalog  fetched once on mount and never again — not on focus, not ever.
+ *            A make added in another tab was absent until a manual reload.
+ *
+ * Passing the fetch itself keeps the two paths identical in behaviour: mount,
+ * focus, visibility, and the same POLL_MS timer, with the same rule that a
+ * hidden tab polls nothing.
+ *
+ * The caller's `load` must be referentially stable (a `useCallback` with real
+ * dependencies), or the effect would tear down and re-subscribe on every render
+ * — the classic way this pattern turns into an infinite fetch loop.
+ */
+export function useRefreshOnFocus(load: () => void | Promise<void>, enabled = true) {
+  // Held in a ref so the effect below depends on NOTHING that changes per
+  // render: it subscribes once and stays subscribed, while still always calling
+  // the latest `load`. Depending on `load` directly would re-run the effect
+  // whenever a caller forgot to memoise it, re-fetching on every render.
+  const loadRef = useRef(load);
+  useEffect(() => {
+    loadRef.current = load;
+  }, [load]);
+
+  useEffect(() => {
+    // Nothing is subscribed while disabled, so a provider that lives in the
+    // admin LAYOUT can stop polling on the pages that do not display its data
+    // rather than fetching it behind every screen in the dashboard.
+    if (!enabled) return;
+
+    let cancelled = false;
+
+    function refreshIfVisible() {
+      // `cancelled` stops a timer or listener that fired during teardown from
+      // calling into an unmounted component.
+      if (cancelled) return;
+      if (document.visibilityState !== "visible") return;
+      void loadRef.current();
+    }
+
+    document.addEventListener("visibilitychange", refreshIfVisible);
+    window.addEventListener("focus", refreshIfVisible);
+    const timer = setInterval(refreshIfVisible, POLL_MS);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+      window.removeEventListener("focus", refreshIfVisible);
+      clearInterval(timer);
+    };
+    // The initial fetch is deliberately NOT triggered here — these screens
+    // already load on mount, and doing it again would double every page's first
+    // request.
+  }, [enabled]);
 }

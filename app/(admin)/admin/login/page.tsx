@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Logo } from "@/components/public/Logo";
-import { getSupabaseBrowser } from "@/lib/supabase/client";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -20,13 +19,28 @@ export default function AdminLoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return; // a second submit while one is in flight would spend an attempt
     setError(null);
     setLoading(true);
     try {
-      const supabase = getSupabaseBrowser();
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-      if (signInError) {
-        setError("Incorrect email or password.");
+      // Goes through our own route rather than calling Supabase directly, so
+      // the attempt passes a server-side rate limiter before any credential is
+      // checked. Signing in from the browser meant no code of ours ran, and
+      // eight wrong passwords in a row were all processed unimpeded.
+      //
+      // The route signs in with a cookie-writing server client, so the session
+      // cookies arrive on this response exactly as they did before.
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const json = await res.json().catch(() => null);
+
+      if (!res.ok || !json?.ok) {
+        // The 429 carries a real wait; everything else is the deliberately
+        // indistinguishable credential failure.
+        setError(json?.error?.message ?? "Incorrect email or password.");
         setLoading(false);
         return;
       }
