@@ -49,11 +49,24 @@ export async function middleware(request: NextRequest) {
   const { data: claims } = await supabase.auth.getClaims();
   const user = claims ? { id: claims.claims.sub } : null;
 
-  const isApiAdmin = pathname.startsWith("/api/admin");
+  // The sign-in endpoint itself. It lives under /api/admin/* so it is covered
+  // by this matcher, but it is the one route there that a signed-OUT visitor
+  // must be able to reach — it is how they stop being signed out. Gating it
+  // would make signing in impossible.
+  //
+  // It is not unprotected: the route rate-limits every attempt server-side
+  // before checking any credential (see app/api/admin/login/route.ts).
+  const isLoginApi = pathname === "/api/admin/login";
+
+  const isApiAdmin = pathname.startsWith("/api/admin") && !isLoginApi;
   const isApiLeadUpdate = pathname.startsWith("/api/leads/") && pathname !== "/api/leads";
   const isLoginPage = pathname === "/admin/login";
   const isSetPasswordPage = pathname === "/admin/set-password";
   const isAdminPage = pathname.startsWith("/admin");
+
+  // An already-signed-in caller hitting the login endpoint is harmless; let it
+  // through rather than bouncing it to the dashboard as a page would be.
+  if (isLoginApi) return response;
 
   if ((isApiAdmin || isApiLeadUpdate) && !user) {
     return NextResponse.json({ ok: false, error: { message: "Not authenticated." } }, { status: 401 });

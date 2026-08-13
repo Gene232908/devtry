@@ -3,6 +3,7 @@ import { getOtpCaps, type OtpCaps } from "@/lib/server/otp-guards";
 import { LEAD_PIPELINE } from "@/lib/format";
 import { mapDbInventory, type DbInventory, type InventoryItem } from "@/lib/admin/inventory";
 import { PARTIAL_LEAD_COLUMNS, type PartialLead } from "@/lib/admin/partial-lead";
+import type { Manager, Settings } from "@/lib/admin/settings-schema";
 import { buildLastSevenUaeDays, startOfUaeDayUtc, uaeDayKey } from "@/lib/uae-time";
 import {
   countDistinctSessions,
@@ -454,20 +455,43 @@ export async function fetchCommissionStatements(): Promise<QueryResult<{ stateme
 
   const supabase = getSupabaseAdmin();
 
-  // Only months from the first sale onwards can hold anything.
-  const { data: earliest } = await supabase
-    .from("commission_entries")
-    .select("sold_at")
-    .order("sold_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  // Both answers are needed before any month can be built, and neither depends
+  // on the other, so they share one round trip rather than taking two.
+  const [{ data: earliest }, { data: existingRows }] = await Promise.all([
+    // Only months from the first sale onwards can hold anything.
+    supabase
+      .from("commission_entries")
+      .select("sold_at")
+      .order("sold_at", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    // Which months are already settled — see the loop below.
+    supabase.from("commission_statements").select("period_month, status"),
+  ]);
 
   const months = monthsToBuild(earliest?.sold_at ?? null);
 
-  // Sequential and oldest-first on purpose: each call locks its statement row,
-  // and the ordering matters now that unbilled entries carry forward — the
-  // earliest OPEN month must get first claim on them.
+  // A statement that is issued or paid is locked: build_commission_statement()
+  // takes its row lock, sees `status <> 'draft'`, and returns it untouched
+  // (migration 0017, lines 43-49). Calling it for such a month is a round trip
+  // that is guaranteed to change nothing.
+  //
+  // That was costing a request per settled month on EVERY view of this page,
+  // sequentially — one month of history today, but this list only grows, and at
+  // ~110ms a call a year of trading would have put a second and a half of dead
+  // waiting in front of the page. Skipping them is not a behaviour change; it
+  // is declining to ask a question whose answer is already known.
+  const settled = new Set(
+    ((existingRows ?? []) as { period_month: string; status: string }[])
+      .filter((s) => s.status !== "draft")
+      .map((s) => s.period_month),
+  );
+
+  // Still sequential and still oldest-first for the months that DO get built:
+  // each call takes its statement's row lock, and unbilled entries carry
+  // forward, so the earliest OPEN month must get first claim on them.
   for (const month of months) {
+    if (settled.has(month)) continue;
     const { error } = await supabase.rpc("build_commission_statement", { p_month: month });
     if (error) return { ok: false, message: error.message, status: 500 };
   }
@@ -529,4 +553,59 @@ export async function fetchCommissionStatements(): Promise<QueryResult<{ stateme
 
   // A month with no sales has nothing to bill and only adds noise.
   return { ok: true, data: { statements: statements.filter((s) => s.entryCount > 0) } };
+}
+
+// ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
+
+/**
+ * Business settings plus the staff list, for the Settings screen's first paint.
+ *
+ * Reading is staff-wide (settings_staff_select); the admin-only restriction
+ * applies to writing and is enforced in the PATCH route.
+ */
+export async function fetchSettings(): Promise<QueryResult<{ settings: Settings; managers: Manager[] }>> {
+  if (!isSupabaseConfigured()) return NOT_CONFIGURED;
+
+  const supabase = getSupabaseAdmin();
+  const [settingsRes, profilesRes] = await Promise.all([
+    supabase
+      .from("settings")
+      // `buy_a_car_enabled` is not read: nothing consumes it, and the public
+      // "Buy a Car — Coming Soon" button is hard-coded. See settings-schema.ts.
+      .select("whatsapp_number, call_number, notify_email, visible_stats")
+      .eq("id", 1)
+      .single(),
+    supabase.from("profiles").select("id, email, role, display_name").order("created_at", { ascending: true }),
+  ]);
+
+  if (settingsRes.error) return { ok: false, message: settingsRes.error.message, status: 500 };
+
+  const row = settingsRes.data as {
+    whatsapp_number: string | null;
+    call_number: string | null;
+    notify_email: string | null;
+    visible_stats: string[] | null;
+  };
+
+  const managers: Manager[] = (profilesRes.data ?? []).map((p) => ({
+    id: p.id as string,
+    email: (p.email as string | null) ?? "",
+    role: p.role as string,
+    displayName: (p.display_name as string | null) ?? undefined,
+  }));
+
+  return {
+    ok: true,
+    data: {
+      settings: {
+        whatsappNumber: row.whatsapp_number ?? "",
+        callNumber: row.call_number ?? "",
+        notifyEmail: row.notify_email ?? "",
+        visibleStats: row.visible_stats ?? [],
+      },
+      managers,
+    },
+  };
 }

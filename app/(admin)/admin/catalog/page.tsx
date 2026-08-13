@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight, Plus, Search, Trash2, X } from "lucide-react
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useRefreshOnFocus } from "@/lib/admin/use-fresh-server-data";
 import { cn } from "@/lib/utils";
 
 // The Make / Model / Trim lists the public valuation form is built from.
@@ -74,6 +75,16 @@ export default function AdminCatalogPage() {
   useEffect(() => {
     void loadCatalog();
   }, [loadCatalog]);
+
+  // Keeps the catalog current without a manual reload. It used to fetch once on
+  // mount and never again — not on focus, not on any timer — so a make added
+  // from another tab or by a colleague simply was not there until the page was
+  // reloaded by hand.
+  //
+  // A background refresh replaces `makes` only; the selected make, the open
+  // models, the search box and any half-typed "add" field are all separate
+  // state and survive it untouched.
+  useRefreshOnFocus(loadCatalog);
 
   // Search matches model names too, so typing "Velar" finds the make it sits
   // under rather than returning nothing.

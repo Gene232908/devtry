@@ -1,8 +1,10 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Lead, LeadStatus, mockLeads } from "@/config/mock-data";
 import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
+import { useRefreshOnFocus } from "@/lib/admin/use-fresh-server-data";
 import { demoNewLeads } from "@/config/demo-admin-data";
 
 const STORAGE_KEY = "cvd_admin_leads_v1";
@@ -118,22 +120,42 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
   }, [loadLive, enabled]);
 
   // The admin layout mounts this provider once and keeps it alive across every
-  // /admin/* page — without this, leads submitted after the dashboard was
-  // first opened (e.g. from another tab, or the public site) would never show
-  // up until a full page reload. Re-fetch whenever the tab regains focus.
-  useEffect(() => {
-    function onVisible() {
-      if (document.visibilityState === "visible" && isLiveRef.current) {
-        loadLive();
-      }
-    }
-    document.addEventListener("visibilitychange", onVisible);
-    window.addEventListener("focus", onVisible);
-    return () => {
-      document.removeEventListener("visibilitychange", onVisible);
-      window.removeEventListener("focus", onVisible);
-    };
-  }, [loadLive]);
+  // /admin/* page — without this, leads submitted after the dashboard was first
+  // opened (e.g. from another tab, or the public site) would never show up
+  // until a full page reload.
+  //
+  // Focus alone was not enough. It covered coming BACK to the tab but not
+  // sitting on it: a lead arriving while the Leads Directory was open and
+  // watched stayed invisible for as long as nobody clicked away and back. This
+  // is the same hook the server-rendered admin screens use, so every screen in
+  // the dashboard now refreshes on the same terms — mount, focus, visibility,
+  // and a 20-second poll that stops entirely while the tab is hidden.
+  //
+  // Refreshing replaces `leads` in place, so an active search, filter, sort or
+  // page in the table below is untouched by it.
+  const refreshIfLive = useCallback(() => {
+    // Demo/mock mode has no server to re-read, and the signed-out screens must
+    // not be asking for leads at all.
+    if (!enabled || !isLiveRef.current) return;
+    void loadLive();
+  }, [enabled, loadLive]);
+
+  // Only where the leads are actually on screen: the Overview's Recent Leads,
+  // and the Leads Directory itself.
+  //
+  // Because this provider lives in the layout, polling it unconditionally meant
+  // every admin page quietly re-fetched the whole leads table every 20 seconds
+  // — a ~158ms request running behind Catalog, Settings, Commission and every
+  // other screen that never shows a lead, competing with the page the person
+  // was actually trying to open.
+  //
+  // Detail pages are excluded on purpose: they read one lead through
+  // `getLead`/`updateLead` and a background replacement of the list underneath
+  // an open edit form would be a race, not a feature.
+  const pathname = usePathname();
+  const showsLeadList = pathname === "/admin" || pathname === "/admin/leads";
+
+  useRefreshOnFocus(refreshIfLive, showsLeadList);
 
   useEffect(() => {
     // Milestone 2: the preview writes nothing, not even locally — otherwise a

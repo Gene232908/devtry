@@ -58,6 +58,31 @@ const nextConfig = {
   // target. Nothing needs it.
   poweredByHeader: false,
 
+  experimental: {
+    // How long the CLIENT-side Router Cache may serve a previously visited
+    // route without asking the server again. Next's default for a dynamic route
+    // is 30 seconds.
+    //
+    // That default is why the admin screens each called `router.refresh()` the
+    // moment they mounted: without it, clicking back to a page you had opened
+    // within the last 30 seconds re-showed the cached copy, so Inventory could
+    // insist a sold car was still in stock. The refresh fixed the staleness by
+    // rendering the page on the server a SECOND time — once for the navigation,
+    // once immediately afterwards — which doubled the cost of every sidebar
+    // click and is what made the dashboard feel slow.
+    //
+    // Setting this to 0 fixes the same staleness at the source: a navigation to
+    // a dynamic route always asks the server, so what arrives is already
+    // current and there is nothing left for a follow-up refresh to correct.
+    // One render per click instead of two.
+    staleTimes: {
+      dynamic: 0,
+      // Static routes (the public marketing pages) keep Next's default. They
+      // have no per-request data and re-fetching them buys nothing.
+      static: 300,
+    },
+  },
+
   async headers() {
     return [
       {
