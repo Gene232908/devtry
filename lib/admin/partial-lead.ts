@@ -20,6 +20,14 @@ export type PartialLead = {
   year: number | null;
   mileage_km: number | null;
   description: string | null;
+  activities?: PartialLeadActivity[];
+};
+
+export type PartialLeadActivity = {
+  id: string;
+  type: "note_updated" | "status_changed";
+  meta: { from?: string; to?: string };
+  created_at: string;
 };
 
 /** Columns selected everywhere a partial lead is read, kept in one place so the

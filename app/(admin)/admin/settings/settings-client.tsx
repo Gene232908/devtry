@@ -5,14 +5,16 @@ import { AlertCircle, Loader2, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { useFreshServerData, useServerState } from "@/lib/admin/use-fresh-server-data";
+import { useFreshServerData } from "@/lib/admin/use-fresh-server-data";
 import {
   fieldErrors,
   settingsSchema,
-  type Manager,
   type Settings,
   type SettingsInput,
 } from "@/lib/admin/settings-schema";
+import { StaffAccounts } from "@/components/admin/StaffAccounts";
+import type { StaffIdentity } from "@/lib/auth/permissions";
+import type { StaffSummary } from "@/lib/admin/staff-schema";
 
 // Business contact details and dashboard preferences, stored in the `settings`
 // table (single row, id = 1).
@@ -29,10 +31,16 @@ import {
 
 type Props = {
   initialSettings: Settings | null;
-  initialManagers: Manager[];
+  /** Retained for API compatibility with the server page; no longer read here.
+   * The Staff Accounts panel manages its own state via initialStaff. */
+  initialManagers: unknown[];
   initialError: string | null;
   /** Managers may read this screen; only admins may write it. */
   canEdit: boolean;
+  /** Resolved server identity — used by StaffAccounts for capability checks. */
+  viewer: StaffIdentity | null;
+  /** Pre-fetched staff list for the Staff Accounts panel. */
+  initialStaff: StaffSummary[];
 };
 
 type SaveState =
@@ -41,10 +49,8 @@ type SaveState =
   | { kind: "saved" }
   | { kind: "error"; message: string };
 
-export default function SettingsClient({ initialSettings, initialManagers, initialError, canEdit }: Props) {
+export default function SettingsClient({ initialSettings, initialError, canEdit, viewer, initialStaff }: Props) {
   useFreshServerData();
-
-  const [managers] = useServerState(initialManagers);
 
   // The last values known to be in the database. Drafts are compared against
   // this to decide whether anything is actually unsaved, and it is replaced by
@@ -227,32 +233,13 @@ export default function SettingsClient({ initialSettings, initialManagers, initi
           <p className="text-fluid--1 text-text-faint">Leave empty to switch lead notifications off.</p>
         </Card>
 
-        <Card className="flex flex-col gap-4 p-5">
-          <h3 className="text-fluid-0 text-text">Staff accounts</h3>
-          {managers.length === 0 ? (
-            <p className="text-fluid--1 text-text-faint">No staff accounts found.</p>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {managers.map((m) => (
-                <li
-                  key={m.id}
-                  className="flex items-center justify-between gap-3 rounded-card bg-surface-2 px-3 py-2 text-fluid--1"
-                >
-                  <span className="min-w-0 truncate text-text">{m.displayName || m.email || m.id}</span>
-                  <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[0.72rem] capitalize text-text-muted">
-                    {m.role}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-          {/* Deliberately read-only. Creating a sign-in requires an auth-admin
-              call and an invite email; a box that only added a row to this list
-              would look like it had made an account that does not exist. */}
-          <p className="text-fluid--1 text-text-faint">
-            Accounts are created in Supabase. This list reflects who can sign in.
-          </p>
-        </Card>
+{viewer && (
+          <StaffAccounts
+            viewer={viewer}
+            initialStaff={initialStaff}
+            canManageStaff={canEdit}
+          />
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

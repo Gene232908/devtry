@@ -11,6 +11,7 @@
 - Five-part presentation: `DAY5REPORT`.
 - Backend finalization: `FINISH THE PRODUCT` (already sent — see 2026-07-17 in `WORK_LOG.md` for the full breakdown).
 - WhatsApp OTP production onboarding: when Sir Nyash has supplied and authorized the real business number, send `NABIGAY NA NI SIR NYASH ANG WHATSAPP BUSINESS NUMBER`. `AGENTS.md` will require the next AI to read `docs/ai/WHATSAPP_OTP_PRODUCTION_SETUP.md` and guide the setup one safe checkpoint at a time.
+- WhatsApp OTP emergency stop: `WHATSAPP_OTP_SENDING_ENABLED=false` in the Production environment, followed by a fresh deployment, stops sends before a database write or Meta API call. Restore it to `true` only after investigation and an approved canary.
 
 ## Last completed work
 

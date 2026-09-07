@@ -4,6 +4,7 @@ import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { hashIp } from "@/lib/whatsapp/otp-hash";
 import { getClientIp } from "@/lib/server/ip";
 import { isRateLimited } from "@/lib/rate-limit";
+import { hasOpenLead } from "@/lib/server/enquiry";
 
 // Captures a valuation form that was started but never submitted, so a visitor
 // who types their name and number and then leaves is still reachable.
@@ -66,6 +67,22 @@ export async function POST(req: NextRequest) {
   if (ip && isRateLimited(`partial-lead:${ip}`, MAX_CAPTURES_PER_IP, CAPTURE_WINDOW_MS)) {
     return ok(false);
   }
+
+  // A number that is ALREADY an open lead is not captured as incomplete.
+  //
+  // partial_leads is temporary storage on the way to `leads`. Once someone has
+  // verified their number and submitted the form, the lead is the real record —
+  // and a row for that same person sitting on Incomplete Forms is a duplicate
+  // of it: the same name and number in two places, with nothing telling the
+  // admin which one to act on. Worse, this endpoint fires on ordinary UI
+  // actions, so simply closing the modal after submitting would put a finished
+  // customer straight back onto the incomplete list.
+  //
+  // Only an OPEN lead blocks the capture. deal and closed are finished
+  // conversations, so the same person starting a second valuation is a genuinely
+  // new enquiry and must still be recorded if they abandon it — the same rule
+  // the OTP gate applies, from the same shared helper.
+  if (await hasOpenLead(getSupabaseAdmin(), phone)) return ok(false);
 
   const step = int(body.furthestStep) ?? 1;
 

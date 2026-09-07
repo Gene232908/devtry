@@ -6,6 +6,8 @@ Use reverse chronological order.
 
 ### Added
 
+- **WhatsApp OTP emergency circuit breaker.** `WHATSAPP_OTP_SENDING_ENABLED=false` stops `/api/otp/send` before it can parse a request, create an OTP record, or call Meta. The valuation form shows a temporary-unavailability message instead of treating this intentional shutdown as its local demo fallback. Focused tests prove the Meta sender is not called while the switch is off.
+
 - **`npm run dev:turbo`** — the dev server on Turbopack. Added alongside `dev` rather than replacing it, so it is opt-in and falling back costs nothing. In development Next compiles each route the first time it is visited, and that (not the network) is the largest part of the "first click on a sidebar link is slow, going back is instant" symptom: a cold `/privacy` measured 0.96s against 0.09s warm, and the admin screens are far heavier. Both `lucide-react` and `recharts` are already in Next 14.2's default `optimizePackageImports`, so there was nothing left to win there.
 - **A loading boundary for the admin area** (`app/(admin)/admin/loading.tsx`). There was no `loading.tsx` anywhere in the app, so during a navigation the App Router had nothing to show and the browser sat on the *previous* page until the next one was fully ready — which read as the dashboard being frozen rather than busy. It also left Next with no static shell to prefetch for these dynamic routes, so the sidebar's `<Link>` prefetching bought nothing. One generic skeleton covers every admin route.
 - **Guided WhatsApp OTP production runbook and trigger command.** Added `docs/ai/WHATSAPP_OTP_PRODUCTION_SETUP.md` with a resumable, beginner-friendly Meta Cloud API checklist covering business/number eligibility, safe migration or coexistence, WABA billing and payment setup, Authentication template approval, least-privilege system-user tokens, Vercel secrets, UAE-only cutover cleanup, spend controls, database/security checks, a controlled real-message canary, monitoring, and emergency rollback. Sending `NABIGAY NA NI SIR NYASH ANG WHATSAPP BUSINESS NUMBER` now instructs future AI sessions through `AGENTS.md` to read the runbook first and guide one verified checkpoint at a time without collecting card data or secrets in chat.
@@ -139,3 +141,11 @@ Use reverse chronological order.
 **Documentation updated:**  
 **Verification:**  
 **Remaining work:**
+## 2026-09-06
+
+- **Admin demo leads:** added Leads-only controls that create 40 server-backed
+  demonstration leads (five per status) and a one-time cleanup action. Demo rows
+  are marked with `source = demonstration` and a `DEMO-ONLY` note; cleanup does
+  not touch non-demo leads, and both controls disappear permanently after a
+  successful delete. Added migration `0020_demo_lead_runs.sql` for the
+  server-side one-time state.

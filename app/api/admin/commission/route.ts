@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { blockedByPreview } from "@/lib/admin/preview-guard";
 import { fetchCommissionStatements } from "@/lib/admin/queries";
+import { requireAdmin } from "@/lib/server/require-admin";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,13 @@ export const dynamic = "force-dynamic";
  * issue/mark-paid actions that reload afterwards.
  */
 export async function GET() {
+  // Commission data is owner-only. Operational staff (call_center/purchaser)
+  // must not see developer or staff commission figures.
+  const auth = await requireAdmin();
+  if (!auth.ok) {
+    return NextResponse.json({ ok: false, error: { message: auth.message } }, { status: auth.status });
+  }
+
   const result = await fetchCommissionStatements();
 
   if (!result.ok) {
@@ -28,6 +36,11 @@ export async function GET() {
  * one action, which is how the developer is actually paid.
  */
 export async function PATCH(req: NextRequest) {
+  const auth = await requireAdmin();
+  if (!auth.ok) {
+    return NextResponse.json({ ok: false, error: { message: auth.message } }, { status: auth.status });
+  }
+
   const blocked = blockedByPreview();
   if (blocked) return blocked;
 

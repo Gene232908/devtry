@@ -276,6 +276,7 @@ WHATSAPP_TEST_RECIPIENTS=
 OTP_HASH_SECRET=<unique cryptographically random production secret>
 DEV_OTP_BYPASS=false
 OTP_PRODUCTION_COUNTRY=AE
+WHATSAPP_OTP_SENDING_ENABLED=true
 ```
 
 Also confirm the existing server-only Supabase variables are present. Never
@@ -317,8 +318,10 @@ approval, make the smallest safe production patch needed to:
       current required request shape.
 - [ ] Confirm `DEV_OTP_BYPASS` cannot run in production and is false/absent in
       the Production environment.
-- [ ] Add or verify an emergency server-side OTP sending kill switch so real
-      sends and charges can be stopped without exposing or deleting secrets.
+- [ ] Verify the emergency server-side OTP sending kill switch is enabled.
+      Set `WHATSAPP_OTP_SENDING_ENABLED=false` only during an incident, then
+      redeploy so no request can write an OTP record or call Meta. Restore it
+      to `true` only after the cause is resolved and an approved canary passes.
 - [ ] Verify rate limits, persistent daily caps, resend cooldown, expiry, wrong
       attempt limit, blocklist behavior, and safe generic error messages.
 - [ ] Verify `whatsapp_otp_verifications`, `otp_attempts`, `blocked_numbers`, and
@@ -406,7 +409,10 @@ After activation:
 If unexpected charges, abuse, wrong recipients, an exposed token, or incorrect
 template content appear:
 
-1. Disable the server-side OTP sending kill switch immediately.
+1. Disable the server-side OTP sending kill switch immediately. Set
+   `WHATSAPP_OTP_SENDING_ENABLED=false` in the Production environment and
+   create a new deployment. This stops the route before any database write or
+   Meta API call; it does not expose or delete existing credentials.
 2. Do not switch `WHATSAPP_TEST_MODE=true` while keeping production sender
    credentials; test mode changes message behavior and is not a safe rollback.
 3. If a token may be exposed, revoke it in Meta and create a replacement using

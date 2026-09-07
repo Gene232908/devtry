@@ -2,6 +2,9 @@
 
 ## Current objective
 
+- [x] 2026-09-07 Fixed Incomplete Forms note/status saving when the existing Supabase project had the activity table but not the migration RPC. The API now has a validated fallback update and activity insert path; apply migration 0021 later to restore the transactional RPC path.
+- [x] 2026-09-07 Updated public valuation capture so a valid name plus phone number automatically creates/updates an incomplete-form record after a short typing pause, even without consent, Next, or closing the form.
+
 Milestone 3 — the private dashboard. Both phases are code-complete: inventory,
 per-sale 2% commission, the two missing pipeline statuses, and monthly
 statements grouped into quarters for payment. Nothing has run against the real
@@ -9,6 +12,11 @@ database yet. Run migrations 0014-0016, verify one full purchase → sale →
 statement cycle, then take the dashboard out of preview mode.
 
 ## In progress
+
+- [x] 2026-09-06 Added a one-time Leads-only demonstration batch: 40 clearly marked
+  rows, five per pipeline status, with server-side deletion scoped to the demo
+  batch. Apply migration `0020_demo_lead_runs.sql` before using the buttons on
+  the deployed app.
 
 - [x] 2026-08-03 Ran migrations 0014, 0015 and 0016 against the live Supabase project and verified the schema and all four functions directly (`KNOWN_ISSUES.md` ISSUE-005).
 - [x] 2026-08-03 Set `ADMIN_PREVIEW = false`. The dashboard now reads and writes the real database.

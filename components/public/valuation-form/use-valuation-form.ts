@@ -30,6 +30,7 @@ const OTP_MESSAGES = {
   // whatsapp_otp_verifications, so honouring this requires someone to watch
   // that table. See the follow-up noted in docs when wiring that up.
   dailyLimit: "Too many verification requests. Our team will contact you shortly.",
+  temporarilyUnavailable: "WhatsApp verification is temporarily unavailable. Please try again later.",
   sendFailed: "Unable to send the code. Please try again.",
 };
 
@@ -46,6 +47,8 @@ function messageForKind(kind: string | undefined): string {
       return OTP_MESSAGES.cooldown;
     case "daily_limit":
       return OTP_MESSAGES.dailyLimit;
+    case "otp_sending_disabled":
+      return OTP_MESSAGES.temporarilyUnavailable;
     default:
       return OTP_MESSAGES.sendFailed;
   }
@@ -184,6 +187,14 @@ export function useValuationForm() {
 
       // Backend unreachable/not configured: fall back to a client-only demo
       // so the flow is still fully testable without live WhatsApp credentials.
+      // An intentional server-side OTP shutdown is NOT a backend outage and
+      // must never become a client-side verification bypass.
+      if (body?.error?.kind === "otp_sending_disabled") {
+        setState("filling");
+        setPhoneVerification((pv) => ({ ...pv, status: "error", errorMessage: OTP_MESSAGES.temporarilyUnavailable }));
+        return { ok: false as const };
+      }
+
       if (res.status === 503) {
         setState("filling");
         setPhoneVerification({
@@ -362,7 +373,7 @@ export function useValuationForm() {
    * the server refuses to re-open them as incomplete anyway.
    */
   const capturePartial = useCallback(
-    (trigger: "close" | "consent" | "next", furthestStep: number) => {
+    (trigger: "close" | "consent" | "next" | "input", furthestStep: number) => {
       if (submittedRef.current || state === "success") return;
 
       // The phone number is the dedupe key and the only way to follow up, so

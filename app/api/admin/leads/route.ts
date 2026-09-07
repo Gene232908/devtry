@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
-import { mapDbLead, type DbLead } from "@/lib/admin/lead-mapper";
+import type { DbLead } from "@/lib/admin/lead-mapper";
+import { requireStaff } from "@/lib/server/require-staff";
+import { selectProjection } from "@/lib/server/staff-projections";
 
 // Always run at request time (never prerender/cache): admin data must be live.
 export const dynamic = "force-dynamic";
@@ -23,6 +25,13 @@ export const dynamic = "force-dynamic";
 const MAX_LEADS = 1000;
 
 export async function GET() {
+  // Middleware verifies authentication; this check additionally confirms an
+  // active profile and resolves role capabilities for projection.
+  const auth = await requireStaff();
+  if (!auth.ok) {
+    return NextResponse.json({ ok: false, error: { message: auth.message } }, { status: auth.status });
+  }
+
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ ok: false, error: { message: "Database is not configured." } }, { status: 503 });
   }
@@ -39,7 +48,8 @@ export async function GET() {
     return NextResponse.json({ ok: false, error: { message: error.message } }, { status: 500 });
   }
 
-  const leads = (data as DbLead[]).map(mapDbLead);
+  const project = selectProjection(auth.identity);
+  const leads = (data as DbLead[]).map((row) => project(row));
   const truncated = leads.length === MAX_LEADS;
 
   if (truncated) {

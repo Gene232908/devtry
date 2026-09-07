@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/server/require-admin";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  // Catalog writes are owner-only. Public reads of makes are not gated here
+  // (no GET handler) — the public catalog is read by the valuation form.
+  const auth = await requireAdmin();
+  if (!auth.ok) {
+    return NextResponse.json({ ok: false, error: { message: auth.message } }, { status: auth.status });
+  }
+
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ ok: false, error: { message: "Database is not configured." } }, { status: 503 });
   }

@@ -172,7 +172,8 @@ async function convertToDealtLead(partialId: string, body: Record<string, unknow
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   if (!isSupabaseConfigured()) return fail("Database is not configured.", 503);
 
-  const { data, error } = await getSupabaseAdmin()
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
     .from("partial_leads")
     .select(PARTIAL_LEAD_COLUMNS)
     .eq("id", params.id)
@@ -184,7 +185,14 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   if (error) return fail(error.message, 500);
   if (!data) return fail("Not found.", 404);
 
-  return NextResponse.json({ ok: true, data: { partialLead: data } });
+  const { data: activities, error: activityError } = await supabase
+    .from("partial_lead_events")
+    .select("id, type, meta, created_at")
+    .eq("partial_lead_id", params.id)
+    .order("created_at", { ascending: false });
+  if (activityError) return fail(activityError.message, 500);
+
+  return NextResponse.json({ ok: true, data: { partialLead: { ...data, activities: activities ?? [] } } });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -206,22 +214,75 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return convertToDealtLead(params.id, body);
   }
 
-  const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
-
+  let nextStatus: string | undefined;
+  let nextNotes: string | undefined;
   if (body.status !== undefined) {
     if (typeof body.status !== "string" || !ALLOWED_STATUSES.has(body.status)) {
       return fail("Invalid status.", 400);
     }
-    update.status = body.status;
+    nextStatus = body.status;
   }
 
   if (body.notes !== undefined) {
     if (typeof body.notes !== "string") return fail("Invalid notes.", 400);
-    update.notes = body.notes;
+    nextNotes = body.notes;
   }
 
-  const { error } = await getSupabaseAdmin().from("partial_leads").update(update).eq("id", params.id);
-  if (error) return fail(error.message, 500);
+  const supabase = getSupabaseAdmin();
+  const { data: current, error: readError } = await supabase
+    .from("partial_leads")
+    .select("status, notes")
+    .eq("id", params.id)
+    .is("converted_lead_id", null)
+    .maybeSingle();
+  if (readError) return fail(readError.message, 500);
+  if (!current) return fail("Incomplete form not found.", 404);
+
+  const status = nextStatus ?? current.status;
+  const notes = nextNotes ?? current.notes ?? "";
+
+  // Keep the API usable while older Supabase projects are missing the RPC
+  // from migration 0021. The service-role client is already trusted here;
+  // the route still validates the status and reads the unconverted row above.
+  // Once the RPC exists, it remains the preferred transactional path.
+  const rpc = await supabase.rpc("update_partial_lead_follow_up", {
+    p_id: params.id,
+    p_status: status,
+    p_notes: notes,
+  });
+
+  if (rpc.error) {
+    if (!rpc.error.message.toLowerCase().includes("could not find the function")) {
+      return fail(rpc.error.message, 500);
+    }
+
+    const { error: updateError } = await supabase
+      .from("partial_leads")
+      .update({ status, notes, updated_at: new Date().toISOString() })
+      .eq("id", params.id)
+      .is("converted_lead_id", null);
+    if (updateError) return fail(updateError.message, 500);
+
+    const events = [];
+    if ((current.notes ?? "") !== notes) {
+      events.push({
+        partial_lead_id: params.id,
+        type: "note_updated",
+        meta: { from: current.notes ?? "", to: notes },
+      });
+    }
+    if (current.status !== status) {
+      events.push({
+        partial_lead_id: params.id,
+        type: "status_changed",
+        meta: { from: current.status, to: status },
+      });
+    }
+    if (events.length > 0) {
+      const { error: eventError } = await supabase.from("partial_lead_events").insert(events);
+      if (eventError) return fail(eventError.message, 500);
+    }
+  }
 
   return NextResponse.json({ ok: true, data: { id: params.id } });
 }

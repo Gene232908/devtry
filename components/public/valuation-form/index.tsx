@@ -56,6 +56,17 @@ export function ValuationForm({ registerCapture }: { registerCapture?: (capture:
     capturePartial("consent", step);
   }, [consent, capturePartial, step]);
 
+  // Step 1 is already enough to recover a visitor: name plus a usable phone
+  // number. Save automatically after the visitor pauses, even if they never
+  // tick consent, press Next, or close the form.
+  const fullName = form.values.fullName;
+  const whatsapp = form.values.whatsapp;
+  useEffect(() => {
+    if (!fullName.trim() || !whatsapp.trim()) return;
+    const timer = window.setTimeout(() => capturePartial("input", step), 700);
+    return () => window.clearTimeout(timer);
+  }, [fullName, whatsapp, capturePartial, step]);
+
   function goNext() {
     // Captured before validation so a visitor who filled in their name and
     // number but left a later field blank is still recorded — pressing Next is

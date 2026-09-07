@@ -3,6 +3,7 @@ import { normalizeWhatsappPhone } from "@/lib/whatsapp/phone";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { blockedByPreview } from "@/lib/admin/preview-guard";
 import { fetchBlockedNumbers } from "@/lib/admin/queries";
+import { requireAdmin } from "@/lib/server/require-admin";
 
 // Admin-only (gated by middleware.ts). Manages the hard blocklist that
 // /api/otp/send checks before sending anything, so a blocked number can never
@@ -28,6 +29,10 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  // Blocking/unblocking numbers is an owner-only action.
+  const auth = await requireAdmin();
+  if (!auth.ok) return bad(auth.message, auth.status);
+
   const blocked = blockedByPreview();
   if (blocked) return blocked;
 
@@ -67,6 +72,9 @@ export async function POST(req: NextRequest) {
 
 /** Unblocks a number — the recovery path for a customer blocked by mistake. */
 export async function DELETE(req: NextRequest) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return bad(auth.message, auth.status);
+
   const blocked = blockedByPreview();
   if (blocked) return blocked;
 
