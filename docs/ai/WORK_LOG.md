@@ -4,6 +4,46 @@ This is the factual source for reports.
 
 Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
+## 2026-09-08
+
+### Completed
+
+- Implemented Step 1 (Roles, Access Boundaries & Staff Accounts) from plan.md on new `improvement` branch.
+- Created `lib/auth/permissions.ts`: StaffRole/Capability types, role→capability matrix, buildIdentity/hasCapability helpers.
+- Created `lib/admin/staff-schema.ts`: StaffSummary DTO, StaffDraft/StaffPatch Zod schemas for staff provisioning.
+- Created `supabase/migrations/0023_staff_roles_permissions.sql`: additive enum extension (call_center, purchaser), is_active column on profiles, provision_staff_account RPC, would_remove_last_owner guard, updated RLS for assigned-lead row visibility, updated is_admin/is_staff helpers to include is_active check.
+- Created `lib/server/require-staff.ts`: general-purpose auth guard verifying JWT + profile existence + is_active on every API call.
+- Modified `lib/server/require-admin.ts`: adds is_active check and now returns StaffIdentity.
+- Created `lib/server/staff-projections.ts`: role-safe lead projections; notes fully excluded for operational staff (no regex redaction).
+- Created `app/api/admin/staff/route.ts` (GET list, POST invite+provision).
+- Created `app/api/admin/staff/[id]/route.ts` (PATCH rename/role/enable/disable with last-owner guard).
+- Created `components/admin/StaffAccounts.tsx`: staff management panel with invite dialog, role selector, enable/disable, isolated from contact-settings state.
+- Modified `app/(admin)/admin/settings/page.tsx`: seeds viewer identity and initialStaff from server.
+- Modified `app/(admin)/admin/settings/settings-client.tsx`: mounts StaffAccounts; removed old read-only managers list.
+- Added requireStaff + role projection to `app/api/admin/leads/route.ts`.
+- Added requireAdmin to GET+PATCH of `app/api/admin/commission/route.ts`.
+- Added requireAdmin to write routes for catalog (makes, makes/[id], models, models/[id], trims) and blocked-numbers (POST/DELETE).
+- Created `lib/auth/permissions.test.ts`: 13 tests.
+- Created `lib/server/staff-projections.test.ts`: 17 tests.
+
+### Verification
+
+- `npx tsc --noEmit` passed with no output.
+- `npm run lint` passed: ✔ No ESLint warnings or errors.
+- `npm test lib/auth/permissions.test.ts lib/server/staff-projections.test.ts` passed: 30 tests.
+- Branch: `improvement` created from `main`.
+
+### Security impact
+
+- Disabled accounts now fail at the API layer even within an unexpired JWT window.
+- Operational staff (call_center, purchaser) cannot see each other's restricted data; projections applied server-side.
+- All catalog write, blocklist write, and commission routes now require active owner identity.
+
+### Mobile/performance impact
+
+- StaffAccounts dialog is full-width on mobile, keyboard-operable, no layout changes to existing screens.
+- No additional queries on non-Settings pages.
+
 ## 2026-09-04
 
 ### Completed
