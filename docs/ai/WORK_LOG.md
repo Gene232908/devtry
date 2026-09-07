@@ -4,6 +4,25 @@ This is the factual source for reports.
 
 Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
+## 2026-09-04
+
+### Completed
+
+- Added the server-only WhatsApp OTP emergency circuit breaker. When `WHATSAPP_OTP_SENDING_ENABLED=false`, `/api/otp/send` stops before request parsing, Supabase writes, or a Meta API call. The public valuation form shows a safe temporary-unavailability message and does not activate its client-only demo fallback for this deliberate response.
+- Added focused tests for both switch parsing and the API route boundary. No Meta account, WABA, phone number, billing method, token, Vercel variable, deployment, or real message was changed.
+
+### Verification
+
+- Focused kill-switch test passed: 4 tests across 2 files.
+- `npm run lint` passed with no warnings or errors.
+- `npx tsc --noEmit` passed with no output.
+- `npm test` passed: 111 tests across 11 files.
+- `npm run build:check` passed and wrote the isolated `.next-build` output.
+
+### Next
+
+- During production setup, add `WHATSAPP_OTP_SENDING_ENABLED=true` to Vercel Production; use `false` plus a redeployment only for an incident.
+
 ## 2026-08-07
 
 ### Completed
@@ -910,3 +929,14 @@ log's history.
 - Tests: Not run; no test script is configured.
 - Build: `npm run build` passed.
 - Manual check: Browser preview on `http://localhost:3011` checked for desktop section layout, no repeated hero image in How It Works/Contact, and mobile overflow.
+## 2026-09-06
+
+- Added the Leads-only demo batch flow for the admin walkthrough: 40 server-side
+  sample leads, five each for New, Pending, Contacted, Inspection Scheduled,
+  Inspected, Negotiating, Deal, and Closed. The create action is one-time; the
+  delete action targets only marked demo rows and permanently hides both demo
+  buttons after successful cleanup.
+- Added `supabase/migrations/0020_demo_lead_runs.sql`. It must be applied to the
+  target Supabase project before the deployed controls can be used.
+- Verification: `npm run lint`, `npx tsc --noEmit`, and `npm run build:check`
+  passed.

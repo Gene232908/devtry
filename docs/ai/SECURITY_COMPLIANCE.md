@@ -67,6 +67,18 @@ Before collecting personal data, document:
 
 The project still requires qualified UAE legal/compliance review before production.
 
+## 2026-09-04 WhatsApp OTP emergency stop
+
+- `WHATSAPP_OTP_SENDING_ENABLED=false` is a server-only emergency circuit
+  breaker for paid WhatsApp OTP sends. The send route stops before parsing the
+  request, writing an OTP record, or calling Meta.
+- The public form receives a safe temporary-unavailability message. It must not
+  treat this intentional stop as an offline/demo fallback or client-side OTP
+  verification bypass.
+- The switch name and value may be reviewed, but access tokens, OTP secrets,
+  customer numbers, and verification codes must never be copied into chat or
+  documentation.
+
 ## 2026-07-02 public valuation form update
 
 - The Milestone 1 UI now collects name and WhatsApp number first, following Sir Nyash's preference to capture contact details before the customer leaves.

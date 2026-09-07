@@ -19,6 +19,7 @@ import {
   PARTIAL_STEP_LABELS,
   PARTIAL_TRIGGER_LABELS,
   type PartialLead,
+  type PartialLeadActivity,
 } from "@/lib/admin/partial-lead";
 import { STATUS_HINT, STATUS_LABEL } from "@/lib/format";
 import { LeadStatus } from "@/config/mock-data";
@@ -92,6 +93,7 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
   const [justSaved, setJustSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState(initialStatus);
+  const activities = partial.activities ?? [];
 
   // `pending` survives the dialog's exit animation on purpose. Clearing it on
   // close made the closing dialog fall back to the other action's wording for
@@ -353,6 +355,31 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
               </p>
             )}
           </Card>
+
+          <Card className="flex flex-col gap-3 p-5">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-fluid-0 text-text">Recent Activity</h3>
+              <span className="text-fluid--1 text-text-muted">{activities.length + 1} events</span>
+            </div>
+            <ul className="flex flex-col gap-3">
+              <li className="flex gap-3 text-fluid--1">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
+                <div>
+                  <p className="text-text">Incomplete valuation captured</p>
+                  <p className="text-text-faint">{formatActivityTimestamp(partial.created_at)}</p>
+                </div>
+              </li>
+              {activities.map((activity) => (
+                <li key={activity.id} className="flex gap-3 text-fluid--1">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
+                  <div>
+                    <p className="text-text">{activityMessage(activity)}</p>
+                    <p className="text-text-faint">{formatActivityTimestamp(activity.created_at)}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Card>
         </div>
 
         <div className="flex flex-col gap-6">
@@ -563,4 +590,22 @@ function Detail({ label, value }: { label: string; value: string }) {
       <p className="mt-0.5 break-words text-text">{value}</p>
     </div>
   );
+}
+
+function formatActivityTimestamp(iso: string): string {
+  return new Date(iso).toLocaleString("en-GB", {
+    timeZone: "Asia/Dubai",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function activityMessage(activity: PartialLeadActivity): string {
+  if (activity.type === "status_changed") {
+    return `Status changed from ${STATUS_LABEL[activity.meta.from as LeadStatus] ?? activity.meta.from ?? "unknown"} to ${STATUS_LABEL[activity.meta.to as LeadStatus] ?? activity.meta.to ?? "unknown"}`;
+  }
+  return "Follow-up note updated";
 }

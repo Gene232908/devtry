@@ -8,25 +8,26 @@ import { checkOtpSendGuards } from "@/lib/server/otp-guards";
 import { getClientIp } from "@/lib/server/ip";
 import { isDevOtpBypass, DEV_OTP_CODE } from "@/lib/otp-dev";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
+import { hasOpenLead } from "@/lib/server/enquiry";
+import { isWhatsappOtpSendingEnabled } from "@/lib/server/otp-sending";
 
 const OTP_TTL_MS = 5 * 60 * 1000;
 const RESEND_COOLDOWN_SEC = 60;
 const MAX_ATTEMPTS = 5;
-
-/**
- * Lead statuses that let the same number verify again.
- *
- * Both mean the conversation ENDED: 'deal' — the car was bought; 'closed' —
- * they met and it was not purchased. Anything else is still open, and someone
- * whose enquiry is open does not need to prove their number a second time.
- */
-const REOPENABLE_STATUSES = new Set(["deal", "closed"]);
 
 function err(kind: string, message: string, status: number) {
   return NextResponse.json({ ok: false, error: { kind, message } }, { status });
 }
 
 export async function POST(req: NextRequest) {
+  // Emergency circuit breaker. It intentionally runs before request parsing,
+  // database writes, or the Meta API call, so turning it off immediately stops
+  // both OTP charges and new verification records.
+  if (!isWhatsappOtpSendingEnabled()) {
+    console.warn("[otp/send] WhatsApp OTP sending disabled by emergency switch");
+    return err("otp_sending_disabled", "WhatsApp verification is temporarily unavailable. Please try again later.", 503);
+  }
+
   if (!isSupabaseConfigured()) {
     return err("server_error", "Verification is not configured yet.", 503);
   }
@@ -98,37 +99,20 @@ export async function POST(req: NextRequest) {
     // copy: this is not a refusal to be worked around, it is an answer — "we
     // have your details" — and the form says exactly that instead of showing a
     // code box that can never be satisfied.
-    // BOTH tables count as "we have your details".
+    // ONLY a real lead counts as "we have your details".
     //
-    // Checking `leads` alone missed the more common case: someone who filled in
-    // their number and car and then closed the tab has a `partial_leads` row and
-    // no lead at all. Their information is sitting in Incomplete Forms — the
-    // business can already call them — so asking them to verify again on their
-    // next visit is exactly the loop this is meant to stop.
+    // A partial_leads row deliberately does NOT, and that is the whole point of
+    // this change. That table is temporary storage for someone who typed a name
+    // and a number and then stopped: nothing was verified, and often the car was
+    // never even chosen. Telling them "your information has been received and
+    // management will contact you" was not true, and it trapped them — the form
+    // refused to send a code, so the one route they had to FINISH the very form
+    // they had started was closed, and their half-record sat in Incomplete Forms
+    // for good.
     //
-    // Converted captures are skipped because the lead they became is authoritative
-    // and is checked directly.
-    const [leadRes, partialRes] = await Promise.all([
-      supabase
-        .from("leads")
-        .select("status")
-        .eq("phone_e164", phone)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("partial_leads")
-        .select("status")
-        .eq("phone_e164", phone)
-        .is("converted_lead_id", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    ]);
-
-    const onFile = leadRes.data ?? partialRes.data;
-
-    if (onFile && !REOPENABLE_STATUSES.has(onFile.status)) {
+    // A lead is the opposite: it only exists once a code was delivered, entered
+    // correctly, and the full form submitted. At that point the message is true.
+    if (await hasOpenLead(supabase, phone)) {
       // Deliberately NOT logged as a failed attempt.
       //
       // `otp_attempts` feeds the "Hit a limit" table, which exists to surface

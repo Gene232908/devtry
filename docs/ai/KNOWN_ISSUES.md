@@ -294,6 +294,17 @@ Allow local UAE mobile and country-code UAE mobile input formats while still rej
 **Resolved date:**  
 2026-07-02
 
+### ISSUE-006 - Missing partial lead activity RPC on existing Supabase project
+
+**Severity:** Medium  
+**Status:** Resolved in API fallback; migration still recommended
+
+**Description:** The `partial_lead_events` table existed, but the `update_partial_lead_follow_up` RPC was absent from the Supabase schema cache. Saving a note or status on Incomplete Forms therefore failed.
+
+**Workaround:** The admin API now falls back to a validated update plus activity inserts when the RPC is missing.
+
+**Planned fix:** Apply migration `0021_partial_lead_activity.sql` so future updates use the transactional RPC path.
+
 ## Issue template
 
 ### ISSUE-XXX — Title

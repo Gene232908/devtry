@@ -61,3 +61,12 @@ Before production, define:
 - Security alerts.
 
 A backup is not trusted until restore is tested.
+
+## WhatsApp OTP incident stop
+
+For unexpected OTP charges, abuse, wrong-recipient reports, or suspected
+credential exposure, set the Production-only environment value
+`WHATSAPP_OTP_SENDING_ENABLED=false`, then create a new deployment. This stops
+the server route before it writes an OTP record or calls Meta. Verify the
+release, investigate Meta Account Quality and non-sensitive server logs, and
+run an approved canary before restoring the value to `true` and redeploying.

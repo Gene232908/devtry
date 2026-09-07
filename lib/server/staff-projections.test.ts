@@ -1,0 +1,161 @@
+import { describe, it, expect } from "vitest";
+import {
+  projectLeadForOwner,
+  projectLeadForCallCenter,
+  projectLeadForPurchaser,
+  selectProjection,
+} from "@/lib/server/staff-projections";
+import { buildIdentity } from "@/lib/auth/permissions";
+import type { DbLead } from "@/lib/admin/lead-mapper";
+
+/**
+ * lib/server/staff-projections.test.ts
+ *
+ * Verifies role-safe field projections for lead data.
+ */
+
+const SAMPLE: DbLead = {
+  id: "lead-1",
+  created_at: "2026-09-01T10:00:00Z",
+  full_name: "Ali Hassan",
+  phone_e164: "+971501234567",
+  email: "ali@example.com",
+  make: "Toyota",
+  model: "Camry",
+  trim: "SE",
+  year: 2022,
+  mileage_km: 30000,
+  condition: "good",
+  option_level: "Mid Mode",
+  description: "Well maintained",
+  emirate: "Dubai",
+  status: "new",
+  estimated_value_aed: 85000,
+  notes: "Customer called twice. Offer around AED 80k.",
+  is_duplicate: false,
+  is_spam: false,
+};
+
+// ─── Owner ─────────────────────────────────────────────────────────────────
+
+describe("projectLeadForOwner", () => {
+  const result = projectLeadForOwner(SAMPLE);
+
+  it("exposes full name and contact info", () => {
+    expect(result.fullName).toBe("Ali Hassan");
+    expect(result.phoneE164).toBe("+971501234567");
+    expect(result.email).toBe("ali@example.com");
+  });
+
+  it("exposes price", () => {
+    expect(result.estimatedValueAed).toBe(85000);
+  });
+
+  it("exposes notes", () => {
+    expect(result.notes).toBe("Customer called twice. Offer around AED 80k.");
+  });
+});
+
+// ─── Call Centre ────────────────────────────────────────────────────────────
+
+describe("projectLeadForCallCenter", () => {
+  const result = projectLeadForCallCenter(SAMPLE);
+
+  it("exposes contact info (name, phone, email)", () => {
+    expect(result.fullName).toBe("Ali Hassan");
+    expect(result.phoneE164).toBe("+971501234567");
+    expect(result.email).toBe("ali@example.com");
+  });
+
+  it("does NOT expose price", () => {
+    expect(result.estimatedValueAed).toBeUndefined();
+  });
+
+  it("does NOT expose notes (may contain financial data)", () => {
+    expect(result.notes).toBeUndefined();
+  });
+
+  it("exposes vehicle details", () => {
+    expect(result.make).toBe("Toyota");
+    expect(result.model).toBe("Camry");
+    expect(result.year).toBe(2022);
+  });
+});
+
+// ─── Purchaser ──────────────────────────────────────────────────────────────
+
+describe("projectLeadForPurchaser", () => {
+  const result = projectLeadForPurchaser(SAMPLE);
+
+  it("does NOT expose contact info", () => {
+    expect(result.fullName).toBeUndefined();
+    expect(result.phoneE164).toBeUndefined();
+    expect(result.email).toBeUndefined();
+  });
+
+  it("exposes price", () => {
+    expect(result.estimatedValueAed).toBe(85000);
+  });
+
+  it("does NOT expose notes (may contain contact data)", () => {
+    expect(result.notes).toBeUndefined();
+  });
+
+  it("exposes vehicle details", () => {
+    expect(result.make).toBe("Toyota");
+    expect(result.status).toBe("new");
+  });
+});
+
+// ─── selectProjection ────────────────────────────────────────────────────────
+
+describe("selectProjection", () => {
+  it("returns owner projection for admin", () => {
+    const identity = buildIdentity("u1", "admin", "Boss");
+    const project = selectProjection(identity);
+    const result = project(SAMPLE);
+    expect(result.fullName).toBe("Ali Hassan");
+    expect(result.notes).toBeDefined();
+  });
+
+  it("returns owner projection for manager (legacy full-access)", () => {
+    const identity = buildIdentity("u2", "manager", "Owner");
+    const project = selectProjection(identity);
+    const result = project(SAMPLE);
+    expect(result.fullName).toBe("Ali Hassan");
+    expect(result.notes).toBeDefined();
+  });
+
+  it("returns call_center projection for call_center role", () => {
+    const identity = buildIdentity("u3", "call_center", "Maricel");
+    const project = selectProjection(identity);
+    const result = project(SAMPLE);
+    expect(result.fullName).toBe("Ali Hassan");
+    expect(result.estimatedValueAed).toBeUndefined();
+  });
+
+  it("returns purchaser projection for purchaser role", () => {
+    const identity = buildIdentity("u4", "purchaser", "Michael");
+    const project = selectProjection(identity);
+    const result = project(SAMPLE);
+    expect(result.fullName).toBeUndefined();
+    expect(result.estimatedValueAed).toBe(85000);
+  });
+});
+
+// ─── Notes exclusion ─────────────────────────────────────────────────────────
+
+describe("notes exclusion policy", () => {
+  const notesWithContact: DbLead = { ...SAMPLE, notes: "Call +971509999999 to confirm." };
+  const notesWithMoney: DbLead = { ...SAMPLE, notes: "Profit margin AED 15000." };
+
+  it("call_center does not see notes even when they contain phone numbers", () => {
+    const result = projectLeadForCallCenter(notesWithContact);
+    expect(result.notes).toBeUndefined();
+  });
+
+  it("purchaser does not see notes even when they contain money figures", () => {
+    const result = projectLeadForPurchaser(notesWithMoney);
+    expect(result.notes).toBeUndefined();
+  });
+});
