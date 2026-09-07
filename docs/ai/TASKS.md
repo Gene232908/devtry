@@ -2,14 +2,12 @@
 
 ## Current objective
 
+- [x] 2026-09-08 Implemented Step 1 from plan.md: roles, access boundaries, and staff accounts (branch: `improvement`).
+  - `lib/auth/permissions.ts`, `lib/admin/staff-schema.ts`, `0023_staff_roles_permissions.sql`, `require-staff.ts`, `require-admin.ts` (updated), `staff-projections.ts`, `StaffAccounts.tsx`, staff API routes, settings page wiring, route guards on leads/commission/catalog/blocklist. Tests: 30 passing.
+  - **Next**: Run `0023_staff_roles_permissions.sql` against a test Supabase instance and verify one full owner → add call centre → disable → re-enable cycle. Then proceed to Step 2 (attribution) or Step 6 (Nodemailer) per client priority.
+
 - [x] 2026-09-07 Fixed Incomplete Forms note/status saving when the existing Supabase project had the activity table but not the migration RPC. The API now has a validated fallback update and activity insert path; apply migration 0021 later to restore the transactional RPC path.
 - [x] 2026-09-07 Updated public valuation capture so a valid name plus phone number automatically creates/updates an incomplete-form record after a short typing pause, even without consent, Next, or closing the form.
-
-Milestone 3 — the private dashboard. Both phases are code-complete: inventory,
-per-sale 2% commission, the two missing pipeline statuses, and monthly
-statements grouped into quarters for payment. Nothing has run against the real
-database yet. Run migrations 0014-0016, verify one full purchase → sale →
-statement cycle, then take the dashboard out of preview mode.
 
 ## In progress
 
