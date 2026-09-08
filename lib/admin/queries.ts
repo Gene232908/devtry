@@ -328,6 +328,38 @@ export async function fetchPartialLeads(identity?: { role: string; userId: strin
   return { ok: true, data: { partialLeads: (data ?? []) as unknown as PartialLead[] } };
 }
 
+/** Single incomplete valuation form with activities. */
+export async function fetchPartialLead(id: string): Promise<QueryResult<{ partialLead: PartialLead }>> {
+  if (!isSupabaseConfigured()) return NOT_CONFIGURED;
+
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("partial_leads")
+    .select(PARTIAL_LEAD_COLUMNS)
+    .eq("id", id)
+    .is("converted_lead_id", null)
+    .maybeSingle();
+
+  if (error) return { ok: false, message: error.message, status: 500 };
+  if (!data) return { ok: false, message: "Not found.", status: 404 };
+
+  let activities: Array<{ id: string; type: "note_updated" | "status_changed"; meta: { from?: string; to?: string }; created_at: string }> = [];
+  try {
+    const { data: actData, error: actError } = await supabase
+      .from("partial_lead_events")
+      .select("id, type, meta, created_at")
+      .eq("partial_lead_id", id)
+      .order("created_at", { ascending: false });
+    if (!actError && actData) {
+      activities = actData as typeof activities;
+    }
+  } catch {
+    // Optional audit table
+  }
+
+  return { ok: true, data: { partialLead: { ...(data as unknown as PartialLead), activities } } };
+}
+
 export type BlockedNumberRow = {
   phone_e164: string;
   reason: string;
