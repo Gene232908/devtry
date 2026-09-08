@@ -2,11 +2,15 @@ import { describe, expect, it } from "vitest";
 import { countDistinctSessions, countDistinctSessionsByDay } from "./visitor-count";
 import {
   buildLastSevenUaeDays,
+  buildUaeDayRange,
+  endOfUaeDayUtc,
   formatTimeUntil,
   nextUaeMidnightUtc,
   startOfUaeDayUtc,
   uaeDayKey,
+  uaeMidnightUtc,
 } from "@/lib/uae-time";
+import { resolveDateRange } from "./queries";
 
 // The bug these guard against: "visitors" counted page_view ROWS, so one person
 // browsing three pages was reported as three visitors.
@@ -197,3 +201,54 @@ describe("formatTimeUntil", () => {
     expect(formatTimeUntil(midnight, NOW)).toBe("10h 00m");
   });
 });
+
+describe("buildUaeDayRange (Historical Backlog / Time Machine)", () => {
+  it("builds exact 7 days for Days 1 to 7 of August 2025", () => {
+    const days = buildUaeDayRange("2025-08-01", "2025-08-07");
+    expect(days).toHaveLength(7);
+    expect(days[0].key).toBe("2025-08-01");
+    expect(days[0].label).toBe("01 Aug");
+    expect(days[0].startsAt.toISOString()).toBe("2025-07-31T20:00:00.000Z");
+    expect(days[6].key).toBe("2025-08-07");
+    expect(days[6].label).toBe("07 Aug");
+  });
+
+  it("builds all 31 days for a complete month (August 2025)", () => {
+    const days = buildUaeDayRange("2025-08-01", "2025-08-31");
+    expect(days).toHaveLength(31);
+    expect(days[0].key).toBe("2025-08-01");
+    expect(days[30].key).toBe("2025-08-31");
+  });
+
+  it("produces single day when from and to are equal (Today)", () => {
+    const days = buildUaeDayRange("2026-05-10", "2026-05-10");
+    expect(days).toHaveLength(1);
+    expect(days[0].key).toBe("2026-05-10");
+  });
+});
+
+describe("resolveDateRange", () => {
+  it("resolves YYYY-MM-DD UAE date range to exact UTC instants", () => {
+    const res = resolveDateRange({ from: "2025-08-01", to: "2025-08-07" });
+    expect(res).not.toBeNull();
+    expect(res?.fromUtc.toISOString()).toBe("2025-07-31T20:00:00.000Z");
+    expect(res?.toUtc.toISOString()).toBe("2025-08-07T19:59:59.999Z");
+    expect(res?.fromKey).toBe("2025-08-01");
+    expect(res?.toKey).toBe("2025-08-07");
+  });
+
+  it("returns null when range is missing or incomplete", () => {
+    expect(resolveDateRange(undefined)).toBeNull();
+    expect(resolveDateRange({ from: "2025-08-01" })).toBeNull();
+  });
+
+  it("computes uaeMidnightUtc and endOfUaeDayUtc accurately", () => {
+    const mid = uaeMidnightUtc(2025, 8, 1);
+    expect(mid.toISOString()).toBe("2025-07-31T20:00:00.000Z");
+
+    const end = endOfUaeDayUtc("2025-08-01");
+    expect(end.toISOString()).toBe("2025-08-01T19:59:59.999Z");
+  });
+});
+
+

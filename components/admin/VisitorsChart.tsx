@@ -13,14 +13,22 @@ import {
 } from "@/components/admin/chart-parts";
 import type { ChartPoint } from "@/lib/admin/use-admin-stats";
 
-export function VisitorsChart({ data, isLoading }: { data: ChartPoint[]; isLoading?: boolean }) {
+export function VisitorsChart({
+  data,
+  isLoading,
+  periodLabel = "This Week",
+}: {
+  data: ChartPoint[];
+  isLoading?: boolean;
+  periodLabel?: string;
+}) {
   const values = data.map((d) => d.visitors ?? 0);
 
   return (
     <Card className="p-5">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-fluid-0 text-text">Website Visitors</h3>
-        <span className="text-fluid--1 text-text-faint">This Week</span>
+        <span className="text-fluid--1 text-text-faint">{periodLabel}</span>
       </div>
       <div className="h-48">
         {isLoading ? (

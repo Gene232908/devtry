@@ -26,12 +26,28 @@ Update it after meaningful completed work. Do not invent hours, tests, or dates.
 - Created `lib/auth/permissions.test.ts`: 13 tests.
 - Created `lib/server/staff-projections.test.ts`: 17 tests.
 
+- Implemented Overview Historical Backlog & Time-Machine Date Filtering:
+  - Created interactive Visual Calendar Popover (`components/admin/OverviewDateFilter.tsx`): luxury dark/gold calendar grid, month/year navigation, interactive range click-and-drag highlighting, preset shortcuts (Today, This Week, This Month, Last Month, All Time), and week shortcuts (Week 1: Days 1–7, Week 2: Days 8–14, etc.).
+  - Enhanced `lib/uae-time.ts`: added `buildUaeDayRange` (with reverse-order swap guard), `uaeMidnightUtc`, `uaeDayStringToUtc`, `endOfUaeDayUtc`, and aligned `uaeDayKey` to format the true UAE calendar date (YYYY-MM-DD).
+  - Enhanced `lib/admin/queries.ts`: `fetchAdminStats` and `fetchAdminCharts` accept optional `dateRange` ({ from, to }) to query and aggregate historical backlog cohorts for pipeline stages, engagement clicks, abandoned forms, visitors, and daily chart series; added swap guard to `resolveDateRange`.
+  - Fixed UAE timezone alignment bug in `dashboard-client.tsx`'s `filteredLeads` by utilizing `uaeDayStringToUtc` and `endOfUaeDayUtc`.
+  - Enhanced `app/api/admin/stats/route.ts` and `app/api/admin/charts/route.ts` to pass `from` and `to` search params.
+  - Enhanced `lib/admin/use-admin-stats.ts`: accepts `filter` to refetch on range changes with loading state and refetch helper.
+  - Updated `components/admin/VisitorsChart.tsx` and `SubmissionsChart.tsx`: added `periodLabel` prop to dynamically reflect the selected range.
+  - Added unit tests in `lib/admin/visitor-count.test.ts` (6 new tests, 147 total).
+  - Fixed TypeScript any annotations in assignment and staff options API routes.
+  - Refactored `components/admin/OverviewDateFilter.tsx`:
+    - Removed redundant exterior row of preset buttons (`PERIOD: This Week, Today...`) that cluttered the top bar and caused the calendar to be pushed/clipped off-screen.
+    - Designed prominent, unified Date Filter trigger button (`Date Filter: [Label] ▾`) with active status pill and "Reset to Live Week" action.
+    - Fixed calendar popover visibility bug (previously used non-existent `bg-surface-1` making it transparent); now uses solid elevated dark background (`bg-[#141416]` with `border-border-gold/70`, `shadow-[0_20px_50px_rgba(0,0,0,0.95)]`, `z-50`).
+    - Positioned anchored `left-0 top-full mt-2 w-full sm:w-[620px]` with organized two-column layout: Standard Presets & Month Backlog Drill-Downs (Weeks 1–5) on the left sidebar, and interactive Month/Year calendar matrix on the right.
+
 ### Verification
 
 - `npx tsc --noEmit` passed with no output.
 - `npm run lint` passed: ✔ No ESLint warnings or errors.
-- `npm test lib/auth/permissions.test.ts lib/server/staff-projections.test.ts` passed: 30 tests.
-- Branch: `improvement` created from `main`.
+- `npm test` passed: 147 passed across 13 files.
+- `npm run build:check` passed with 0 errors.
 
 ### Security impact
 
