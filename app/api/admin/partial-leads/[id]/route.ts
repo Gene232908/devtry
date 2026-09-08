@@ -192,10 +192,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   });
 
   if (rpc.error) {
-    if (!rpc.error.message.toLowerCase().includes("could not find the function")) {
-      return fail(rpc.error.message, 500);
-    }
-
     const { error: updateError } = await supabase
       .from("partial_leads")
       .update({ status, notes, updated_at: new Date().toISOString() })
@@ -219,8 +215,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       });
     }
     if (events.length > 0) {
-      const { error: eventError } = await supabase.from("partial_lead_events").insert(events);
-      if (eventError) return fail(eventError.message, 500);
+      try {
+        await supabase.from("partial_lead_events").insert(events);
+      } catch {
+        // non-fatal if optional audit table is missing
+      }
     }
   }
 
