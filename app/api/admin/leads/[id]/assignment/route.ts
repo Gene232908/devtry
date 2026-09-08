@@ -15,7 +15,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ ok: false, error: { message: "Database is not configured." } }, { status: 503 });
   }
 
-  let body: any;
+  let body: { callCenterId?: unknown; purchaserId?: unknown };
   try {
     body = await req.json();
   } catch {

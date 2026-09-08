@@ -19,6 +19,8 @@ import {
   nextMonth,
   type CommissionStatement,
   type DbStatement,
+  type DbStaffCommissionEntry,
+  type StaffCommission,
 } from "@/lib/admin/commission";
 
 /**
@@ -579,6 +581,125 @@ export async function fetchCommissionStatements(): Promise<QueryResult<{ stateme
 
   // A month with no sales has nothing to bill and only adds noise.
   return { ok: true, data: { statements: statements.filter((s) => s.entryCount > 0) } };
+}
+
+// ---------------------------------------------------------------------------
+// Staff (Agent / Purchaser) commission
+// ---------------------------------------------------------------------------
+
+/**
+ * Agent and purchaser commission, split by role, for the Commission page.
+ *
+ * Unlike the developer's ledger (admin-only), an operational role reads their
+ * own figures here — `identity` narrows the query to just them. An owner gets
+ * every call centre and purchaser account, including ones with nothing owed
+ * yet, so the page reads as a staff roster rather than only whoever happens to
+ * have a balance right now.
+ *
+ * "Owed" means unpaid `staff_commission_entries` rows (migration 0025) — see
+ * that migration for why there is no separate monthly record the way the
+ * developer's commission has one.
+ */
+export async function fetchStaffCommission(
+  identity: { role: string; userId: string },
+): Promise<QueryResult<{ agents: StaffCommission[]; purchasers: StaffCommission[] }>> {
+  if (!isSupabaseConfigured()) return NOT_CONFIGURED;
+
+  const supabase = getSupabaseAdmin();
+  const isOwner = identity.role === "admin" || identity.role === "manager";
+
+  let staffQuery = supabase
+    .from("profiles")
+    .select("id, display_name, role, created_at")
+    .in("role", ["call_center", "purchaser"])
+    .order("created_at", { ascending: true });
+
+  if (!isOwner) staffQuery = staffQuery.eq("id", identity.userId);
+
+  const { data: staffRows, error: staffError } = await staffQuery;
+  if (staffError) return { ok: false, message: staffError.message, status: 500 };
+
+  const staff = (staffRows ?? []) as { id: string; display_name: string | null; role: string; created_at: string }[];
+  if (staff.length === 0) return { ok: true, data: { agents: [], purchasers: [] } };
+
+  const staffIds = staff.map((s) => s.id);
+
+  const { data: entryRows, error: entryError } = await supabase
+    .from("staff_commission_entries")
+    .select("id, staff_id, role, profit_aed, commission_aed, sold_at, paid_at, inventory_id")
+    .in("staff_id", staffIds)
+    .order("sold_at", { ascending: false });
+
+  if (entryError) return { ok: false, message: entryError.message, status: 500 };
+
+  const entries = (entryRows ?? []) as unknown as DbStaffCommissionEntry[];
+
+  // Car and customer names for the entries list, fetched separately rather
+  // than nested-embedded — same reasoning as mapDbInventory's one-or-array
+  // handling: a schema-cache quirk on either relation degrades to "name
+  // blank" instead of losing the commission row entirely.
+  const inventoryIds = Array.from(new Set(entries.map((e) => e.inventory_id)));
+  const { data: invRows } = inventoryIds.length
+    ? await supabase.from("inventory").select("id, lead_id, make, model, year").in("id", inventoryIds)
+    : { data: [] as { id: string; lead_id: string; make: string; model: string; year: number }[] };
+
+  const invById = new Map(
+    ((invRows ?? []) as { id: string; lead_id: string; make: string; model: string; year: number }[]).map((r) => [
+      r.id,
+      r,
+    ]),
+  );
+
+  const leadIds = Array.from(new Set(Array.from(invById.values()).map((r) => r.lead_id)));
+  const { data: leadRows } = leadIds.length
+    ? await supabase.from("leads").select("id, full_name").in("id", leadIds)
+    : { data: [] as { id: string; full_name: string }[] };
+  const leadNameById = new Map(((leadRows ?? []) as { id: string; full_name: string }[]).map((r) => [r.id, r.full_name]));
+
+  const entriesByStaff = new Map<string, DbStaffCommissionEntry[]>();
+  for (const e of entries) {
+    const list = entriesByStaff.get(e.staff_id);
+    if (list) list.push(e);
+    else entriesByStaff.set(e.staff_id, [e]);
+  }
+
+  const agents: StaffCommission[] = [];
+  const purchasers: StaffCommission[] = [];
+
+  for (const s of staff) {
+    const own = entriesByStaff.get(s.id) ?? [];
+    const unpaid = own.filter((e) => e.paid_at === null);
+
+    const paidTimestamps = own.map((e) => e.paid_at).filter((t): t is string => t !== null);
+    const latestPaidAt = paidTimestamps.length > 0 ? paidTimestamps.sort()[paidTimestamps.length - 1] : null;
+
+    const result: StaffCommission = {
+      id: s.id,
+      displayName: s.display_name ?? s.id,
+      role: s.role as "call_center" | "purchaser",
+      totalCarsSold: unpaid.length,
+      totalProfit: unpaid.reduce((n, e) => n + Number(e.profit_aed), 0),
+      totalCommission: unpaid.reduce((n, e) => n + Number(e.commission_aed), 0),
+      isPaidThisMonth: unpaid.length === 0,
+      paidAt: latestPaidAt,
+      entries: unpaid.map((e) => {
+        const inv = invById.get(e.inventory_id);
+        return {
+          id: e.id,
+          leadName: (inv ? leadNameById.get(inv.lead_id) : null) ?? "—",
+          carDetails: inv ? `${inv.year} ${inv.make} ${inv.model}`.trim() : "—",
+          soldAt: e.sold_at,
+          profit: Number(e.profit_aed),
+          commission: Number(e.commission_aed),
+        };
+      }),
+    };
+
+    if (s.role === "call_center") agents.push(result);
+    else purchasers.push(result);
+  }
+
+  return { ok: true, data: { agents, purchasers } };
 }
 
 // ---------------------------------------------------------------------------

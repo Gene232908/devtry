@@ -1,5 +1,6 @@
 import CommissionClient from "./commission-client";
-import { fetchCommissionStatements } from "@/lib/admin/queries";
+import { fetchCommissionStatements, fetchStaffCommission } from "@/lib/admin/queries";
+import { requireStaff } from "@/lib/server/require-staff";
 import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 import { demoCommissionStatements } from "@/config/demo-admin-data";
 
@@ -18,15 +19,43 @@ export const dynamic = "force-dynamic";
  */
 export default async function AdminCommissionPage() {
   if (ADMIN_PREVIEW) {
-    return <CommissionClient initialStatements={demoCommissionStatements} initialError={null} />;
+    return (
+      <CommissionClient
+        initialStatements={demoCommissionStatements}
+        initialError={null}
+      />
+    );
   }
 
-  const result = await fetchCommissionStatements();
+  const auth = await requireStaff();
+  if (!auth.ok) {
+    // Should never happen because middleware redirects unauthenticated users,
+    // but the types require handling this.
+    return <div>Not authorized</div>;
+  }
+
+  const isOwner = auth.identity.role === "admin" || auth.identity.role === "manager";
+
+  // The developer ledger is a contract between the owner and the developer —
+  // requireAdmin() already refuses it at GET /api/admin/commission for an
+  // operational role, but this page used to call fetchCommissionStatements()
+  // unconditionally for every visitor and hand the result to the client
+  // component as a prop regardless of whether the UI ever rendered it. That
+  // put the whole company's developer commission figures into a call centre
+  // agent's or purchaser's page payload — visible in React DevTools or a page
+  // source view even though no button on their screen ever showed it. Fetched
+  // only for owners now, matching the API route's own rule.
+  const [statementsResult, staffResult] = await Promise.all([
+    isOwner ? fetchCommissionStatements() : Promise.resolve(null),
+    fetchStaffCommission(auth.identity),
+  ]);
 
   return (
     <CommissionClient
-      initialStatements={result.ok ? result.data.statements : []}
-      initialError={result.ok ? null : result.message}
+      initialStatements={statementsResult?.ok ? statementsResult.data.statements : []}
+      initialError={statementsResult && !statementsResult.ok ? statementsResult.message : null}
+      initialAgents={staffResult.ok ? staffResult.data.agents : []}
+      initialPurchasers={staffResult.ok ? staffResult.data.purchasers : []}
     />
   );
 }

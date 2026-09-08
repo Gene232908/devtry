@@ -109,24 +109,45 @@ export async function middleware(request: NextRequest) {
     // start applying. That is a rare administrative action, and the cookie is
     // deliberately short-lived so it self-corrects rather than needing a purge.
     const PW_CHECKED_COOKIE = "cvd_pw_checked";
+    const ROLE_COOKIE = "cvd_role";
     const alreadyChecked = request.cookies.get(PW_CHECKED_COOKIE)?.value === user.id;
 
     let mustChangePassword = false;
+    // Role is used for page-level redirects only — never as an authorization
+    // decision. The server guard re-derives capabilities on every request.
+    let role = request.cookies.get(ROLE_COOKIE)?.value ?? "";
 
     if (!alreadyChecked) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("must_change_password")
+        .select("must_change_password, role, is_active")
         .eq("id", user.id)
         .single();
 
+      if (profile?.is_active === false) {
+        await supabase.auth.signOut();
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = "/admin/login";
+        redirectUrl.searchParams.set("error", "disabled");
+        return NextResponse.redirect(redirectUrl);
+      }
+
       mustChangePassword = profile?.must_change_password === true;
+      role = (profile?.role as string) ?? "";
 
       // Only cached once the answer is "no". The "yes" case has to keep asking,
       // otherwise setting a password would not take effect until the cookie
       // expired.
       if (!mustChangePassword) {
         response.cookies.set(PW_CHECKED_COOKIE, user.id, {
+          httpOnly: true,
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+          path: "/",
+          maxAge: 60 * 60,
+        });
+        // Cache role alongside — same lifetime, same scope.
+        response.cookies.set(ROLE_COOKIE, role, {
           httpOnly: true,
           sameSite: "lax",
           secure: process.env.NODE_ENV === "production",
@@ -146,6 +167,30 @@ export async function middleware(request: NextRequest) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/admin";
       return NextResponse.redirect(redirectUrl);
+    }
+
+    // ── Role-based page redirects ─────────────────────────────────────────
+    // Operational roles that land on a page they cannot access are redirected
+    // to /admin/leads. This is a UX convenience, not an authorization gate —
+    // the server guard in each page is the real enforcer.
+    if (role === "call_center") {
+      // Agent: Leads + Commission + Incomplete Forms + Blocked Numbers + Settings
+      const blocked = ["/admin", "/admin/inventory", "/admin/catalog", "/admin/staff"];
+      if (blocked.includes(pathname)) {
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = "/admin/leads";
+        return NextResponse.redirect(redirectUrl);
+      }
+    }
+
+    if (role === "purchaser") {
+      // Purchaser: Leads + Inventory + Commission + Settings
+      const blocked = ["/admin", "/admin/incomplete", "/admin/blocked", "/admin/catalog", "/admin/staff"];
+      if (blocked.includes(pathname)) {
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = "/admin/leads";
+        return NextResponse.redirect(redirectUrl);
+      }
     }
   }
 

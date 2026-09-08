@@ -97,6 +97,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: { message: GENERIC_FAILURE } }, { status: 401 });
   }
 
+  // Verify account is active
+  const { data: authData } = await supabase.auth.getUser();
+  if (authData?.user) {
+    const { data: profile } = await service
+      .from("profiles")
+      .select("is_active")
+      .eq("id", authData.user.id)
+      .single();
+
+    if (profile && profile.is_active === false) {
+      await supabase.auth.signOut();
+      return NextResponse.json(
+        { ok: false, error: { message: "Your account has been disabled by the owner." } },
+        { status: 403 },
+      );
+    }
+  }
+
   // Proving the password clears this account's failures, so an owner who
   // mistyped twice does not carry those into the rest of the window.
   await clearLoginAttempts(service, email, ipHash);

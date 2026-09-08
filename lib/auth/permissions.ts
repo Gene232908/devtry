@@ -32,10 +32,15 @@ export const ROLE_LABELS: Record<StaffRole, string> = {
  */
 export type Capability =
   | "manageStaff"       // create / rename / enable / disable staff accounts
+  | "viewDashboard"     // see the Overview / Dashboard page
   | "viewAllLeads"      // see leads not assigned to self
   | "viewLeadContact"   // see phone numbers and email addresses on leads
   | "viewPrices"        // see purchase price, estimated value, profit
   | "viewCommissions"   // see commission entries and statements
+  | "viewInventory"     // see the Inventory page
+  | "viewIncompleteForms" // see the Incomplete Forms page
+  | "viewBlockedNumbers"  // see the Blocked Numbers page
+  | "viewCatalog"       // see the Vehicle Catalog page
   | "manageCatalog"     // add / edit / delete car makes, models, trims
   | "exportCsv"         // trigger CSV download of lead data
   | "manageBlocklist"   // block / unblock phone numbers
@@ -52,10 +57,15 @@ export type Capability =
 export const ROLE_CAPABILITIES: Record<StaffRole, Capability[]> = {
   admin: [
     "manageStaff",
+    "viewDashboard",
     "viewAllLeads",
     "viewLeadContact",
     "viewPrices",
     "viewCommissions",
+    "viewInventory",
+    "viewIncompleteForms",
+    "viewBlockedNumbers",
+    "viewCatalog",
     "manageCatalog",
     "exportCsv",
     "manageBlocklist",
@@ -66,10 +76,15 @@ export const ROLE_CAPABILITIES: Record<StaffRole, Capability[]> = {
     // Legacy 'manager' accounts receive full owner-level access until
     // explicitly migrated to a specific operational role.
     "manageStaff",
+    "viewDashboard",
     "viewAllLeads",
     "viewLeadContact",
     "viewPrices",
     "viewCommissions",
+    "viewInventory",
+    "viewIncompleteForms",
+    "viewBlockedNumbers",
+    "viewCatalog",
     "manageCatalog",
     "exportCsv",
     "manageBlocklist",
@@ -77,13 +92,18 @@ export const ROLE_CAPABILITIES: Record<StaffRole, Capability[]> = {
     "viewSettings",
   ],
   call_center: [
-    // May see assigned leads and contact info; never prices or commissions.
+    // Agent: see assigned leads, contact info, own commission, incomplete forms, and blocked numbers.
     "viewLeadContact",
+    "viewCommissions",
+    "viewIncompleteForms",
+    "viewBlockedNumbers",
     "viewSettings",
   ],
   purchaser: [
-    // May see assigned leads and prices; never contact info or commissions.
+    // Purchaser: see assigned leads, prices, inventory, and own commission.
     "viewPrices",
+    "viewInventory",
+    "viewCommissions",
     "viewSettings",
   ],
 };

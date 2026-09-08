@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { ADMIN_PREVIEW, PREVIEW_NOTICE } from "@/lib/admin/preview-mode";
+import { requireStaff } from "@/lib/server/require-staff";
+import { hasCapability } from "@/lib/auth/permissions";
+import { pickNextAssignee } from "@/lib/server/lead-assignment";
+import { canRoleSetStatus, canSeeLead } from "@/lib/auth/lead-visibility";
 
 // "deal" = the customer agreed to sell; "closed" = met but no agreement.
 // "valuation_sent" stays accepted so historical rows can still be written back,
@@ -30,6 +34,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     );
   }
 
+  // Middleware only proves a valid session exists. This resolves WHO is acting,
+  // which is what every guard below is written against — until now this endpoint
+  // checked nothing beyond "signed in", so any staff account could edit any lead
+  // in the company just by knowing its id.
+  const auth = await requireStaff();
+  if (!auth.ok) {
+    return NextResponse.json({ ok: false, error: { message: auth.message } }, { status: auth.status });
+  }
+  const { role, userId } = auth.identity;
+
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ ok: false, error: { message: "Database is not configured." } }, { status: 503 });
   }
@@ -42,6 +56,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     is_spam?: unknown;
     purchase_price_aed?: unknown;
     purchased_at?: unknown;
+    inspection_scheduled_at?: unknown;
+    purchaser_id?: unknown;
   };
   try {
     body = await req.json();
@@ -51,19 +67,68 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const supabase = getSupabaseAdmin();
 
-  // Load the current row so we can record meaningful timeline diffs.
-  const { data: current, error: loadError } = await supabase
-    .from("leads")
-    .select("id, status, estimated_value_aed, notes, is_spam")
-    .eq("id", id)
-    .single();
+  // Load the current row so we can record meaningful timeline diffs — and so
+  // the role guards below decide against what the database says rather than
+  // against anything the caller sent.
+  const loadCurrent = (fields: string) => supabase.from("leads").select(fields).eq("id", id).single();
 
-  if (loadError || !current) {
+  let { data: currentRow, error: loadError } = await loadCurrent(
+    "id, status, estimated_value_aed, notes, is_spam, call_center_id, purchaser_id, inspection_scheduled_at",
+  );
+
+  // Same fallback as GET /api/admin/leads: a live database that has not run
+  // migration 0024 yet must still be able to save a lead.
+  if (loadError?.message?.includes("inspection_scheduled_at")) {
+    ({ data: currentRow, error: loadError } = await loadCurrent(
+      "id, status, estimated_value_aed, notes, is_spam, call_center_id, purchaser_id",
+    ));
+  }
+
+  if (loadError || !currentRow) {
     return NextResponse.json({ ok: false, error: { message: "Lead not found." } }, { status: 404 });
+  }
+
+  const current = currentRow as unknown as {
+    id: string;
+    status: string;
+    estimated_value_aed: number | string | null;
+    notes: string | null;
+    is_spam: boolean | null;
+    call_center_id: string | null;
+    purchaser_id: string | null;
+    inspection_scheduled_at?: string | null;
+  };
+
+  // Ownership. A lead belongs to exactly one agent and, once handed over, to
+  // exactly one purchaser; only that person — or an owner, who sees everything —
+  // may write to it.
+  if (!hasCapability(auth.identity, "viewAllLeads")) {
+    const ownsLead = canSeeLead(
+      { status: current.status, callCenterId: current.call_center_id, purchaserId: current.purchaser_id },
+      role,
+      userId,
+    );
+
+    if (!ownsLead) {
+      // 404 rather than 403: a staff member has no business learning that a lead
+      // they cannot see exists at all.
+      return NextResponse.json({ ok: false, error: { message: "Lead not found." } }, { status: 404 });
+    }
   }
 
   const update: Record<string, unknown> = {};
   const events: LeadEventInsert[] = [];
+
+  // Checked before the deal branch below, so an agent cannot reach
+  // record_lead_deal() — and a purchaser cannot walk a lead back to "contacted".
+  if (typeof body.status === "string" && body.status !== current.status) {
+    if (!canRoleSetStatus(role, body.status)) {
+      return NextResponse.json(
+        { ok: false, error: { message: "That status is not available for your role." } },
+        { status: 403 },
+      );
+    }
+  }
 
   // "Deal" means the car was bought, so it is the one status that carries money
   // with it. It is handled through record_lead_deal() rather than a plain status
@@ -158,6 +223,31 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
   }
 
+  // Who a lead belongs to is decided by the round-robin below and by the
+  // owner-only assignment endpoint — never by whatever the browser posted. The
+  // dashboard used to compute an assignee client-side from a hardcoded demo list
+  // and send it here, so any caller could hand themselves someone else's lead.
+  if ("purchaser_id" in body && hasCapability(auth.identity, "assignLeads")) {
+    const raw = body.purchaser_id;
+    update.purchaser_id = raw === null || raw === "" ? null : String(raw);
+  }
+
+  // Purchasers read the inspection time; they do not set it. Only the agent
+  // working the lead (or an owner) decides when the customer is coming in.
+  if ("inspection_scheduled_at" in body && role !== "purchaser") {
+    const raw = body.inspection_scheduled_at;
+    const value = raw === null || raw === "" ? null : String(raw);
+
+    if (value !== null && Number.isNaN(new Date(value).getTime())) {
+      return NextResponse.json(
+        { ok: false, error: { message: "Invalid inspection date and time." } },
+        { status: 400 },
+      );
+    }
+
+    update.inspection_scheduled_at = value;
+  }
+
   if ("estimated_value_aed" in body) {
     const raw = body.estimated_value_aed;
     const value = raw === null || raw === "" ? null : Number(raw);
@@ -182,6 +272,48 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
   }
 
+  // Scheduling the inspection IS the hand-over: it is the single moment a lead
+  // stops being the agent's and becomes a purchaser's. Both halves of that live
+  // here rather than in the form, because the form is only one client.
+  // `becomingDeal` writes the status through record_lead_deal() rather than
+  // through `update`, so it has to be read back explicitly here.
+  const resultingStatus = becomingDeal ? "deal" : (update.status as string | undefined) ?? current.status;
+
+  if (resultingStatus === "inspection_scheduled") {
+    const scheduledAt =
+      "inspection_scheduled_at" in update
+        ? (update.inspection_scheduled_at as string | null)
+        : current.inspection_scheduled_at ?? null;
+
+    // Required when the lead is being MOVED to Inspection Scheduled, or when the
+    // date itself is being edited. A lead already sitting at this status with no
+    // date — a row written before the date existed — is not blocked from having
+    // its notes saved.
+    const mustHaveDate = update.status === "inspection_scheduled" || "inspection_scheduled_at" in update;
+
+    if (mustHaveDate && !scheduledAt) {
+      return NextResponse.json(
+        { ok: false, error: { message: "Set the scheduled inspection date and time before scheduling." } },
+        { status: 400 },
+      );
+    }
+
+    // Round-robin onto the next purchaser. Skipped when one already holds the
+    // lead — a re-save must not shuffle it to somebody else mid-negotiation —
+    // and when an owner named someone in this same request.
+    if (!("purchaser_id" in update) && !current.purchaser_id) {
+      const purchaserId = await pickNextAssignee("purchaser");
+      if (purchaserId) {
+        update.purchaser_id = purchaserId;
+        events.push({
+          lead_id: id,
+          type: "assigned",
+          meta: { purchaser_id: purchaserId, reason: "inspection_scheduled" },
+        });
+      }
+    }
+  }
+
   // Only "nothing happened" when there is also nothing to record. Recording a
   // deal writes through record_lead_deal() and leaves `update` empty, so
   // checking the update alone would drop its timeline entries on the floor.
@@ -192,6 +324,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (Object.keys(update).length > 0) {
     const { error: updateError } = await supabase.from("leads").update(update).eq("id", id);
     if (updateError) {
+      console.error("[PATCH /api/leads/[id]] Error updating lead:", updateError);
+      // Fallback for live Supabase databases that have not run migration 0024 yet
+      if (updateError.message?.includes("inspection_scheduled_at")) {
+        const fallbackUpdate = { ...update };
+        delete fallbackUpdate.inspection_scheduled_at;
+        const { error: fallbackError } = await supabase.from("leads").update(fallbackUpdate).eq("id", id);
+        if (!fallbackError) {
+          return NextResponse.json({ ok: true, data: { id, fallbackSchemaNotice: true } });
+        }
+      }
       return NextResponse.json({ ok: false, error: { message: updateError.message } }, { status: 500 });
     }
   }

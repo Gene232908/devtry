@@ -8,6 +8,51 @@
 
 export type StatementStatus = "draft" | "issued" | "paid";
 
+/**
+ * A call centre agent's or purchaser's commission, current as of right now.
+ *
+ * Unlike the developer's monthly/quarterly statements, this has no separate
+ * "record" object: `totalCommission` etc. are always the sum of that staff
+ * member's currently UNPAID `staff_commission_entries` rows (see migration
+ * 0025). Marking them paid clears the balance to zero because there is
+ * nothing left unpaid to sum — not because a counter was reset.
+ */
+export type StaffCommission = {
+  id: string;
+  displayName: string;
+  role: "call_center" | "purchaser";
+  totalCarsSold: number;
+  totalProfit: number;
+  totalCommission: number;
+  /** True when nothing is currently owed — includes staff with no sales yet. */
+  isPaidThisMonth: boolean;
+  /** Most recent time any commission was paid to this person, if ever. */
+  paidAt: string | null;
+  /** The unpaid entries making up the totals above. */
+  entries: StaffCommissionEntry[];
+};
+
+export type StaffCommissionEntry = {
+  id: string;
+  leadName: string;
+  carDetails: string;
+  soldAt: string;
+  profit: number;
+  commission: number;
+};
+
+/** Shape of a row from the Supabase `staff_commission_entries` table. */
+export type DbStaffCommissionEntry = {
+  id: string;
+  staff_id: string;
+  role: "call_center" | "purchaser";
+  profit_aed: number | string;
+  commission_aed: number | string;
+  sold_at: string;
+  paid_at: string | null;
+  inventory_id: string;
+};
+
 export type CommissionStatement = {
   id: string;
   /** First day of the month it covers, ISO date. */
