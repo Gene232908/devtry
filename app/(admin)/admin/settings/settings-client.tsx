@@ -12,9 +12,7 @@ import {
   type Settings,
   type SettingsInput,
 } from "@/lib/admin/settings-schema";
-import { StaffAccounts } from "@/components/admin/StaffAccounts";
-import type { StaffIdentity } from "@/lib/auth/permissions";
-import type { StaffSummary } from "@/lib/admin/staff-schema";
+
 
 // Business contact details and dashboard preferences, stored in the `settings`
 // table (single row, id = 1).
@@ -31,16 +29,9 @@ import type { StaffSummary } from "@/lib/admin/staff-schema";
 
 type Props = {
   initialSettings: Settings | null;
-  /** Retained for API compatibility with the server page; no longer read here.
-   * The Staff Accounts panel manages its own state via initialStaff. */
-  initialManagers: unknown[];
   initialError: string | null;
   /** Managers may read this screen; only admins may write it. */
   canEdit: boolean;
-  /** Resolved server identity — used by StaffAccounts for capability checks. */
-  viewer: StaffIdentity | null;
-  /** Pre-fetched staff list for the Staff Accounts panel. */
-  initialStaff: StaffSummary[];
 };
 
 type SaveState =
@@ -49,7 +40,7 @@ type SaveState =
   | { kind: "saved" }
   | { kind: "error"; message: string };
 
-export default function SettingsClient({ initialSettings, initialError, canEdit, viewer, initialStaff }: Props) {
+export default function SettingsClient({ initialSettings, initialError, canEdit }: Props) {
   useFreshServerData();
 
   // The last values known to be in the database. Drafts are compared against
@@ -233,13 +224,7 @@ export default function SettingsClient({ initialSettings, initialError, canEdit,
           <p className="text-fluid--1 text-text-faint">Leave empty to switch lead notifications off.</p>
         </Card>
 
-{viewer && (
-          <StaffAccounts
-            viewer={viewer}
-            initialStaff={initialStaff}
-            canManageStaff={canEdit}
-          />
-        )}
+
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

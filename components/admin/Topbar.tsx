@@ -6,10 +6,20 @@ import Link from "next/link";
 import { LogOut, ChevronDown, Menu } from "lucide-react";
 import { Logo } from "@/components/public/Logo";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { ROLE_LABELS, type StaffIdentity } from "@/lib/auth/permissions";
 
-export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
+type Props = {
+  onMenuClick?: () => void;
+  identity?: StaffIdentity | null;
+};
+
+export function Topbar({ onMenuClick, identity }: Props) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const displayName = identity?.displayName ?? "Admin";
+  const initial = displayName.charAt(0).toUpperCase();
+  const roleLabel = identity ? (ROLE_LABELS[identity.role] ?? identity.role) : "";
 
   async function handleSignOut() {
     try {
@@ -21,6 +31,14 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
     router.refresh();
   }
 
+  const headerTitle = identity
+    ? identity.role === "call_center"
+      ? "Call Center Agent"
+      : identity.role === "purchaser"
+      ? "Purchaser"
+      : "Super Admin"
+    : "Admin";
+
   return (
     <header className="flex h-16 items-center justify-between border-b border-border-gold bg-bg-elev px-4 sm:px-6">
       <div className="flex items-center gap-3">
@@ -31,7 +49,7 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
           {/* "sm" keeps the mark inside the 4rem header instead of overlapping it. */}
           <Logo size="sm" />
         </Link>
-        <span className="hidden text-fluid--1 text-text-faint sm:inline">| Admin</span>
+        <span className="hidden text-fluid--1 text-text-faint sm:inline">| {headerTitle}</span>
       </div>
 
       <div className="flex items-center gap-4">
@@ -42,9 +60,14 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
             className="flex items-center gap-2 rounded-card px-2 py-1.5 text-fluid--1 text-text hover:bg-surface-2"
           >
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/20 font-display text-gold">
-              S
+              {initial}
             </span>
-            <span className="hidden sm:inline">Sir Nash</span>
+            <span className="hidden flex-col items-start sm:flex">
+              <span className="leading-tight">{displayName}</span>
+              {roleLabel && (
+                <span className="text-[0.65rem] leading-tight text-text-faint">{roleLabel}</span>
+              )}
+            </span>
             <ChevronDown className="h-4 w-4 text-text-muted" />
           </button>
           {menuOpen && (

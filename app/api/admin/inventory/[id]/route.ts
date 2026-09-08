@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { blockedByPreview } from "@/lib/admin/preview-guard";
-import { COMMISSION_RATE, INVENTORY_STATUS_OPTIONS } from "@/lib/admin/inventory";
+import { requireStaff } from "@/lib/server/require-staff";
+import { hasCapability } from "@/lib/auth/permissions";
+import { AGENT_COMMISSION_RATE, COMMISSION_RATE, INVENTORY_STATUS_OPTIONS, PURCHASER_COMMISSION_RATE } from "@/lib/admin/inventory";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +22,19 @@ export const dynamic = "force-dynamic";
 const PLAIN_STATUSES = new Set<string>(INVENTORY_STATUS_OPTIONS);
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  // Every write here moves money (a sale) or the record of an asset (status,
+  // notes) — this had no role check at all beyond "middleware confirmed a
+  // session exists," so any authenticated staff account, including a call
+  // centre agent with no `viewInventory` capability and a sidebar that hides
+  // this whole page, could sell a car by calling the endpoint directly.
+  const auth = await requireStaff();
+  if (!auth.ok) {
+    return NextResponse.json({ ok: false, error: { message: auth.message } }, { status: auth.status });
+  }
+  if (!hasCapability(auth.identity, "viewInventory")) {
+    return NextResponse.json({ ok: false, error: { message: "Not authorized." } }, { status: 403 });
+  }
+
   const blocked = blockedByPreview();
   if (blocked) return blocked;
 
@@ -58,6 +73,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       p_sale_price: price,
       p_sold_at: soldAt.toISOString(),
       p_rate: COMMISSION_RATE,
+      // Credits whichever agent and purchaser the car's lead carries, in the
+      // same transaction as the sale — see migration 0025.
+      p_agent_rate: AGENT_COMMISSION_RATE,
+      p_purchaser_rate: PURCHASER_COMMISSION_RATE,
     });
 
     if (error) {

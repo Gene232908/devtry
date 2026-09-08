@@ -15,6 +15,19 @@ export type InventoryStatus = "in_stock" | "reserved" | "sold" | "withdrawn";
 /** The developer's share of the profit on each completed sale. */
 export const COMMISSION_RATE = 0.02;
 
+/**
+ * The call centre agent's and purchaser's shares of the profit on each
+ * completed sale — the same 2% / 10% quoted on the Commission page.
+ *
+ * Unlike `COMMISSION_RATE`, neither is frozen per sale in the database yet
+ * (the Commission page's per-staff totals have no backing table — see
+ * KNOWN_ISSUES); these are mirrored here only so the Inventory summary can
+ * total all three roles together against the same profit figure it already
+ * computes.
+ */
+export const AGENT_COMMISSION_RATE = 0.02;
+export const PURCHASER_COMMISSION_RATE = 0.1;
+
 /** Frozen at the moment of sale — see migration 0014. */
 export type CommissionEntry = {
   profitAed: number;
@@ -92,7 +105,7 @@ export const INVENTORY_STATUS_OPTIONS: InventoryStatus[] = ["in_stock"];
 
 export const INVENTORY_FILTER_OPTIONS: InventoryStatus[] = ["in_stock", "sold"];
 
-function round2(n: number): number {
+export function round2(n: number): number {
   return Math.round((n + Number.EPSILON) * 100) / 100;
 }
 

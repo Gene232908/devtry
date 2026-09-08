@@ -26,10 +26,15 @@ describe("ROLE_LABELS", () => {
 describe("ROLE_CAPABILITIES", () => {
   const allCaps: Capability[] = [
     "manageStaff",
+    "viewDashboard",
     "viewAllLeads",
     "viewLeadContact",
     "viewPrices",
     "viewCommissions",
+    "viewInventory",
+    "viewIncompleteForms",
+    "viewBlockedNumbers",
+    "viewCatalog",
     "manageCatalog",
     "exportCsv",
     "manageBlocklist",
@@ -48,18 +53,26 @@ describe("ROLE_CAPABILITIES", () => {
     }
   });
 
-  it("call_center can see contact info but not prices or commissions", () => {
+  it("call_center can see contact info, commissions, incomplete forms, and blocked numbers", () => {
     expect(ROLE_CAPABILITIES.call_center).toContain("viewLeadContact");
+    expect(ROLE_CAPABILITIES.call_center).toContain("viewCommissions");
+    expect(ROLE_CAPABILITIES.call_center).toContain("viewIncompleteForms");
+    expect(ROLE_CAPABILITIES.call_center).toContain("viewBlockedNumbers");
     expect(ROLE_CAPABILITIES.call_center).not.toContain("viewPrices");
-    expect(ROLE_CAPABILITIES.call_center).not.toContain("viewCommissions");
+    expect(ROLE_CAPABILITIES.call_center).not.toContain("viewDashboard");
+    expect(ROLE_CAPABILITIES.call_center).not.toContain("viewInventory");
     expect(ROLE_CAPABILITIES.call_center).not.toContain("manageStaff");
     expect(ROLE_CAPABILITIES.call_center).not.toContain("exportCsv");
   });
 
-  it("purchaser can see prices but not contact info or commissions", () => {
+  it("purchaser can see prices, inventory, and commissions", () => {
     expect(ROLE_CAPABILITIES.purchaser).toContain("viewPrices");
+    expect(ROLE_CAPABILITIES.purchaser).toContain("viewInventory");
+    expect(ROLE_CAPABILITIES.purchaser).toContain("viewCommissions");
     expect(ROLE_CAPABILITIES.purchaser).not.toContain("viewLeadContact");
-    expect(ROLE_CAPABILITIES.purchaser).not.toContain("viewCommissions");
+    expect(ROLE_CAPABILITIES.purchaser).not.toContain("viewDashboard");
+    expect(ROLE_CAPABILITIES.purchaser).not.toContain("viewIncompleteForms");
+    expect(ROLE_CAPABILITIES.purchaser).not.toContain("viewBlockedNumbers");
     expect(ROLE_CAPABILITIES.purchaser).not.toContain("manageStaff");
     expect(ROLE_CAPABILITIES.purchaser).not.toContain("exportCsv");
   });

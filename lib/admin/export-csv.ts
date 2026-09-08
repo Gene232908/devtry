@@ -4,8 +4,11 @@ export function exportLeadsCsv(leads: Lead[], filename = "carvibedubai-leads.csv
   const headers = ["Lead ID", "Name", "Mobile", "Email", "Make", "Model", "Trim", "Year", "Mileage (km)", "Option Level", "Description", "Status", "Estimated Value (AED)", "Date"];
   const rows = leads.map((l) => [
     l.id,
-    l.fullName,
-    l.phoneE164,
+    // Both redacted server-side for a purchaser (see projectLeadForPurchaser),
+    // so `undefined` here is expected, not a bug — without the fallback it
+    // printed the literal word "undefined" into the Name/Mobile columns.
+    l.fullName ?? "",
+    l.phoneE164 ?? "",
     l.email ?? "",
     l.make,
     l.model,

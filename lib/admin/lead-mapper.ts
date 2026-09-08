@@ -24,6 +24,9 @@ export type DbLead = {
   is_spam: boolean | null;
   call_center_id: string | null;
   purchaser_id: string | null;
+  /** Optional: absent on databases that have not run migration 0024 yet, which
+   *  both readers fall back to querying without (see GET /api/admin/leads). */
+  inspection_scheduled_at?: string | null;
 };
 
 // Maps a Supabase row to the camelCase `Lead` shape the admin UI already expects,
@@ -51,5 +54,6 @@ export function mapDbLead(r: DbLead): Lead {
     isSpam: r.is_spam ?? undefined,
     callCenterId: r.call_center_id ?? null,
     purchaserId: r.purchaser_id ?? null,
+    inspectionScheduledAt: r.inspection_scheduled_at ?? undefined,
   };
 }
