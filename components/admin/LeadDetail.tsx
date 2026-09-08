@@ -30,6 +30,8 @@ import {
   type LeadViewSummary,
 } from "@/lib/admin/lead-events";
 import { INVENTORY_STATUS_LABEL, type InventoryItem } from "@/lib/admin/inventory";
+import { useStaffOptions } from "@/lib/admin/use-staff-options";
+import { LeadAssignment } from "@/components/admin/LeadAssignment";
 import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 import { demoInventory } from "@/config/demo-admin-data";
 import { whatsappLink } from "@/config/brand";
@@ -78,6 +80,7 @@ function draftFromLead(lead: Lead): Draft {
 
 export function LeadDetail({ lead }: { lead: Lead }) {
   const { updateLead } = useLeads();
+  const { staffOptions, canAssign, loading: staffLoading } = useStaffOptions();
   const router = useRouter();
 
   // Edits live here until Save. Nothing on this page writes through on blur —
@@ -322,7 +325,7 @@ export function LeadDetail({ lead }: { lead: Lead }) {
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-fluid-3 text-text">{lead.fullName}</h1>
+          <h1 className="font-display text-fluid-3 text-text">{lead.fullName || "Customer"}</h1>
           <p className="mt-1 text-fluid--1 text-text-muted">Submitted {formatDate(lead.createdAt)}</p>
         </div>
         <StatusPill status={lead.status} />
@@ -406,29 +409,58 @@ export function LeadDetail({ lead }: { lead: Lead }) {
         </div>
 
         <div className="flex flex-col gap-6">
-          <Card className="flex flex-col gap-3 p-5">
-            <h3 className="text-fluid-0 text-text">Contact customer</h3>
-            <a
-              href={whatsappLink(
-                `Hi ${lead.fullName.split(" ")[0]}, regarding your ${lead.year} ${lead.make} ${lead.model} valuation with CarVibe Dubai…`,
-                lead.phoneE164,
-              )}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button className="w-full">
-                <MessageCircle className="h-4 w-4" /> Message on WhatsApp
-              </Button>
-            </a>
-            <a href={`tel:${lead.phoneE164}`}>
-              <Button variant="outline" className="w-full">
-                <Phone className="h-4 w-4" /> Call {formatPhoneDisplay(lead.phoneE164)}
-              </Button>
-            </a>
-            <p className="text-fluid--1 text-text-faint">
-              WhatsApp opens the chat pre-filled — use the call icon inside WhatsApp for a voice/video call.
-            </p>
-          </Card>
+          {!staffLoading && (
+            <LeadAssignment
+              assignment={{
+                callCenterId: lead.callCenterId ?? null,
+                purchaserId: lead.purchaserId ?? null,
+              }}
+              staffOptions={staffOptions}
+              canAssign={canAssign}
+              onSave={async (assignment) => {
+                try {
+                  const res = await fetch(`/api/admin/leads/${lead.id}/assignment`, {
+                    method: "PATCH",
+                    body: JSON.stringify(assignment),
+                  });
+                  if (res.ok) {
+                    router.refresh();
+                    void fetchTimeline();
+                    return true;
+                  }
+                  return false;
+                } catch {
+                  return false;
+                }
+              }}
+            />
+          )}
+
+          {lead.phoneE164 && (
+            <Card className="flex flex-col gap-3 p-5">
+              <h3 className="text-fluid-0 text-text">Contact customer</h3>
+              <a
+                href={whatsappLink(
+                  `Hi ${lead.fullName ? lead.fullName.split(" ")[0] : ""}, regarding your ${lead.year} ${lead.make} ${lead.model} valuation with CarVibe Dubai…`,
+                  lead.phoneE164,
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button className="w-full">
+                  <MessageCircle className="h-4 w-4" /> Message on WhatsApp
+                </Button>
+              </a>
+              <a href={`tel:${lead.phoneE164}`}>
+                <Button variant="outline" className="w-full">
+                  <Phone className="h-4 w-4" /> Call {formatPhoneDisplay(lead.phoneE164)}
+                </Button>
+              </a>
+              <p className="text-fluid--1 text-text-faint">
+                WhatsApp opens the chat pre-filled — use the call icon inside WhatsApp for a voice/video call.
+              </p>
+            </Card>
+          )}
 
           <Card className="flex flex-col gap-4 p-5">
             <h3 className="text-fluid-0 text-text">Status &amp; purchase</h3>

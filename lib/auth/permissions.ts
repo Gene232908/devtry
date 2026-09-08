@@ -39,6 +39,7 @@ export type Capability =
   | "manageCatalog"     // add / edit / delete car makes, models, trims
   | "exportCsv"         // trigger CSV download of lead data
   | "manageBlocklist"   // block / unblock phone numbers
+  | "assignLeads"       // assign leads to call center or purchaser
   | "viewSettings";     // read the Settings page (all roles can; write is admin only)
 
 /**
@@ -58,6 +59,7 @@ export const ROLE_CAPABILITIES: Record<StaffRole, Capability[]> = {
     "manageCatalog",
     "exportCsv",
     "manageBlocklist",
+    "assignLeads",
     "viewSettings",
   ],
   manager: [
@@ -71,6 +73,7 @@ export const ROLE_CAPABILITIES: Record<StaffRole, Capability[]> = {
     "manageCatalog",
     "exportCsv",
     "manageBlocklist",
+    "assignLeads",
     "viewSettings",
   ],
   call_center: [

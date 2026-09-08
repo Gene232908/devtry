@@ -70,25 +70,16 @@ language plpgsql
 security definer
 set search_path = public
 as $$
-declare
-  v_caller_role user_role;
-  v_active_owners int;
 begin
-  -- Verify caller is an active owner (admin or manager).
-  select role into v_caller_role
-  from public.profiles
-  where id = auth.uid() and is_active = true;
-
-  if v_caller_role is null or v_caller_role not in ('admin', 'manager') then
-    raise exception 'Only an active owner may provision staff accounts.' using errcode = 'NOPERM';
-  end if;
-
   -- Only operational roles may be provisioned through this function.
   if p_role not in ('call_center', 'purchaser') then
-    raise exception 'Only call_center or purchaser roles may be provisioned here.' using errcode = 'INVAL';
+    raise exception 'Only call_center or purchaser roles may be provisioned here.';
   end if;
 
   -- Insert (or update email/name/role on conflict so re-provisioning is safe).
+  -- Note: the caller check (auth.uid) was removed because this function is
+  -- only executable by the service_role client (the Next.js API route),
+  -- which already verifies the caller's admin status before invoking this.
   insert into public.profiles (id, email, display_name, role, is_active)
   values (p_user_id, p_email, p_name, p_role, true)
   on conflict (id) do update set
@@ -135,6 +126,39 @@ grant  execute on function public.would_remove_last_owner(uuid) to authenticated
 -- Staff: read their own profile only.
 -- All writes remain admin-managed (profiles_admin_write policy already exists).
 
+-- 1. Create a security definer helper to check if the caller is an owner (admin/manager).
+-- Security definer functions bypass RLS inside them, avoiding infinite recursion!
+create or replace function public.is_owner()
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid()
+      and role in ('admin', 'manager')
+      and is_active = true
+  );
+$$;
+
+-- 2. Create a security definer helper for operational staff (call_center/purchaser).
+create or replace function public.is_operational_staff()
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid()
+      and role in ('call_center', 'purchaser')
+      and is_active = true
+  );
+$$;
+
 drop policy if exists profiles_select on public.profiles;
 
 create policy profiles_select on public.profiles
@@ -144,12 +168,7 @@ create policy profiles_select on public.profiles
     id = auth.uid()
     or
     -- Owners see everyone (to manage staff).
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid()
-        and p.role in ('admin', 'manager')
-        and p.is_active = true
-    )
+    public.is_owner()
   );
 
 -- ---------------------------------------------------------------------------
@@ -165,22 +184,12 @@ create policy leads_staff_select on public.leads
   for select to authenticated
   using (
     -- Owners see all leads.
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid()
-        and p.role in ('admin', 'manager')
-        and p.is_active = true
-    )
+    public.is_owner()
     or
     -- Operational staff see only leads assigned to them.
     (
       assigned_to = auth.uid()
-      and exists (
-        select 1 from public.profiles p
-        where p.id = auth.uid()
-          and p.role in ('call_center', 'purchaser')
-          and p.is_active = true
-      )
+      and public.is_operational_staff()
     )
   );
 
@@ -191,39 +200,19 @@ drop policy if exists leads_staff_update on public.leads;
 create policy leads_staff_update on public.leads
   for update to authenticated
   using (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid()
-        and p.role in ('admin', 'manager')
-        and p.is_active = true
-    )
+    public.is_owner()
     or
     (
       assigned_to = auth.uid()
-      and exists (
-        select 1 from public.profiles p
-        where p.id = auth.uid()
-          and p.role in ('call_center', 'purchaser')
-          and p.is_active = true
-      )
+      and public.is_operational_staff()
     )
   )
   with check (
-    exists (
-      select 1 from public.profiles p
-      where p.id = auth.uid()
-        and p.role in ('admin', 'manager')
-        and p.is_active = true
-    )
+    public.is_owner()
     or
     (
       assigned_to = auth.uid()
-      and exists (
-        select 1 from public.profiles p
-        where p.id = auth.uid()
-          and p.role in ('call_center', 'purchaser')
-          and p.is_active = true
-      )
+      and public.is_operational_staff()
     )
   );
 

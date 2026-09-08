@@ -20,6 +20,8 @@ export type PartialLead = {
   year: number | null;
   mileage_km: number | null;
   description: string | null;
+  call_center_id: string | null;
+  purchaser_id: string | null;
   activities?: PartialLeadActivity[];
 };
 
@@ -33,7 +35,7 @@ export type PartialLeadActivity = {
 /** Columns selected everywhere a partial lead is read, kept in one place so the
  *  list and detail endpoints can never drift apart. */
 export const PARTIAL_LEAD_COLUMNS =
-  "id, created_at, updated_at, phone_e164, full_name, consent, status, notes, furthest_step, last_trigger, make, model, year, mileage_km, description";
+  "id, created_at, updated_at, phone_e164, full_name, consent, status, notes, furthest_step, last_trigger, make, model, year, mileage_km, description, call_center_id, purchaser_id";
 
 /**
  * Deliberately the same vocabulary as the lead pipeline. An abandoned form can

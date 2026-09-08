@@ -100,6 +100,8 @@ export const demoPartialLeads: PartialLead[] = [
     year: null,
     mileage_km: null,
     description: null,
+    call_center_id: null,
+    purchaser_id: null,
   },
   {
     id: "demo-partial-2",
@@ -117,6 +119,8 @@ export const demoPartialLeads: PartialLead[] = [
     year: 2021,
     mileage_km: 52000,
     description: null,
+    call_center_id: null,
+    purchaser_id: null,
   },
   {
     id: "demo-partial-3",
@@ -134,6 +138,8 @@ export const demoPartialLeads: PartialLead[] = [
     year: 2020,
     mileage_km: 68000,
     description: "Selling because of relocation.",
+    call_center_id: null,
+    purchaser_id: null,
   },
 ];
 

@@ -22,7 +22,7 @@ export const LeadRow = memo(function LeadRow({ lead }: Props) {
     <tr className="border-b border-border last:border-0 hover:bg-surface-2/50">
       <td className="py-3 pr-4">
         <Link href={`/admin/leads/${lead.id}`} className="text-text hover:text-gold">
-          {lead.fullName}
+          {lead.fullName || "Customer"}
         </Link>
       </td>
       <td className="py-3 pr-4 text-text-muted">
