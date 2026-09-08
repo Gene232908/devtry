@@ -98,9 +98,9 @@ export function formatTimeUntil(target: Date, now: Date = new Date()): string {
   return `${String(hours).padStart(2, "0")}h ${String(minutes).padStart(2, "0")}m`;
 }
 
-/** The grouping key for whichever UAE day contains `d`. */
+/** The grouping key for whichever UAE day contains `d` (YYYY-MM-DD). */
 export function uaeDayKey(d: Date): string {
-  return startOfUaeDayUtc(d).toISOString().slice(0, 10);
+  return new Date(d.getTime() + UAE_OFFSET_MS).toISOString().slice(0, 10);
 }
 
 /**
@@ -140,3 +140,61 @@ export function buildLastSevenUaeDays(now: Date = new Date()): UaeDay[] {
 export function uaeDayOfWeek(now: Date = new Date()): number {
   return new Date(now.getTime() + UAE_OFFSET_MS).getUTCDay();
 }
+
+/** Given year, month (1-12), day (1-31), returns the UTC Date of 00:00:00 UAE time. */
+export function uaeMidnightUtc(year: number, month: number, day: number): Date {
+  const utcMs = Date.UTC(year, month - 1, day, 0, 0, 0, 0);
+  return new Date(utcMs - UAE_OFFSET_MS);
+}
+
+/** Given a UAE day string 'YYYY-MM-DD', returns the UTC Date of 00:00:00 UAE time. */
+export function uaeDayStringToUtc(dayStr: string): Date {
+  const [year, month, day] = dayStr.split("-").map(Number);
+  return uaeMidnightUtc(year, month, day);
+}
+
+/** The UTC instant corresponding to 23:59:59.999 UAE time on the UAE day given by dayStr or instant. */
+export function endOfUaeDayUtc(dayOrStr: string | Date): Date {
+  const start = typeof dayOrStr === "string" ? uaeDayStringToUtc(dayOrStr) : startOfUaeDayUtc(dayOrStr);
+  return new Date(start.getTime() + ONE_DAY_MS - 1);
+}
+
+/**
+ * Builds an array of UaeDay objects for every UAE calendar day between
+ * startDayStr and endDayStr (inclusive), oldest first.
+ */
+export function buildUaeDayRange(startDayStr: string, endDayStr: string): UaeDay[] {
+  let start = uaeDayStringToUtc(startDayStr);
+  let end = uaeDayStringToUtc(endDayStr);
+  if (start.getTime() > end.getTime()) {
+    const temp = start;
+    start = end;
+    end = temp;
+  }
+  const days: UaeDay[] = [];
+
+  let currentMs = start.getTime();
+  const endMs = end.getTime();
+  const maxDays = 366; // safe cap
+  let count = 0;
+
+  while (currentMs <= endMs && count < maxDays) {
+    const startsAt = new Date(currentMs);
+    const key = uaeDayKey(startsAt);
+    const d = new Date(currentMs + UAE_OFFSET_MS);
+    const dayNum = d.getUTCDate();
+    const monthShort = d.toLocaleString("en-GB", { month: "short", timeZone: "UTC" });
+    const label = `${String(dayNum).padStart(2, "0")} ${monthShort}`;
+
+    days.push({
+      key,
+      label,
+      startsAt,
+    });
+    currentMs += ONE_DAY_MS;
+    count++;
+  }
+
+  return days;
+}
+

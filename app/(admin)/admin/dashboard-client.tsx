@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   BadgeCheck,
@@ -42,11 +42,13 @@ const SubmissionsChart = dynamic(
   () => import("@/components/admin/SubmissionsChart").then((m) => m.SubmissionsChart),
   { ssr: false, loading: () => <ChartPlaceholder title="Form Submissions" /> },
 );
+import { OverviewDateFilter, type DateFilterValue } from "@/components/admin/OverviewDateFilter";
 import { RecentLeads } from "@/components/admin/RecentLeads";
 import { useLeads } from "@/lib/admin/leads-store";
 import { useAdminStats, type AdminStatsSeed } from "@/lib/admin/use-admin-stats";
 import { useFreshServerData } from "@/lib/admin/use-fresh-server-data";
 import { formatNumber, LEAD_PIPELINE, STATUS_HINT, STATUS_LABEL } from "@/lib/format";
+import { endOfUaeDayUtc, uaeDayStringToUtc } from "@/lib/uae-time";
 
 /**
  * One icon per pipeline stage.
@@ -71,30 +73,36 @@ const PIPELINE_ICON = {
  * render in `page.tsx`, so the six cards and both charts paint with real
  * figures on the first frame instead of showing skeletons while the browser
  * makes two more HTTP calls.
- *
- * Recent Leads still comes from `useLeads()`. That provider is mounted once by
- * the admin layout and shared by every admin route, so it is fetched a single
- * time per session rather than per navigation — moving it here would not save
- * a round trip and would break the sharing.
  */
 export default function AdminDashboardClient({ seed }: { seed?: AdminStatsSeed }) {
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>({
+    preset: "week",
+    label: "This Week",
+  });
+
+  const activeStatsFilter = useMemo(() => {
+    if (dateFilter.from && dateFilter.to) {
+      return { from: dateFilter.from, to: dateFilter.to };
+    }
+    return undefined;
+  }, [dateFilter.from, dateFilter.to]);
+
   const { leads, isLoading: leadsLoading, refresh: refreshLeads } = useLeads();
-  const { stats, visitors, submissions, isLoading: statsLoading } = useAdminStats(seed);
+  const { stats, visitors, submissions, isLoading: statsLoading } = useAdminStats(seed, activeStatsFilter);
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
 
-  /**
-   * The Overview reads its figures from the server render, which means it shows
-   * whatever was true when this page was last rendered — and the App Router can
-   * serve a cached payload on top of that. Sitting on the dashboard while new
-   * visits arrive therefore showed a number that was quietly out of date, with
-   * nothing on screen admitting it.
-   *
-   * `router.refresh()` drops that cache and re-runs the server render, so the
-   * counts and both charts come back live. Recent Leads is refreshed alongside
-   * it because it comes from the shared provider, not the server render, and a
-   * half-updated dashboard is worse than a stale one.
-   */
+  // Filter recent leads if an explicit date range is chosen
+  const filteredLeads = useMemo(() => {
+    if (!dateFilter.from || !dateFilter.to) return leads;
+    const fromMs = uaeDayStringToUtc(dateFilter.from).getTime();
+    const toMs = endOfUaeDayUtc(dateFilter.to).getTime();
+    return leads.filter((l) => {
+      const t = new Date(l.createdAt).getTime();
+      return t >= fromMs && t <= toMs;
+    });
+  }, [leads, dateFilter.from, dateFilter.to]);
+
   async function refreshAll() {
     setRefreshing(true);
     try {
@@ -105,9 +113,11 @@ export default function AdminDashboardClient({ seed }: { seed?: AdminStatsSeed }
     }
   }
 
-  // Shared with every other server-rendered admin screen — see the hook for why
-  // this is needed at all.
   useFreshServerData();
+
+  const isTodayActive = dateFilter.preset === "today";
+  const isWeekActive = dateFilter.preset === "week";
+  const isBacklogActive = !isWeekActive;
 
   return (
     <div className="flex flex-col gap-6">
@@ -119,74 +129,93 @@ export default function AdminDashboardClient({ seed }: { seed?: AdminStatsSeed }
         </Button>
       </div>
 
-      {/* The pipeline, one card per stage.
-          These were six unlabelled "Metric N" placeholders, left that way while
-          it was still an open question which figures belonged here. It is no
-          longer open: the owner wants to see where every lead stands, which is
-          exactly the list the status dropdown offers.
+      {/* Historical Backlog & Time-Machine Filter Bar */}
+      <OverviewDateFilter
+        value={dateFilter}
+        onChange={setDateFilter}
+        isLoading={statsLoading}
+      />
 
-          Every stage is shown even on zero. A stage that disappears when empty
-          makes the pipeline look shorter than it is, and "nothing at Inspected"
-          is itself worth noticing — it is the stage nobody is working. */}
+      {/* The pipeline, one card per stage. */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {LEAD_PIPELINE.map((status) => (
           <StatCard
             key={status}
             label={STATUS_LABEL[status]}
             value={formatNumber(stats.byStatus?.[status] ?? 0)}
-            hint={STATUS_HINT[status]}
+            hint={
+              isBacklogActive
+                ? `Leads at '${STATUS_LABEL[status]}' for ${dateFilter.label}.`
+                : STATUS_HINT[status]
+            }
             icon={PIPELINE_ICON[status]}
-            // "Deal" is the only one given the accent: it is the outcome the
-            // whole pipeline exists to reach.
             accent={status === "deal"}
             isLoading={statsLoading}
           />
         ))}
       </div>
 
-      {/* Interest that has NOT become a lead yet.
-          Kept apart from the pipeline above on purpose: a pipeline card counts
-          people whose car you know about, and these count people who pressed a
-          button. Mixing them into one row would invite adding them together,
-          which would mean nothing. */}
+      {/* Engagement & Visitor counters */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard
           label="Message Us clicks"
           value={formatNumber(stats.whatsappClicks)}
-          hint="Times a visitor pressed the Message Us button on the landing page."
+          hint={
+            isBacklogActive
+              ? `Times visitors clicked Message Us during ${dateFilter.label}.`
+              : "Times a visitor pressed the Message Us button on the landing page."
+          }
           icon={MessageCircle}
           isLoading={statsLoading}
         />
         <StatCard
           label="Call Now clicks"
           value={formatNumber(stats.callClicks ?? 0)}
-          hint="Times a visitor pressed the Call Now button on the landing page."
+          hint={
+            isBacklogActive
+              ? `Times visitors clicked Call Now during ${dateFilter.label}.`
+              : "Times a visitor pressed the Call Now button on the landing page."
+          }
           icon={PhoneCall}
           isLoading={statsLoading}
         />
         <StatCard
           label="Incomplete forms"
           value={formatNumber(stats.incompleteForms)}
-          hint="Someone entered their number and left before submitting. Their details are under Incomplete Forms."
+          hint={
+            isBacklogActive
+              ? `Valuation forms started during ${dateFilter.label} but never submitted.`
+              : "Someone entered their number and left before submitting. Their details are under Incomplete Forms."
+          }
           icon={CircleDashed}
           isLoading={statsLoading}
         />
         <StatCard
-          label="Visitors today"
+          label={
+            isTodayActive
+              ? "Visitors today"
+              : isWeekActive
+                ? "Visitors today"
+                : `Visitors (${dateFilter.preset === "all" ? "All Time" : "in period"})`
+          }
           value={formatNumber(stats.visitorsToday)}
-          hint="Distinct people who opened the site today. Refreshing or opening more pages does not count again."
-          footer={<ResetCountdown />}
+          hint={
+            isTodayActive || isWeekActive
+              ? "Distinct people who opened the site today. Refreshing or opening more pages does not count again."
+              : `Distinct people who visited the site during ${dateFilter.label}.`
+          }
+          footer={isTodayActive || isWeekActive ? <ResetCountdown /> : undefined}
           icon={Users}
           isLoading={statsLoading}
         />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <VisitorsChart data={visitors} isLoading={statsLoading} />
-        <SubmissionsChart data={submissions} isLoading={statsLoading} />
+        <VisitorsChart data={visitors} isLoading={statsLoading} periodLabel={dateFilter.label} />
+        <SubmissionsChart data={submissions} isLoading={statsLoading} periodLabel={dateFilter.label} />
       </div>
 
-      <RecentLeads leads={leads} isLoading={leadsLoading} />
+      <RecentLeads leads={filteredLeads} isLoading={leadsLoading} />
     </div>
   );
 }

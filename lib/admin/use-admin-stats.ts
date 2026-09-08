@@ -33,57 +33,70 @@ export type AdminStatsSeed = {
   isLive: boolean;
 };
 
+export type AdminStatsFilter = {
+  from?: string;
+  to?: string;
+};
+
 /**
  * Dashboard-only (not app-wide, unlike LeadsProvider) since stats/charts are
  * only needed on the Overview page — keeps that cost off every other admin route.
  *
  * `seed` is the server-rendered result handed down by `admin/page.tsx`. When it
- * is present the hook starts already resolved and never fetches: the counts and
- * both chart series were produced during the server render, so re-requesting
- * them over HTTP on mount would only repeat work that is already on screen.
+ * is present and no filter is active, the hook starts already resolved and never fetches:
+ * the counts and both chart series were produced during the server render.
  *
- * Without a seed it behaves exactly as before, fetching on mount — which is
- * what preview mode and any other caller still rely on.
+ * When a `filter` is provided ({ from, to }), it fetches from /api/admin/stats and
+ * /api/admin/charts with query parameters so the admin can backtrack into any
+ * year, month, or day range.
  */
-export function useAdminStats(seed?: AdminStatsSeed) {
+export function useAdminStats(seed?: AdminStatsSeed, filter?: AdminStatsFilter) {
   const [state, setState] = useState<State>(
-    seed ? { ...seed, isLoading: false } : { ...MOCK_STATE, isLoading: true },
+    seed && !filter?.from
+      ? { ...seed, isLoading: false }
+      : { ...MOCK_STATE, isLoading: true },
   );
+
+  const [refreshIndex, setRefreshIndex] = useState(0);
+  const refetch = () => setRefreshIndex((i) => i + 1);
+
+  const filterFrom = filter?.from;
+  const filterTo = filter?.to;
+  const isFiltered = Boolean(filterFrom && filterTo);
 
   useEffect(() => {
     let cancelled = false;
 
-    // Adopt figures from a fresh server render.
-    //
-    // This used to `return` here on the grounds that a seed was "already
-    // resolved", which was wrong in a way that made the Overview quietly lie:
-    // useState's initialiser runs only on the FIRST render, so once mounted the
-    // hook kept its original numbers forever. A new seed — from router.refresh(),
-    // from the Refresh button, from any re-render of the server component — was
-    // received as a prop and then thrown away. The dashboard showed a snapshot
-    // of the moment it was opened and nothing on screen said so.
-    //
-    // `seed` is a new object on every server render, so this re-runs exactly
-    // when there are new figures to take, and never loops: setState does not
-    // change the identity of `seed`.
-    if (seed) {
+    // Adopt figures from a fresh server render only when NO custom filter is active.
+    if (seed && !isFiltered && refreshIndex === 0) {
       setState({ ...seed, isLoading: false });
       return;
     }
 
-    // Milestone 2: the dashboard is a design preview, so the summary cards and
-    // charts are rendered from the demo dataset rather than live counts.
-    if (ADMIN_PREVIEW) {
+    // Milestone 2: preview mode fallback
+    if (ADMIN_PREVIEW && !isFiltered) {
       setState({ ...MOCK_STATE, isLoading: false });
       return;
     }
 
     async function load() {
+      setState((prev) => ({ ...prev, isLoading: true }));
       try {
+        const statsUrl = new URL("/api/admin/stats", window.location.origin);
+        const chartsUrl = new URL("/api/admin/charts", window.location.origin);
+
+        if (filterFrom && filterTo) {
+          statsUrl.searchParams.set("from", filterFrom);
+          statsUrl.searchParams.set("to", filterTo);
+          chartsUrl.searchParams.set("from", filterFrom);
+          chartsUrl.searchParams.set("to", filterTo);
+        }
+
         const [statsRes, chartsRes] = await Promise.all([
-          fetch("/api/admin/stats", { cache: "no-store" }),
-          fetch("/api/admin/charts", { cache: "no-store" }),
+          fetch(statsUrl.toString(), { cache: "no-store" }),
+          fetch(chartsUrl.toString(), { cache: "no-store" }),
         ]);
+
         if (!statsRes.ok || !chartsRes.ok) throw new Error("not configured");
 
         const statsBody = await statsRes.json();
@@ -100,7 +113,9 @@ export function useAdminStats(seed?: AdminStatsSeed) {
           });
         }
       } catch {
-        if (!cancelled) setState({ ...MOCK_STATE, isLoading: false });
+        if (!cancelled) {
+          setState({ ...MOCK_STATE, isLoading: false });
+        }
       }
     }
 
@@ -108,7 +123,8 @@ export function useAdminStats(seed?: AdminStatsSeed) {
     return () => {
       cancelled = true;
     };
-  }, [seed]);
+  }, [seed, filterFrom, filterTo, isFiltered, refreshIndex]);
 
-  return state;
+  return { ...state, refetch };
 }
+

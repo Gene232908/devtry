@@ -4,7 +4,14 @@ import { LEAD_PIPELINE } from "@/lib/format";
 import { mapDbInventory, type DbInventory, type InventoryItem } from "@/lib/admin/inventory";
 import { PARTIAL_LEAD_COLUMNS, type PartialLead } from "@/lib/admin/partial-lead";
 import type { Manager, Settings } from "@/lib/admin/settings-schema";
-import { buildLastSevenUaeDays, startOfUaeDayUtc, uaeDayKey } from "@/lib/uae-time";
+import {
+  buildLastSevenUaeDays,
+  buildUaeDayRange,
+  endOfUaeDayUtc,
+  startOfUaeDayUtc,
+  uaeDayKey,
+  uaeDayStringToUtc,
+} from "@/lib/uae-time";
 import {
   countDistinctSessions,
   countDistinctSessionsByDay,
@@ -51,19 +58,33 @@ const NOT_CONFIGURED = {
   status: 503,
 };
 
+export type DateRangeParam = {
+  from?: string;
+  to?: string;
+};
+
+export function resolveDateRange(range?: DateRangeParam) {
+  if (!range?.from || !range?.to) return null;
+  let fromUtc = range.from.includes("T") ? new Date(range.from) : uaeDayStringToUtc(range.from);
+  let toUtc = range.to.includes("T") ? new Date(range.to) : endOfUaeDayUtc(range.to);
+  if (isNaN(fromUtc.getTime()) || isNaN(toUtc.getTime())) return null;
+  if (fromUtc.getTime() > toUtc.getTime()) {
+    const temp = fromUtc;
+    fromUtc = toUtc;
+    toUtc = temp;
+  }
+  const fromKey = uaeDayKey(fromUtc);
+  const toKey = uaeDayKey(toUtc);
+  return { fromUtc, toUtc, fromKey, toKey };
+}
+
 export type AdminStats = {
   totalLeads: number;
   newToday: number;
   activeLeads: number;
   /**
-   * Distinct people who opened the site TODAY, where "today" is the UAE
-   * calendar day — the same boundary `newToday` uses for leads, so the two
-   * daily figures on the Overview always agree about when a day starts.
-   *
-   * This was a rolling 7×24h count called `visitorsThisWeek`. Renamed rather
-   * than quietly re-scoped: a stat whose name says "week" while it counts a day
-   * is exactly how a dashboard ends up being read wrong, and the old name is
-   * now a compile error everywhere it was used.
+   * Distinct people who opened the site TODAY (or during the active date range),
+   * where "today" is the UAE calendar day.
    */
   visitorsToday: number;
   whatsappClicks: number;
@@ -73,36 +94,37 @@ export type AdminStats = {
   incompleteForms: number;
   /**
    * How many leads sit at each pipeline status.
-   *
-   * Every status in LEAD_PIPELINE is present, including the ones on zero — a
-   * stage that vanishes when empty makes the pipeline look shorter than it is,
-   * and "no leads at Inspected" is itself the thing worth noticing.
    */
   byStatus: Record<string, number>;
 };
 
 /**
  * The Overview counters.
- *
- * Leads are read ONCE, as `(status, created_at)` rows, and every lead figure is
- * tallied from that in memory. It used to run three separate `count` queries
- * over the same table — total, new-today, and active — and adding a count per
- * pipeline status would have taken that to eleven round trips to answer
- * questions one pass over the same rows already answers.
- *
- * At 300ms per round trip to this project's database, that is the difference
- * between a dashboard that opens and one that hesitates.
  */
-export async function fetchAdminStats(identity?: { role: string; userId: string }): Promise<QueryResult<AdminStats>> {
+export async function fetchAdminStats(
+  identity?: { role: string; userId: string },
+  dateRange?: DateRangeParam,
+): Promise<QueryResult<AdminStats>> {
   if (!isSupabaseConfigured()) return NOT_CONFIGURED;
 
   const supabase = getSupabaseAdmin();
+  const resolved = resolveDateRange(dateRange);
+
   // "Today" means the UAE calendar day, not the server's (likely UTC) local day -
   // the server may run anywhere (e.g. Vercel defaults to UTC), but the business is UAE-based.
   const startOfToday = startOfUaeDayUtc();
 
   let leadsQuery = supabase.from("leads").select("status, created_at").limit(SESSION_SCAN_CAP);
   let partialLeadsQuery = supabase.from("partial_leads").select("id", { count: "exact", head: true }).is("converted_lead_id", null);
+
+  if (resolved) {
+    leadsQuery = leadsQuery
+      .gte("created_at", resolved.fromUtc.toISOString())
+      .lte("created_at", resolved.toUtc.toISOString());
+    partialLeadsQuery = partialLeadsQuery
+      .gte("created_at", resolved.fromUtc.toISOString())
+      .lte("created_at", resolved.toUtc.toISOString());
+  }
 
   if (identity?.role === "call_center") {
     leadsQuery = leadsQuery.eq("call_center_id", identity.userId);
@@ -112,21 +134,34 @@ export async function fetchAdminStats(identity?: { role: string; userId: string 
     partialLeadsQuery = partialLeadsQuery.eq("purchaser_id", identity.userId);
   }
 
+  let visitorsQuery = supabase
+    .from("events")
+    .select("session_id")
+    .eq("type", "page_view")
+    .limit(SESSION_SCAN_CAP);
+
+  let whatsappQuery = supabase.from("events").select("id", { count: "exact", head: true }).eq("type", "whatsapp_click");
+  let callClicksQuery = supabase.from("events").select("id", { count: "exact", head: true }).eq("type", "call_click");
+
+  if (resolved) {
+    visitorsQuery = visitorsQuery
+      .gte("created_at", resolved.fromUtc.toISOString())
+      .lte("created_at", resolved.toUtc.toISOString());
+    whatsappQuery = whatsappQuery
+      .gte("created_at", resolved.fromUtc.toISOString())
+      .lte("created_at", resolved.toUtc.toISOString());
+    callClicksQuery = callClicksQuery
+      .gte("created_at", resolved.fromUtc.toISOString())
+      .lte("created_at", resolved.toUtc.toISOString());
+  } else {
+    visitorsQuery = visitorsQuery.gte("created_at", startOfToday.toISOString());
+  }
+
   const [leadRows, visitorRows, whatsapp, callClicks, incomplete] = await Promise.all([
     leadsQuery,
-    // Distinct people, not page loads — see countDistinctSessions. Bounded by
-    // the same UAE day start as `newToday` below, so the figure returns to zero
-    // at UAE midnight instead of dragging the previous six days along with it.
-    supabase
-      .from("events")
-      .select("session_id")
-      .eq("type", "page_view")
-      .gte("created_at", startOfToday.toISOString())
-      .limit(SESSION_SCAN_CAP),
-    supabase.from("events").select("id", { count: "exact", head: true }).eq("type", "whatsapp_click"),
-    supabase.from("events").select("id", { count: "exact", head: true }).eq("type", "call_click"),
-    // Abandoned forms still waiting on someone. Converted rows are excluded, so
-    // this only ever counts people who are not already leads.
+    visitorsQuery,
+    whatsappQuery,
+    callClicksQuery,
     partialLeadsQuery,
   ]);
 
@@ -144,8 +179,6 @@ export async function fetchAdminStats(identity?: { role: string; userId: string 
     if (new Date(lead.created_at).getTime() >= todayMs) newToday += 1;
   }
 
-  // "Active" = still being worked. Excludes 'new' (nobody has picked it up),
-  // 'deal' (bought — it is a car in Inventory now) and 'closed' (finished).
   const activeLeads =
     byStatus.pending +
     byStatus.contacted +
@@ -162,11 +195,6 @@ export async function fetchAdminStats(identity?: { role: string; userId: string 
       byStatus,
       visitorsToday: countDistinctSessions((visitorRows.data ?? []) as SessionRow[]),
       whatsappClicks: whatsapp.count ?? 0,
-      // `?? 0` matters here beyond tidiness: until migration 0018 is applied,
-      // 'call_click' is not a member of the `event_type` enum, so Postgres
-      // errors on the comparison and returns a null count rather than zero.
-      // Falling back keeps the card reading 0 instead of blank while the
-      // migration is outstanding.
       callClicks: callClicks.count ?? 0,
       incompleteForms: incomplete.count ?? 0,
     },
@@ -189,21 +217,31 @@ function countByDay(
   return days.map((d) => ({ day: d.label, count: counts.get(d.key) ?? 0 }));
 }
 
-
-/** The two 7-day series behind the Overview charts. */
+/** The series behind the Overview charts (7-day default or custom range). */
 export async function fetchAdminCharts(
-  identity?: { role: string; userId: string }
+  identity?: { role: string; userId: string },
+  dateRange?: DateRangeParam,
 ): Promise<QueryResult<{ visitors: ChartPoint[]; submissions: ChartPoint[] }>> {
   if (!isSupabaseConfigured()) return NOT_CONFIGURED;
 
-  const days = buildLastSevenUaeDays();
-  // The exact instant the oldest bucket opens. Deriving this from the day KEY
-  // and appending "T00:00:00.000Z" fetched an extra 20 hours of rows on every
-  // request that could never match a bucket.
+  const resolved = resolveDateRange(dateRange);
+  const days = resolved
+    ? buildUaeDayRange(resolved.fromKey, resolved.toKey)
+    : buildLastSevenUaeDays();
+
+  if (days.length === 0) {
+    return { ok: true, data: { visitors: [], submissions: [] } };
+  }
+
   const rangeStart = days[0].startsAt.toISOString();
+  const rangeEnd = endOfUaeDayUtc(days[days.length - 1].key).toISOString();
 
   const supabase = getSupabaseAdmin();
-  let leadsQuery = supabase.from("leads").select("created_at").gte("created_at", rangeStart);
+  let leadsQuery = supabase
+    .from("leads")
+    .select("created_at")
+    .gte("created_at", rangeStart)
+    .lte("created_at", rangeEnd);
 
   if (identity?.role === "call_center") {
     leadsQuery = leadsQuery.eq("call_center_id", identity.userId);
@@ -217,6 +255,7 @@ export async function fetchAdminCharts(
       .select("created_at, session_id")
       .eq("type", "page_view")
       .gte("created_at", rangeStart)
+      .lte("created_at", rangeEnd)
       .limit(SESSION_SCAN_CAP),
     leadsQuery,
   ]);

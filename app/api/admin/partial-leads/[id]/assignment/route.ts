@@ -15,14 +15,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ ok: false, error: { message: "Database is not configured." } }, { status: 503 });
   }
 
-  let body: any;
+  let body: Record<string, unknown>;
   try {
-    body = await req.json();
+    body = (await req.json()) as Record<string, unknown>;
   } catch {
     return NextResponse.json({ ok: false, error: { message: "Invalid JSON." } }, { status: 400 });
   }
 
-  const { callCenterId, purchaserId } = body;
+  const { callCenterId, purchaserId } = body as { callCenterId?: string | null; purchaserId?: string | null };
 
   const supabase = getSupabaseAdmin();
 
