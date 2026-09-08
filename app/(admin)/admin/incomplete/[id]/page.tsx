@@ -1,75 +1,46 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
 import Link from "next/link";
 import { PartialLeadDetail } from "@/components/admin/PartialLeadDetail";
-import type { PartialLead } from "@/lib/admin/partial-lead";
+import { fetchPartialLead } from "@/lib/admin/queries";
+import { requireStaff } from "@/lib/server/require-staff";
 import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 import { demoPartialLeads } from "@/config/demo-admin-data";
 
-export default function IncompleteDetailPage() {
-  const params = useParams<{ id: string }>();
-  const [partial, setPartial] = useState<PartialLead | null>(null);
-  const [loading, setLoading] = useState(true);
+export const dynamic = "force-dynamic";
 
-  // Fetched per-page rather than held in a provider like leads: this list is
-  // small, rarely visited, and nothing else in the admin needs it in memory.
-  useEffect(() => {
-    let cancelled = false;
-
-    // Milestone 2: design preview — served from the demo rows so the detail
-    // layout can be walked through without loading a real captured number.
-    if (ADMIN_PREVIEW) {
-      setPartial(demoPartialLeads.find((row) => row.id === params.id) ?? null);
-      setLoading(false);
-      return;
-    }
-
-    async function load() {
-      try {
-        const res = await fetch(`/api/admin/partial-leads/${params.id}`, { cache: "no-store" });
-        const body = await res.json();
-        if (!cancelled && res.ok && body.ok && body.data?.partialLead) {
-          setPartial(body.data.partialLead);
-          return;
-        }
-      } catch {
-        // falls through to fallback check below
-      }
-
-      if (!cancelled) {
-        const fallback = demoPartialLeads.find((row) => row.id === params.id);
-        if (fallback) {
-          setPartial(fallback);
-        }
-      }
-      if (!cancelled) setLoading(false);
-    }
-
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [params.id]);
-
-  if (loading) {
-    return <p className="py-20 text-center text-fluid--1 text-text-muted">Loading…</p>;
+export default async function IncompleteDetailPage({ params }: { params: { id: string } }) {
+  if (ADMIN_PREVIEW) {
+    const fallback = demoPartialLeads.find((row) => row.id === params.id) ?? null;
+    if (!fallback) return <NotFound />;
+    return <PartialLeadDetail partial={fallback} />;
   }
 
-  if (!partial) {
-    return (
-      <div className="flex flex-col items-center gap-4 py-20 text-center">
-        <p className="text-fluid-1 text-text">Incomplete form not found.</p>
-        <p className="text-fluid--1 text-text-muted">
-          It may have been deleted, or the person has since completed the form and become a lead.
-        </p>
-        <Link href="/admin/incomplete" className="text-gold hover:underline">
-          Back to incomplete forms
-        </Link>
-      </div>
-    );
+  const auth = await requireStaff();
+  if (!auth.ok) {
+    return <div>Not authorized</div>;
   }
 
-  return <PartialLeadDetail partial={partial} />;
+  const result = await fetchPartialLead(params.id);
+  if (!result.ok) {
+    const fallback = demoPartialLeads.find((row) => row.id === params.id) ?? null;
+    if (fallback) {
+      return <PartialLeadDetail partial={fallback} />;
+    }
+    return <NotFound />;
+  }
+
+  return <PartialLeadDetail partial={result.data.partialLead} />;
+}
+
+function NotFound() {
+  return (
+    <div className="flex flex-col items-center gap-4 py-20 text-center">
+      <p className="text-fluid-1 text-text">Incomplete form not found.</p>
+      <p className="text-fluid--1 text-text-muted">
+        It may have been deleted, or the person has since completed the form and become a lead.
+      </p>
+      <Link href="/admin/incomplete" className="text-gold hover:underline">
+        Back to incomplete forms
+      </Link>
+    </div>
+  );
 }

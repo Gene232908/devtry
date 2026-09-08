@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
-import { PARTIAL_LEAD_COLUMNS, PARTIAL_STATUSES_ALLOWED } from "@/lib/admin/partial-lead";
+import { PARTIAL_STATUSES_ALLOWED } from "@/lib/admin/partial-lead";
 import { blockedByPreview } from "@/lib/admin/preview-guard";
-
-// Admin-only (gated by middleware.ts for /api/admin/*). Single incomplete
-// valuation form: read it, record follow-up on it, or delete it.
+import { fetchPartialLead } from "@/lib/admin/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -30,21 +28,6 @@ function int(v: unknown): number | null {
  * Marks an abandoned form as a Deal: converts it to a real lead, then records
  * the purchase. See ADR-004 for why converting is the right answer rather than
  * refusing.
- *
- * The order matters and is not interchangeable:
- *
- *   1. create the lead        — inventory cannot exist without one
- *   2. link the partial to it — so the person leaves Incomplete Forms
- *   3. record_lead_deal()     — moves the lead to 'deal' AND creates the car,
- *                               in one database transaction
- *
- * If step 3 fails the lead is deleted again, so a failure cannot leave a
- * half-converted record behind: no lead without a car, no partial that has
- * vanished from both lists.
- *
- * `phone_verified` is false and `source` is 'recovered' deliberately. Nobody
- * proved this number — the justification for the lead is a purchase the
- * business made, and the record says so rather than hiding it.
  */
 async function convertToDealtLead(partialId: string, body: Record<string, unknown>) {
   const price = Number(body.purchase_price_aed);
@@ -72,10 +55,6 @@ async function convertToDealtLead(partialId: string, body: Record<string, unknow
     return fail("This form has already been converted into a lead.", 409);
   }
 
-  // The admin can supply anything the form never captured — a capture that
-  // stopped at step 1 has no car at all. Whatever they send wins, because they
-  // just agreed the purchase with the customer and the form is months stale by
-  // comparison.
   const fullName = str(body.full_name) ?? str(partial.full_name);
   const make = str(body.make) ?? str(partial.make);
   const model = str(body.model) ?? str(partial.model);
@@ -89,8 +68,6 @@ async function convertToDealtLead(partialId: string, body: Record<string, unknow
   ].filter(Boolean);
 
   if (missing.length > 0) {
-    // Named explicitly: "invalid request" would leave the owner guessing which
-    // box to fill on a screen where most of them are optional.
     return fail(`Please fill in the ${missing.join(", ")} before recording this as a deal.`, 400);
   }
 
@@ -101,21 +78,12 @@ async function convertToDealtLead(partialId: string, body: Record<string, unknow
       phone_e164: partial.phone_e164,
       make,
       model,
-      // `trim` and `emirate` have no equivalent on partial_leads — the form
-      // only captures them at step 3, and nothing writes them back. They can
-      // therefore come from the admin or from nowhere; both are optional on
-      // `leads`, so a missing one is recorded honestly as unknown rather than
-      // guessed.
       trim: str(body.trim),
       year,
       mileage_km: int(body.mileage_km) ?? int(partial.mileage_km),
       emirate: str(body.emirate),
       description: str(partial.description),
       notes: str(body.notes),
-      // False unless an admin explicitly asserted they spoke to this customer
-      // on this number. `=== true` rather than a truthy check: this flag decides
-      // whether the OTP guards ever trust the number again, so a stray "1" or
-      // "yes" in the payload must not be enough to set it.
       phone_verified: body.phone_verified === true,
       source: "recovered",
       marketing_consent: partial.consent === true,
@@ -142,8 +110,6 @@ async function convertToDealtLead(partialId: string, body: Record<string, unknow
   });
 
   if (dealError) {
-    // Unwind: unlink first so the partial reappears in Incomplete Forms, then
-    // remove the lead. Leaving either behind would be worse than failing.
     await supabase
       .from("partial_leads")
       .update({ converted_lead_id: null, converted_at: null })
@@ -163,43 +129,16 @@ async function convertToDealtLead(partialId: string, body: Record<string, unknow
       { lead_id: lead.id, type: "car_purchased", meta: { purchase_price_aed: price } },
     ]);
   } catch {
-    // non-fatal: the conversion itself succeeded
+    // non-fatal
   }
 
   return NextResponse.json({ ok: true, data: { id: partialId, leadId: lead.id } });
 }
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  if (!isSupabaseConfigured()) return fail("Database is not configured.", 503);
-
-  const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase
-    .from("partial_leads")
-    .select(PARTIAL_LEAD_COLUMNS)
-    .eq("id", params.id)
-    // Converted rows are no longer incomplete — that person is a real lead now,
-    // so their detail page lives under Leads instead.
-    .is("converted_lead_id", null)
-    .maybeSingle();
-
-  if (error) return fail(error.message, 500);
-  if (!data) return fail("Not found.", 404);
-
-  let activities: Array<{ id: string; type: "note_updated" | "status_changed"; meta: { from?: string; to?: string }; created_at: string }> = [];
-  try {
-    const { data: actData, error: actError } = await supabase
-      .from("partial_lead_events")
-      .select("id, type, meta, created_at")
-      .eq("partial_lead_id", params.id)
-      .order("created_at", { ascending: false });
-    if (!actError && actData) {
-      activities = actData as typeof activities;
-    }
-  } catch {
-    // Audit table may not be migrated yet in some database instances
-  }
-
-  return NextResponse.json({ ok: true, data: { partialLead: { ...data, activities } } });
+  const result = await fetchPartialLead(params.id);
+  if (!result.ok) return fail(result.message, result.status);
+  return NextResponse.json({ ok: true, data: result.data });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -215,8 +154,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return fail("Invalid request.", 400);
   }
 
-  // Marking an abandoned form as a Deal turns it into a real lead first — see
-  // ADR-004. Everything about that path is different enough to keep separate.
   if (body.status === "deal") {
     return convertToDealtLead(params.id, body);
   }
@@ -248,10 +185,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const status = nextStatus ?? current.status;
   const notes = nextNotes ?? current.notes ?? "";
 
-  // Keep the API usable while older Supabase projects are missing the RPC
-  // from migration 0021. The service-role client is already trusted here;
-  // the route still validates the status and reads the unconverted row above.
-  // Once the RPC exists, it remains the preferred transactional path.
   const rpc = await supabase.rpc("update_partial_lead_follow_up", {
     p_id: params.id,
     p_status: status,
