@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { buildIdentity, type StaffIdentity } from "@/lib/auth/permissions";
 
@@ -25,7 +26,7 @@ export type AdminCheck =
   | { ok: true; userId: string; identity: StaffIdentity }
   | { ok: false; status: 401 | 403; message: string };
 
-export async function requireAdmin(): Promise<AdminCheck> {
+export const requireAdmin = cache(async function requireAdmin(): Promise<AdminCheck> {
   const supabase = getSupabaseServer();
 
   // getClaims() verifies the JWT signature locally rather than calling the auth
@@ -64,4 +65,4 @@ export async function requireAdmin(): Promise<AdminCheck> {
   );
 
   return { ok: true, userId, identity };
-}
+});

@@ -1,14 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Logo } from "@/components/public/Logo";
-
 import { useSearchParams } from "next/navigation";
 
 export default function AdminLoginPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -50,9 +47,9 @@ export default function AdminLoginPage() {
       // Deliberately does NOT clear `loading` — the page is on its way out, and
       // resetting it would flash an idle form during the redirect.
       setRedirecting(true);
-      // Middleware decides whether this account needs /admin/set-password first.
-      router.replace("/admin");
-      router.refresh();
+      // Clean full navigation ensures session cookies are attached and eliminates
+      // dual-request race conditions and compilation lag in dev mode.
+      window.location.href = "/admin";
     } catch {
       setError("Something went wrong. Please try again.");
       setLoading(false);

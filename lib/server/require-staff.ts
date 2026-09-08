@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { buildIdentity, type StaffIdentity, type StaffRole } from "@/lib/auth/permissions";
 
@@ -16,6 +17,9 @@ import { buildIdentity, type StaffIdentity, type StaffRole } from "@/lib/auth/pe
  * Callers use hasCapability() from lib/auth/permissions.ts to gate specific
  * operations after this guard succeeds.
  *
+ * Wrapped in React cache() so multiple checks in the same request (e.g. layout + page)
+ * share a single Supabase query instead of firing multiple sequential network calls.
+ *
  * Always fails closed — any error condition returns a denial, never a grant.
  */
 
@@ -23,7 +27,7 @@ export type StaffCheck =
   | { ok: true; identity: StaffIdentity }
   | { ok: false; status: 401 | 403; message: string };
 
-export async function requireStaff(): Promise<StaffCheck> {
+export const requireStaff = cache(async function requireStaff(): Promise<StaffCheck> {
   const supabase = getSupabaseServer();
 
   // Verify JWT locally (same approach as middleware.ts and require-admin.ts).
@@ -53,4 +57,4 @@ export async function requireStaff(): Promise<StaffCheck> {
   const identity = buildIdentity(userId, role, profile.display_name as string | null);
 
   return { ok: true, identity };
-}
+});
