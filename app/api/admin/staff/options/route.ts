@@ -20,7 +20,7 @@ export async function GET() {
 
   if (error) return NextResponse.json({ ok: false, error: { message: error.message } }, { status: 500 });
 
-  const staffOptions = (data ?? []).map((p: any) => ({
+  const staffOptions = (data ?? []).map((p: { id: string; display_name: string | null; role: string }) => ({
     id: p.id,
     name: p.display_name ?? p.id,
     role: p.role as StaffRole,

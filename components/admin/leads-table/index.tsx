@@ -4,6 +4,7 @@ import { ArrowUpDown } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { useLeads } from "@/lib/admin/leads-store";
 import { useLeadsFilter } from "@/lib/admin/use-leads-filter";
+import { useStaffIdentity } from "@/lib/admin/staff-identity-context";
 import { exportLeadsCsv } from "@/lib/admin/export-csv";
 import { LeadsToolbar } from "./toolbar";
 import { LeadRow } from "./row";
@@ -12,7 +13,8 @@ import { Pagination } from "./pagination";
 
 export function LeadsTable() {
   const { leads, isLive, isLoading, isRefreshing, refresh } = useLeads();
-  const filter = useLeadsFilter(leads);
+  const identity = useStaffIdentity();
+  const filter = useLeadsFilter(leads, identity?.role);
 
   if (isLoading) {
     return (
@@ -40,6 +42,7 @@ export function LeadsTable() {
         isLive={isLive}
         isRefreshing={isRefreshing}
         onRefresh={refresh}
+        role={identity?.role}
       />
 
       <div className="mt-5 overflow-x-auto">

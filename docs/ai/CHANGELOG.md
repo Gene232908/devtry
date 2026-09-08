@@ -6,6 +6,14 @@ Use reverse chronological order.
 
 ### Added
 
+- **Disabled Account Security Guard.** Gated `POST /api/admin/login` and `middleware.ts` against disabled staff accounts (`is_active: false`). If an account has been disabled by the owner, any sign-in attempt is rejected with HTTP 403 status and displays an explicit alert message: `"Your account has been disabled by the owner."` Any active session for a disabled account is immediately terminated and redirected to the login screen.
+- **Agent & Purchaser Lead Assignment Fix.** Fixed staff ID resolution in `lib/admin/leads-store.tsx` so Agent 1 (oldest account in line) and subsequent round-robin assigned agents/purchasers immediately see their assigned customer leads on their dashboard across all environments.
+- **Dynamic Role Header Tag.** Updated topbar header next to logo to display the exact role title: `| Call Center Agent`, `| Purchaser`, or `| Super Admin`.
+- **Restored & Expanded Tabs for Agents and Purchasers.**
+  - **Call Center Agent**: Leads, Commission, Incomplete Forms, Blocked Numbers, Settings.
+  - **Purchaser**: Leads, Inventory, Commission, Settings.
+- **Personal "My Commission" View.** Agents and Purchasers see a personal "My Commission" screen listing their own closed deals, total profit, 2%/10% commission earnings, and downloadable PDF invoice statement (`carvibedubai.pdf`). Super Admin maintains full multi-tab management view across all staff and developer statements.
+
 - **WhatsApp OTP emergency circuit breaker.** `WHATSAPP_OTP_SENDING_ENABLED=false` stops `/api/otp/send` before it can parse a request, create an OTP record, or call Meta. The valuation form shows a temporary-unavailability message instead of treating this intentional shutdown as its local demo fallback. Focused tests prove the Meta sender is not called while the switch is off.
 
 - **`npm run dev:turbo`** — the dev server on Turbopack. Added alongside `dev` rather than replacing it, so it is opt-in and falling back costs nothing. In development Next compiles each route the first time it is visited, and that (not the network) is the largest part of the "first click on a sidebar link is slow, going back is instant" symptom: a cold `/privacy` measured 0.96s against 0.09s warm, and the admin screens are far heavier. Both `lucide-react` and `recharts` are already in Next 14.2's default `optimizePackageImports`, so there was nothing left to win there.

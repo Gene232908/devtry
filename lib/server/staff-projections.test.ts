@@ -34,8 +34,9 @@ const SAMPLE: DbLead = {
   notes: "Customer called twice. Offer around AED 80k.",
   is_duplicate: false,
   is_spam: false,
-  call_center_id: null,
-  purchaser_id: null,
+  call_center_id: "agent-uuid-1",
+  purchaser_id: "buyer-uuid-1",
+  inspection_scheduled_at: "2026-09-12T09:30:00Z",
 };
 
 // ─── Owner ─────────────────────────────────────────────────────────────────
@@ -159,5 +160,30 @@ describe("notes exclusion policy", () => {
   it("purchaser does not see notes even when they contain money figures", () => {
     const result = projectLeadForPurchaser(notesWithMoney);
     expect(result.notes).toBeUndefined();
+  });
+});
+
+// ─── Assignment fields ─────────────────────────────────────────────────────
+
+describe("assignment fields", () => {
+  // These are never redacted. They are what "my leads" is filtered on, so a role
+  // that cannot see who a lead belongs to cannot tell that it belongs to them —
+  // which is precisely what happened when the projections dropped them: every
+  // agent and purchaser received a list that filtered down to nothing.
+  it.each([
+    ["owner", projectLeadForOwner],
+    ["call centre", projectLeadForCallCenter],
+    ["purchaser", projectLeadForPurchaser],
+  ] as const)("survive the %s projection", (_label, project) => {
+    const result = project(SAMPLE);
+
+    expect(result.callCenterId).toBe("agent-uuid-1");
+    expect(result.purchaserId).toBe("buyer-uuid-1");
+    expect(result.inspectionScheduledAt).toBe("2026-09-12T09:30:00Z");
+  });
+
+  it("normalises a missing schedule to null rather than undefined", () => {
+    const result = projectLeadForPurchaser({ ...SAMPLE, inspection_scheduled_at: null });
+    expect(result.inspectionScheduledAt).toBeNull();
   });
 });

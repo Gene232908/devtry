@@ -7,6 +7,31 @@ import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 import { useRefreshOnFocus } from "@/lib/admin/use-fresh-server-data";
 import { demoNewLeads } from "@/config/demo-admin-data";
 
+import { useStaffIdentity } from "@/lib/admin/staff-identity-context";
+import { assignLeadsRoundRobin, assignPurchaserOnInspectionScheduled } from "@/lib/admin/round-robin";
+import { visibleLeadsFor } from "@/lib/auth/lead-visibility";
+
+/**
+ * Fictional staff, used ONLY to give the offline mock/demo dataset plausible
+ * assignments so the walkthrough has something to show.
+ *
+ * These ids must never touch live data. They used to: the round-robin ran over
+ * this list on every load, including live loads, and overwrote the real
+ * `callCenterId`/`purchaserId` that came back from the database with "agent-1"
+ * and "purchaser-1". Nothing was ever written back, so who owned a lead was
+ * whatever the browser last decided — and the visibility filter below then had
+ * to guess its way back to the truth by matching display names.
+ *
+ * Assignment is a server decision now (lib/server/lead-assignment.ts). Live
+ * leads arrive already owned.
+ */
+const DEMO_STAFF_ACCOUNTS = [
+  { id: "agent-1", role: "call_center" as const, createdAt: "2026-01-01T00:00:00Z" },
+  { id: "agent-2", role: "call_center" as const, createdAt: "2026-01-02T00:00:00Z" },
+  { id: "purchaser-1", role: "purchaser" as const, createdAt: "2026-01-01T00:00:00Z" },
+  { id: "purchaser-2", role: "purchaser" as const, createdAt: "2026-01-02T00:00:00Z" },
+];
+
 const STORAGE_KEY = "cvd_admin_leads_v1";
 
 /**
@@ -46,18 +71,18 @@ const LeadsContext = createContext<LeadsContextValue | null>(null);
  * while still not fetching leads on the signed-out screens.
  */
 export function LeadsProvider({ children, enabled = true }: { children: React.ReactNode; enabled?: boolean }) {
-  const [leads, setLeads] = useState<Lead[]>([]);
+  const [allLeads, setAllLeads] = useState<Lead[]>([]);
   const [isLive, setIsLive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isLiveRef = useRef(false);
 
+  const identity = useStaffIdentity();
+
   // Try real Supabase-backed leads first; fall back to the local mock/demo
   // dataset whenever the database isn't configured yet (or the request fails
   // for any reason) so the dashboard never breaks in demo mode.
   const loadLive = useCallback(async () => {
-    // Milestone 2: the dashboard is a design preview, so it never reads real
-    // customer data. Returning false drops through to the demo dataset below.
     if (ADMIN_PREVIEW) return false;
 
     try {
@@ -65,7 +90,10 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
       if (!res.ok) return false;
       const body = await res.json();
       if (!body.ok || !Array.isArray(body.data?.leads)) return false;
-      setLeads(body.data.leads);
+      // No client-side assignment here on purpose — the rows already carry the
+      // assignment the server made, and the server has additionally scoped
+      // WHICH rows were sent.
+      setAllLeads(body.data.leads as Lead[]);
       setIsLive(true);
       isLiveRef.current = true;
       return true;
@@ -77,22 +105,15 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
   useEffect(() => {
     let cancelled = false;
 
-    // Signed-out screens (login, set password) mount the provider but have no
-    // business asking the server for leads.
     if (!enabled) {
       setIsLoading(false);
       return;
     }
 
-    // Milestone 2: the preview always shows the same fixed demo dataset. The
-    // cached copy below is deliberately bypassed — a walkthrough must look
-    // identical every time it is opened, and a row left over from an earlier
-    // session (or saved under an older shape) would either confuse the
-    // discussion or crash the detail page on a field that no longer exists.
     if (ADMIN_PREVIEW) {
-      // Fresh, untouched leads first so the dashboard has something to show in
-      // Recent Leads and New-first ordering has something to lift to the top.
-      setLeads([...demoNewLeads, ...mockLeads]);
+      const rawLeads = [...demoNewLeads, ...mockLeads];
+      const assigned = assignLeadsRoundRobin<Lead>(rawLeads, DEMO_STAFF_ACCOUNTS);
+      setAllLeads(assigned);
       setIsLoading(false);
       return;
     }
@@ -101,15 +122,15 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
       if (cancelled) return;
       if (!live) {
         const stored = localStorage.getItem(STORAGE_KEY);
+        let rawLeads = mockLeads;
         if (stored) {
           try {
-            setLeads(JSON.parse(stored));
+            rawLeads = JSON.parse(stored);
           } catch {
-            setLeads(mockLeads);
+            rawLeads = mockLeads;
           }
-        } else {
-          setLeads(mockLeads);
         }
+        setAllLeads(assignLeadsRoundRobin<Lead>(rawLeads, DEMO_STAFF_ACCOUNTS));
       }
       setIsLoading(false);
     });
@@ -118,6 +139,22 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
       cancelled = true;
     };
   }, [loadLive, enabled]);
+
+  // A second, narrower pass over what the server already scoped.
+  //
+  // It is NOT the security boundary — GET /api/admin/leads decides what leaves
+  // the database, and this cannot un-send a row. It exists because the demo
+  // dataset never goes through that endpoint, and because it keeps the rule
+  // readable in one place next to the screens that depend on it.
+  //
+  // Matching is on assignment id only. It used to fall back to substring
+  // matching on the signed-in person's display name ("mat", "waaa") to paper
+  // over the demo ids being written into live leads above — which meant renaming
+  // a staff account silently changed which customers they could see.
+  const visibleLeads = useMemo(
+    () => (identity ? visibleLeadsFor(allLeads, identity.role, identity.userId) : allLeads),
+    [allLeads, identity],
+  );
 
   // The admin layout mounts this provider once and keeps it alive across every
   // /admin/* page — without this, leads submitted after the dashboard was first
@@ -158,17 +195,14 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
   useRefreshOnFocus(refreshIfLive, showsLeadList);
 
   useEffect(() => {
-    // Milestone 2: the preview writes nothing, not even locally — otherwise a
-    // change made during one walkthrough would still be there at the start of
-    // the next, and the demo would drift away from the fixed dataset.
     if (ADMIN_PREVIEW) return;
-    if (isLive || isLoading) return; // real data persists in Supabase, not localStorage
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
-  }, [leads, isLive, isLoading]);
+    if (isLive || isLoading) return;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(allLeads));
+  }, [allLeads, isLive, isLoading]);
 
   const value = useMemo<LeadsContextValue>(
     () => ({
-      leads,
+      leads: visibleLeads,
       isLive,
       isLoading,
       isRefreshing,
@@ -181,30 +215,34 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
           setIsRefreshing(false);
         }
       },
-      // Resolves false when the write did not reach the database, so a caller
-      // with a Save button can say so. It used to swallow every failure while
-      // leaving the optimistic local update in place, which meant a rejected
-      // status looked saved until the page was reloaded — the worst possible
-      // outcome, because nothing on screen suggested anything was wrong.
       updateLead: async (id, patch) => {
-        // Milestone 2: the preview must never write. The change is still shown
-        // locally so a walkthrough can demonstrate what the screen does, but it
-        // is discarded on reload and never reaches the database.
-        if (ADMIN_PREVIEW) {
-          setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
-          return true;
+        const previous = allLeads.find((l) => l.id === id);
+
+        // Offline demo/mock only. Nothing writes back there, so the hand-over
+        // has to be simulated locally for the walkthrough to make sense. Live
+        // leads get their purchaser from the server, which is the only place
+        // that can pick one who actually exists and is active.
+        const localPatch: LeadPatch = { ...patch };
+        if (!isLive && patch.status === "inspection_scheduled" && previous && !previous.purchaserId) {
+          const assigned = assignPurchaserOnInspectionScheduled(previous, DEMO_STAFF_ACCOUNTS, allLeads);
+          if (assigned.purchaserId) localPatch.purchaserId = assigned.purchaserId;
         }
 
-        const previous = leads.find((l) => l.id === id);
-        setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
-        if (!isLive) return true;
+        setAllLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...localPatch } : l)));
+        if (ADMIN_PREVIEW || !isLive) return true;
 
         const body: Record<string, unknown> = {};
         if (patch.status !== undefined) body.status = patch.status;
+        // purchaser_id is deliberately absent. Which purchaser receives a
+        // scheduled lead is a server decision — the round-robin needs the real
+        // staff table and the real rotation position, neither of which the
+        // browser has. Sending one from here was how a client could hand itself
+        // somebody else's lead; the endpoint now ignores it from any role
+        // without the assignLeads capability.
+        if (patch.inspectionScheduledAt !== undefined) body.inspection_scheduled_at = patch.inspectionScheduledAt;
         if (patch.estimatedValueAed !== undefined) body.estimated_value_aed = patch.estimatedValueAed;
         if (patch.notes !== undefined) body.notes = patch.notes;
         if (patch.isSpam !== undefined) body.is_spam = patch.isSpam;
-        // Sent alongside a "deal" status; the route writes them to `inventory`.
         if (patch.purchasePriceAed !== undefined) body.purchase_price_aed = patch.purchasePriceAed;
         if (patch.purchasedAt !== undefined) body.purchased_at = patch.purchasedAt;
         if (Object.keys(body).length === 0) return true;
@@ -217,17 +255,21 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
           });
           const json = await res.json().catch(() => null);
           if (!res.ok || !json?.ok) throw new Error(json?.error?.message ?? "update failed");
+
+          // Scheduling the inspection hands the lead to a purchaser server-side.
+          // Re-read so the list reflects who actually received it, rather than a
+          // local copy that still shows it unassigned.
+          if (patch.status === "inspection_scheduled") void loadLive();
+
           return true;
         } catch {
-          // Roll the optimistic update back so the UI never shows a value the
-          // database rejected.
-          if (previous) setLeads((prev) => prev.map((l) => (l.id === id ? previous : l)));
+          if (previous) setAllLeads((prev) => prev.map((l) => (l.id === id ? previous : l)));
           return false;
         }
       },
-      getLead: (id) => leads.find((l) => l.id === id),
+      getLead: (id) => visibleLeads.find((l) => l.id === id) ?? allLeads.find((l) => l.id === id),
     }),
-    [leads, isLive, isLoading, isRefreshing, loadLive],
+    [visibleLeads, allLeads, isLive, isLoading, isRefreshing, loadLive],
   );
 
   return <LeadsContext.Provider value={value}>{children}</LeadsContext.Provider>;

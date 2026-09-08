@@ -3,6 +3,7 @@ import { leadSchema } from "@/components/public/valuation-form/lead.schema";
 import { normalizeWhatsappPhone } from "@/lib/whatsapp/phone";
 import { readOtpProof } from "@/lib/whatsapp/otp-proof";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
+import { pickNextAssignee } from "@/lib/server/lead-assignment";
 
 // Flags a lead as duplicate if the same verified phone submitted within this window.
 const DUPLICATE_WINDOW_DAYS = 30;
@@ -104,6 +105,12 @@ export async function POST(req: NextRequest) {
     // non-fatal; default isDuplicate = false
   }
 
+  // Round-robin the lead onto a Call Centre agent at creation, so it arrives
+  // already owned by exactly one person. Purchasers are deliberately NOT
+  // assigned here — a lead only reaches a purchaser once an agent schedules the
+  // inspection (see PATCH /api/leads/[id]).
+  const callCenterId = await pickNextAssignee("call_center");
+
   const insertRow = {
     full_name: v.fullName,
     phone_e164: phone,
@@ -122,6 +129,7 @@ export async function POST(req: NextRequest) {
     marketing_consent: v.consent === true,
     consent_at: v.consent === true ? new Date().toISOString() : null,
     is_duplicate: isDuplicate,
+    call_center_id: callCenterId,
   };
 
   const { data, error } = await supabase.from("leads").insert(insertRow).select("id").single();

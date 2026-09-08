@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Eye, Lock, MessageCircle, Phone, Save } from "lucide-react";
+import { ArrowLeft, Calendar, Eye, Lock, MessageCircle, Phone, Save } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -32,26 +32,24 @@ import {
 import { INVENTORY_STATUS_LABEL, type InventoryItem } from "@/lib/admin/inventory";
 import { useStaffOptions } from "@/lib/admin/use-staff-options";
 import { LeadAssignment } from "@/components/admin/LeadAssignment";
+import { useStaffIdentity } from "@/lib/admin/staff-identity-context";
+import { hasCapability } from "@/lib/auth/permissions";
+import { statusChoicesForRole } from "@/lib/auth/lead-visibility";
 import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 import { demoInventory } from "@/config/demo-admin-data";
 import { whatsappLink } from "@/config/brand";
 
-// Forward moves only. "New" is reached on submission and is never offered as a
-// choice — a lead cannot be moved back to "nobody has looked at this".
-//
-// "Pending" is also absent, but for a different reason now that opening a lead
-// no longer sets it: it means "opened and being worked on, but not contacted",
-// which is the state a lead is already in while someone reads this page. There
-// is nothing to pick.
-const STATUS_OPTIONS = DETAIL_STATUS_OPTIONS.map((s) => ({
-  label: STATUS_LABEL[s],
-  value: s,
-  hint: STATUS_HINT[s],
-}));
-
+// Every status the pipeline knows, used as the fallback option list for roles
+// that are not restricted to a subset (see statusChoicesForRole).
 const SELECTABLE = new Set<string>(DETAIL_STATUS_OPTIONS);
 
-type Draft = { status: LeadStatus; notes: string; purchasePrice: string; purchasedAt: string };
+type Draft = {
+  status: LeadStatus;
+  notes: string;
+  purchasePrice: string;
+  purchasedAt: string;
+  inspectionScheduledAt: string;
+};
 
 /** Shown until the real timeline loads, so the card is never blank. */
 const FALLBACK_EVENTS = (createdAt: string): LeadEvent[] => [
@@ -67,27 +65,39 @@ function todayInputValue(): string {
 
 function draftFromLead(lead: Lead): Draft {
   return {
-    // Shown exactly as stored. A lead that is New stays New on screen — the
-    // status field is not a record of who opened the page.
     status: lead.status,
     notes: lead.notes ?? "",
-    // Both are filled in from the inventory record once it loads — the purchase
-    // figures live on the car, not the lead. See migration 0014.
     purchasePrice: "",
     purchasedAt: todayInputValue(),
+    inspectionScheduledAt: lead.inspectionScheduledAt ? lead.inspectionScheduledAt.slice(0, 16) : "",
   };
 }
 
 export function LeadDetail({ lead }: { lead: Lead }) {
   const { updateLead } = useLeads();
   const { staffOptions, canAssign, loading: staffLoading } = useStaffOptions();
+  const identity = useStaffIdentity();
+  const canViewContact = !identity || hasCapability(identity, "viewLeadContact");
   const router = useRouter();
+  const isPurchaser = identity?.role === "purchaser";
+
+  // Only the statuses this role is actually allowed to set. Offering more
+  // would invite a click the API then rejects — the dropdown and the rule now
+  // come from the same definition, so they cannot drift apart.
+  const roleStatusOptions = useMemo(() => {
+    const allowed = statusChoicesForRole(identity?.role) ?? DETAIL_STATUS_OPTIONS;
+    return allowed.map((s) => ({
+      label: STATUS_LABEL[s],
+      value: s,
+      hint: STATUS_HINT[s],
+    }));
+  }, [identity]);
 
   // Edits live here until Save. Nothing on this page writes through on blur —
   // a half-typed value or a mis-clicked status must not reach the database.
   const [draft, setDraft] = useState<Draft>(() => draftFromLead(lead));
   const [saved, setSaved] = useState<Draft>(() => draftFromLead(lead));
-  const [errors, setErrors] = useState<{ status?: string; notes?: string; purchasePrice?: string }>({});
+  const [errors, setErrors] = useState<{ status?: string; notes?: string; purchasePrice?: string; inspectionScheduledAt?: string }>({});
   // The car bought from this lead, if the deal has already been recorded.
   const [car, setCar] = useState<InventoryItem | null>(null);
   const [justSaved, setJustSaved] = useState(false);
@@ -101,7 +111,8 @@ export function LeadDetail({ lead }: { lead: Lead }) {
       draft.status !== saved.status ||
       draft.notes !== saved.notes ||
       draft.purchasePrice !== saved.purchasePrice ||
-      draft.purchasedAt !== saved.purchasedAt,
+      draft.purchasedAt !== saved.purchasedAt ||
+      draft.inspectionScheduledAt !== saved.inspectionScheduledAt,
     [draft, saved],
   );
 
@@ -221,6 +232,11 @@ export function LeadDetail({ lead }: { lead: Lead }) {
     setSaved((s) => ({ ...s, ...purchase }));
   }, [car]);
 
+  // The unsaved draft wins over the stored value so an agent picking a time sees
+  // the card update as they type; falls back to what is on the lead for everyone
+  // who cannot edit it.
+  const scheduledInspectionAt = draft.inspectionScheduledAt || lead.inspectionScheduledAt || null;
+
   const priceRequired = requiresPurchasePrice(draft.status);
   // A sold car's purchase price is frozen into its commission entry; changing
   // it afterwards would leave the ledger disagreeing with what was invoiced.
@@ -242,6 +258,10 @@ export function LeadDetail({ lead }: { lead: Lead }) {
 
     if (!draft.status) next.status = "Choose a status.";
     if (!draft.notes.trim()) next.notes = "Notes are required before saving.";
+
+    if (draft.status === "inspection_scheduled" && !draft.inspectionScheduledAt.trim()) {
+      next.inspectionScheduledAt = "Please select the scheduled date and time for inspection.";
+    }
 
     if (priceRequired && !priceLocked) {
       const parsed = Number(draft.purchasePrice);
@@ -267,6 +287,16 @@ export function LeadDetail({ lead }: { lead: Lead }) {
     const ok = await updateLead(lead.id, {
       status: draft.status,
       notes: draft.notes,
+      // Only the agent scheduling the visit sends this. A purchaser's draft holds
+      // the same value it was seeded with, and echoing it back would make a
+      // read-only field look like an edit. The API ignores it from them anyway.
+      ...(isPurchaser
+        ? {}
+        : {
+            inspectionScheduledAt: draft.inspectionScheduledAt
+              ? new Date(draft.inspectionScheduledAt).toISOString()
+              : null,
+          }),
       // Only sent at Deal. The server writes these to the car's inventory
       // record, not to the lead, and creates that record if it is the first time.
       ...(recordingPurchase
@@ -346,8 +376,8 @@ export function LeadDetail({ lead }: { lead: Lead }) {
                 value={lead.optionLevel ?? (lead.condition ? lead.condition.charAt(0).toUpperCase() + lead.condition.slice(1) : "—")}
               />
               <Detail label="Location" value={lead.location || "—"} />
-              <Detail label="Phone" value={formatPhoneDisplay(lead.phoneE164)} />
-              <Detail label="Email" value={lead.email || "—"} />
+              {canViewContact && <Detail label="Phone" value={formatPhoneDisplay(lead.phoneE164)} />}
+              {canViewContact && <Detail label="Email" value={lead.email || "—"} />}
               <Detail label="Source" value="Web" />
             </div>
             {lead.description ? (
@@ -436,7 +466,7 @@ export function LeadDetail({ lead }: { lead: Lead }) {
             />
           )}
 
-          {lead.phoneE164 && (
+          {canViewContact && lead.phoneE164 && (
             <Card className="flex flex-col gap-3 p-5">
               <h3 className="text-fluid-0 text-text">Contact customer</h3>
               <a
@@ -490,11 +520,44 @@ export function LeadDetail({ lead }: { lead: Lead }) {
               <Select
                 label="Status *"
                 placeholder={STATUS_LABEL[draft.status] ?? "Select"}
-                options={STATUS_OPTIONS}
+                options={roleStatusOptions}
                 value={SELECTABLE.has(draft.status) ? draft.status : ""}
                 error={errors.status}
                 onChange={(v) => setDraft((d) => ({ ...d, status: v as LeadStatus }))}
               />
+            )}
+
+            {/* Scheduled Inspection Date & Time Picker — Agents & Admin only when scheduling */}
+            {!isPurchaser && draft.status === "inspection_scheduled" && (
+              <Input
+                label="Scheduled Inspection Date & Time *"
+                type="datetime-local"
+                value={draft.inspectionScheduledAt}
+                error={errors.inspectionScheduledAt}
+                onChange={(e) => setDraft((d) => ({ ...d, inspectionScheduledAt: e.target.value }))}
+              />
+            )}
+
+            {/* Read-only record of when the customer is coming in — the one
+                thing a purchaser most needs off this page, and the thing they
+                must not be able to change. Shown only once a time actually
+                exists: it used to render for every purchaser and every lead
+                being scheduled, with the words "Scheduled by Call Center Agent"
+                standing in for a date, which reads as a confirmed appointment
+                that nobody had booked. */}
+            {scheduledInspectionAt && (
+              <div className="flex flex-col gap-1 rounded-card border border-gold/40 bg-gold/5 p-4">
+                <div className="flex items-center gap-2 font-medium text-gold text-fluid-0">
+                  <Calendar className="h-4 w-4 shrink-0" />
+                  <span>Scheduled Inspection</span>
+                </div>
+                <p className="text-fluid-0 font-semibold text-text">
+                  {formatScheduledInspection(scheduledInspectionAt)}
+                </p>
+                <p className="text-fluid--2 text-text-muted">
+                  Customer scheduled to visit facility for car inspection and negotiation.
+                </p>
+              </div>
             )}
 
             {/* Money is asked for at Deal and nowhere else — that is the moment
@@ -580,6 +643,21 @@ export function LeadDetail({ lead }: { lead: Lead }) {
       />
     </div>
   );
+}
+
+/** e.g. "Tue, 09 Sep 2026, 14:30" — day of week included because a bare date
+ *  is the one part of an appointment people mis-read. */
+function formatScheduledInspection(value: string): string {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleString("en-GB", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function Detail({ label, value }: { label: string; value: string }) {

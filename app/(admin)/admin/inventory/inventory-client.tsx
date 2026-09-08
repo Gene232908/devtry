@@ -11,9 +11,12 @@ import { SellCarDialog } from "@/components/admin/SellCarDialog";
 import { formatAed, formatDate } from "@/lib/format";
 import { formatUaeMonth, uaeMonthKey } from "@/lib/uae-time";
 import {
+  AGENT_COMMISSION_RATE,
   COMMISSION_RATE,
   INVENTORY_FILTER_OPTIONS,
   INVENTORY_STATUS_LABEL,
+  PURCHASER_COMMISSION_RATE,
+  round2,
   type InventoryItem,
   type InventoryStatus,
 } from "@/lib/admin/inventory";
@@ -152,11 +155,28 @@ export default function InventoryClient({
     // business paid for — so `withdrawn` is excluded (deliberately no longer
     // for sale) while `reserved` still counts as held.
     const held = visible.filter((i) => i.status === "in_stock" || i.status === "reserved");
+
+    // Developer's share is frozen per sale in the database (`i.commission`),
+    // so it is summed as-is. Agent and purchaser shares have no such record —
+    // the Commission page's per-staff totals aren't backed by a table yet —
+    // so they are computed the same way `previewCommission` does: the rate
+    // against each sale's own profit, rounded per car rather than once at the
+    // end, so this total agrees with what per-car figures would add up to.
+    const agentCommission = visible.reduce(
+      (sum, i) => sum + round2(Math.max(i.commission?.profitAed ?? 0, 0) * AGENT_COMMISSION_RATE),
+      0,
+    );
+    const purchaserCommission = visible.reduce(
+      (sum, i) => sum + round2(Math.max(i.commission?.profitAed ?? 0, 0) * PURCHASER_COMMISSION_RATE),
+      0,
+    );
+    const developerCommission = visible.reduce((sum, i) => sum + (i.commission?.commissionAed ?? 0), 0);
+
     return {
       inStock: held.length,
       capital: held.reduce((sum, i) => sum + i.purchasePriceAed, 0),
       profit: visible.reduce((sum, i) => sum + (i.commission?.profitAed ?? 0), 0),
-      commission: visible.reduce((sum, i) => sum + (i.commission?.commissionAed ?? 0), 0),
+      totalCommission: agentCommission + purchaserCommission + developerCommission,
     };
   }, [visible]);
 
@@ -245,8 +265,8 @@ export default function InventoryClient({
         <Summary label="Capital tied up" value={formatAed(summary.capital)} />
         <Summary label="Profit from sales" value={formatAed(summary.profit)} />
         <Summary
-          label={`Developer share (${(COMMISSION_RATE * 100).toFixed(0)}%)`}
-          value={formatAed(summary.commission)}
+          label={`Total commission (${((AGENT_COMMISSION_RATE + PURCHASER_COMMISSION_RATE + COMMISSION_RATE) * 100).toFixed(0)}%)`}
+          value={formatAed(summary.totalCommission)}
           accent
         />
       </div>

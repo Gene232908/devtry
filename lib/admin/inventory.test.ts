@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { COMMISSION_RATE, mapDbInventory, previewCommission, type DbInventory } from "./inventory";
+import {
+  AGENT_COMMISSION_RATE,
+  COMMISSION_RATE,
+  mapDbInventory,
+  previewCommission,
+  PURCHASER_COMMISSION_RATE,
+  type DbInventory,
+} from "./inventory";
 
 // These assertions describe the agreed commercial rules, not just the code:
 // only the purchase price is deducted, a loss earns nothing, and a loss is
@@ -45,6 +52,19 @@ describe("previewCommission", () => {
     const { profitAed, commissionAed } = previewCommission(2100000, 2350000);
     expect(profitAed).toBe(250000);
     expect(commissionAed).toBe(5000);
+  });
+});
+
+describe("staff commission rates", () => {
+  // These mirror the SQL defaults in sell_inventory_item (migration 0025) and
+  // the rates quoted on the Commission page — a drift between any two of the
+  // three would show a different figure than what actually got paid.
+  it("agent rate matches the 2% quoted on the Commission page", () => {
+    expect(AGENT_COMMISSION_RATE).toBe(0.02);
+  });
+
+  it("purchaser rate matches the 10% quoted on the Commission page", () => {
+    expect(PURCHASER_COMMISSION_RATE).toBe(0.1);
   });
 });
 
