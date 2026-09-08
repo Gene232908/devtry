@@ -1,8 +1,11 @@
+import { useMemo } from "react";
 import { Search, Download, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { LeadStatus } from "@/config/mock-data";
-import { FILTER_STATUS_OPTIONS, STATUS_LABEL } from "@/lib/format";
+import { STATUS_LABEL } from "@/lib/format";
+import { filterStatusOptionsForRole } from "@/lib/admin/use-leads-filter";
+import type { StaffRole } from "@/lib/auth/permissions";
 import { MAKES } from "@/config/vehicles";
 import { AREAS_BY_EMIRATE } from "@/config/emirates-areas";
 import { cn } from "@/lib/utils";
@@ -25,16 +28,13 @@ type Props = {
   isLive?: boolean;
   isRefreshing?: boolean;
   onRefresh?: () => void;
+  /** Narrows the status filter to what that role's leads can ever be — an
+   *  agent's list offering "Deal" or "Not Purchased" could never match one of
+   *  their own leads. Owner roles (and demo/no-identity) still get every
+   *  status. */
+  role?: StaffRole;
 };
 
-// "valuation_sent" is retired and deliberately absent — it is no longer a state
-// a lead can be moved into, so offering it as a filter would only ever return
-// historical rows.
-//
-// There is no "all" entry any more: with checkboxes, "all" is simply nothing
-// ticked, so an explicit option for it would be a second way to express the
-// same state and could contradict the boxes below it.
-const STATUS_OPTIONS = FILTER_STATUS_OPTIONS.map((s) => ({ value: s, label: STATUS_LABEL[s] }));
 const MAKE_OPTIONS = MAKES.map((m) => ({ value: m.name, label: m.name }));
 const EMIRATE_OPTIONS = EMIRATES.map((e) => ({ value: e, label: e }));
 
@@ -54,7 +54,20 @@ export function LeadsToolbar({
   isLive,
   isRefreshing,
   onRefresh,
+  role,
 }: Props) {
+  // "valuation_sent" is retired and deliberately absent from the full list —
+  // it is no longer a state a lead can be moved into, so offering it as a
+  // filter would only ever return historical rows.
+  //
+  // There is no "all" entry either: with checkboxes, "all" is simply nothing
+  // ticked, so an explicit option for it would be a second way to express the
+  // same state and could contradict the boxes below it.
+  const statusOptions = useMemo(
+    () => filterStatusOptionsForRole(role).map((s) => ({ value: s, label: STATUS_LABEL[s] })),
+    [role],
+  );
+
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
@@ -70,7 +83,7 @@ export function LeadsToolbar({
 
         <MultiSelect
           className="sm:w-44"
-          options={STATUS_OPTIONS}
+          options={statusOptions}
           selected={statuses}
           onChange={(v) => onStatuses(v as LeadStatus[])}
           allLabel="All statuses"

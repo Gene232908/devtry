@@ -44,6 +44,12 @@ export type ProjectedLead = {
   status: string;
   isDuplicate: boolean | undefined;
   isSpam: boolean | undefined;
+  // Assignment + scheduling. Present for EVERY role, never redacted: these are
+  // what the dashboard filters "my leads" on, and a role that cannot see who a
+  // lead belongs to cannot tell that it belongs to them.
+  callCenterId: string | null;
+  purchaserId: string | null;
+  inspectionScheduledAt: string | null;
   // Contact fields — only for call centre role
   fullName?: string;
   phoneE164?: string;
@@ -78,6 +84,9 @@ export function projectLeadForOwner(lead: DbLead): ProjectedLead {
     notes: lead.notes ?? "",
     isDuplicate: lead.is_duplicate ?? undefined,
     isSpam: lead.is_spam ?? undefined,
+    callCenterId: lead.call_center_id ?? null,
+    purchaserId: lead.purchaser_id ?? null,
+    inspectionScheduledAt: lead.inspection_scheduled_at ?? null,
   };
 }
 
@@ -103,6 +112,9 @@ export function projectLeadForCallCenter(lead: DbLead): ProjectedLead {
     status: lead.status,
     isDuplicate: lead.is_duplicate ?? undefined,
     isSpam: lead.is_spam ?? undefined,
+    callCenterId: lead.call_center_id ?? null,
+    purchaserId: lead.purchaser_id ?? null,
+    inspectionScheduledAt: lead.inspection_scheduled_at ?? null,
     // estimatedValueAed intentionally absent
     // notes intentionally absent (may contain financial data)
   };
@@ -128,6 +140,9 @@ export function projectLeadForPurchaser(lead: DbLead): ProjectedLead {
     estimatedValueAed: lead.estimated_value_aed != null ? Number(lead.estimated_value_aed) : null,
     isDuplicate: lead.is_duplicate ?? undefined,
     isSpam: lead.is_spam ?? undefined,
+    callCenterId: lead.call_center_id ?? null,
+    purchaserId: lead.purchaser_id ?? null,
+    inspectionScheduledAt: lead.inspection_scheduled_at ?? null,
     // fullName, phoneE164, email intentionally absent
     // notes intentionally absent (may contain contact data)
   };

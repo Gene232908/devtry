@@ -6,6 +6,13 @@ Use reverse chronological order.
 
 ### Added
 
+- **Disabled Account Security Guard.** Gated `POST /api/admin/login` and `middleware.ts` against disabled staff accounts (`is_active: false`). If an account has been disabled by the owner, any sign-in attempt is rejected with HTTP 403 status and displays an explicit alert message: `"Your account has been disabled by the owner."` Any active session for a disabled account is immediately terminated and redirected to the login screen.
+- **Agent & Purchaser Lead Assignment Fix.** Fixed staff ID resolution in `lib/admin/leads-store.tsx` so Agent 1 (oldest account in line) and subsequent round-robin assigned agents/purchasers immediately see their assigned customer leads on their dashboard across all environments.
+- **Dynamic Role Header Tag.** Updated topbar header next to logo to display the exact role title: `| Call Center Agent`, `| Purchaser`, or `| Super Admin`.
+- **Restored & Expanded Tabs for Agents and Purchasers.**
+  - **Call Center Agent**: Leads, Commission, Incomplete Forms, Blocked Numbers, Settings.
+  - **Purchaser**: Leads, Inventory, Commission, Settings.
+- **Personal "My Commission" View.** Agents and Purchasers see a personal "My Commission" screen listing their own closed deals, total profit, 2%/10% commission earnings, and downloadable PDF invoice statement (`carvibedubai.pdf`). Super Admin maintains full multi-tab management view across all staff and developer statements.
 - **Overview Historical Backlog & Time-Machine Date Filtering.** Allows administrators to backlog and backtrack all metrics across any timeframe (Year, Month, and Week/Day ranges e.g. Days 1–7):
   - Fast presets: `This Week` (default 7-day view), `Today`, `This Month`, `Last Month`, `All Time`, and `Custom Backlog`.
   - Backlog drilldown: Year selector (2024+), Month selector (January–December or Full Year), and Week/Day range selector (Days 1–7, 8–14, 15–21, 22–28, 29–end, or custom Day X to Y).

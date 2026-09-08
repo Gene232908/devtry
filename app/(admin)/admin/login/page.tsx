@@ -5,16 +5,19 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Logo } from "@/components/public/Logo";
 
+import { useSearchParams } from "next/navigation";
+
 export default function AdminLoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    searchParams.get("error") === "disabled"
+      ? "Your account has been disabled by the owner."
+      : null
+  );
   const [loading, setLoading] = useState(false);
-  // Held true from a successful sign-in until this page is replaced. Without
-  // it the button snapped back to "Sign In" the instant the request resolved,
-  // so the screen sat looking idle through the redirect and then cut abruptly
-  // to the dashboard.
   const [redirecting, setRedirecting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {

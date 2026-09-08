@@ -38,6 +38,7 @@ export type Lead = {
   isSpam?: boolean;
   callCenterId?: string | null;
   purchaserId?: string | null;
+  inspectionScheduledAt?: string | null;
 };
 
 export type LeadEvent = {

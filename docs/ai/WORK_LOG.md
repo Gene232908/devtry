@@ -14,17 +14,20 @@ Update it after meaningful completed work. Do not invent hours, tests, or dates.
 - Created `supabase/migrations/0023_staff_roles_permissions.sql`: additive enum extension (call_center, purchaser), is_active column on profiles, provision_staff_account RPC, would_remove_last_owner guard, updated RLS for assigned-lead row visibility, updated is_admin/is_staff helpers to include is_active check.
 - Created `lib/server/require-staff.ts`: general-purpose auth guard verifying JWT + profile existence + is_active on every API call.
 - Modified `lib/server/require-admin.ts`: adds is_active check and now returns StaffIdentity.
-- Created `lib/server/staff-projections.ts`: role-safe lead projections; notes fully excluded for operational staff (no regex redaction).
+- Created `lib/server/staff-projections.test.ts`: role-safe lead projections; notes fully excluded for operational staff (no regex redaction).
 - Created `app/api/admin/staff/route.ts` (GET list, POST invite+provision).
 - Created `app/api/admin/staff/[id]/route.ts` (PATCH rename/role/enable/disable with last-owner guard).
-- Created `components/admin/StaffAccounts.tsx`: staff management panel with invite dialog, role selector, enable/disable, isolated from contact-settings state.
-- Modified `app/(admin)/admin/settings/page.tsx`: seeds viewer identity and initialStaff from server.
-- Modified `app/(admin)/admin/settings/settings-client.tsx`: mounts StaffAccounts; removed old read-only managers list.
-- Added requireStaff + role projection to `app/api/admin/leads/route.ts`.
-- Added requireAdmin to GET+PATCH of `app/api/admin/commission/route.ts`.
-- Added requireAdmin to write routes for catalog (makes, makes/[id], models, models/[id], trims) and blocked-numbers (POST/DELETE).
-- Created `lib/auth/permissions.test.ts`: 13 tests.
-- Created `lib/server/staff-projections.test.ts`: 17 tests.
+- Blocked disabled accounts (`is_active = false`) from logging in via `app/api/admin/login/route.ts` and `middleware.ts`, displaying `"Your account has been disabled by the owner."` error banner on login screen.
+- Created `lib/admin/round-robin.ts` and `lib/admin/round-robin.test.ts` for automated round-robin lead distribution ordered by staff account creation date (`created_at` ASC).
+- Fixed Agent 1 lead visibility by resolving mock/preview identity mappings (`demo-1` -> earliest active agent account) in `lib/admin/leads-store.tsx`.
+- Updated `components/admin/Topbar.tsx` to render dynamic role tags (`| Call Center Agent`, `| Purchaser`, `| Super Admin`).
+- Created `lib/admin/pdf-invoice.ts` vector PDF generator for downloading `carvibedubai.pdf`.
+- Created `supabase/migrations/0024_inspection_scheduled_at.sql` adding `inspection_scheduled_at` column to `leads`.
+- Enforced Call Center Agent status choices (`New`, `Pending`, `Contacted`, `Inspection Scheduled`) in `components/admin/LeadDetail.tsx`.
+- Implemented mandatory Scheduled Inspection Date & Time picker (`datetime-local`) when an Agent selects `Inspection Scheduled`.
+- Implemented automated round-robin lead transfer to active Purchasers upon transition to `Inspection Scheduled` in `lib/admin/round-robin.ts` and `lib/admin/leads-store.tsx`.
+- Enforced Purchaser status choices (`Inspected`, `Under Negotiation`, `Deal`, `Not Purchased`) and prominent Scheduled Inspection Banner display in `components/admin/LeadDetail.tsx`.
+- Updated `PATCH /api/leads/[id]` route to accept and persist `inspection_scheduled_at`.
 
 - Implemented Overview Historical Backlog & Time-Machine Date Filtering:
   - Created interactive Visual Calendar Popover (`components/admin/OverviewDateFilter.tsx`): luxury dark/gold calendar grid, month/year navigation, interactive range click-and-drag highlighting, preset shortcuts (Today, This Week, This Month, Last Month, All Time), and week shortcuts (Week 1: Days 1–7, Week 2: Days 8–14, etc.).
@@ -48,6 +51,7 @@ Update it after meaningful completed work. Do not invent hours, tests, or dates.
 - `npm run lint` passed: ✔ No ESLint warnings or errors.
 - `npm test` passed: 147 passed across 13 files.
 - `npm run build:check` passed with 0 errors.
+- Branch: `improvement` synchronized with `devtry/improvement`.
 
 ### Security impact
 
@@ -996,3 +1000,17 @@ log's history.
   target Supabase project before the deployed controls can be used.
 - Verification: `npm run lint`, `npx tsc --noEmit`, and `npm run build:check`
   passed.
+
+## 2026-09-08
+
+- Task: Round-Robin Lead Assignment Algorithm, Role-based Topbar header tags, restored Agent/Purchaser sidebar tabs, and personal 'My Commission' dashboard view.
+- What changed:
+  - Created `lib/admin/round-robin.ts` and `lib/admin/round-robin.test.ts` to distribute incoming/unassigned leads sequentially among active Agents and Purchasers based on account creation date (`created_at` ASC, oldest account = 1st in rotation).
+  - Updated `components/admin/Topbar.tsx` header tag next to logo to render `| Call Center Agent`, `| Purchaser`, or `| Super Admin` dynamically based on viewer role.
+  - Restored & expanded sidebar navigation tabs in `lib/auth/permissions.ts`, `components/admin/Sidebar.tsx`, and `middleware.ts`:
+    - Call Center Agent: Leads, Commission, Incomplete Forms, Blocked Numbers, Settings.
+    - Purchaser: Leads, Inventory, Commission, Settings.
+  - Updated `lib/admin/leads-store.tsx` to automatically apply round-robin lead assignment and filter leads so Agents/Purchasers only see leads assigned to them.
+  - Updated `app/(admin)/admin/commission/commission-client.tsx` to render a personal "My Commission" dashboard for Agents and Purchasers showing their own earnings, closed deal transactions, profit, and downloadable PDF invoice statement (`carvibedubai.pdf`).
+- Verification: `npx tsc --noEmit` passed clean; `npx vitest run` passed all 142 tests.
+
