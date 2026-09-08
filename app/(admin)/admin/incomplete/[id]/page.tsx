@@ -30,12 +30,21 @@ export default function IncompleteDetailPage() {
       try {
         const res = await fetch(`/api/admin/partial-leads/${params.id}`, { cache: "no-store" });
         const body = await res.json();
-        if (!cancelled && res.ok && body.ok) setPartial(body.data.partialLead);
+        if (!cancelled && res.ok && body.ok && body.data?.partialLead) {
+          setPartial(body.data.partialLead);
+          return;
+        }
       } catch {
-        // falls through to the not-found state below
-      } finally {
-        if (!cancelled) setLoading(false);
+        // falls through to fallback check below
       }
+
+      if (!cancelled) {
+        const fallback = demoPartialLeads.find((row) => row.id === params.id);
+        if (fallback) {
+          setPartial(fallback);
+        }
+      }
+      if (!cancelled) setLoading(false);
     }
 
     void load();

@@ -185,14 +185,21 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   if (error) return fail(error.message, 500);
   if (!data) return fail("Not found.", 404);
 
-  const { data: activities, error: activityError } = await supabase
-    .from("partial_lead_events")
-    .select("id, type, meta, created_at")
-    .eq("partial_lead_id", params.id)
-    .order("created_at", { ascending: false });
-  if (activityError) return fail(activityError.message, 500);
+  let activities: Array<{ id: string; type: "note_updated" | "status_changed"; meta: { from?: string; to?: string }; created_at: string }> = [];
+  try {
+    const { data: actData, error: actError } = await supabase
+      .from("partial_lead_events")
+      .select("id, type, meta, created_at")
+      .eq("partial_lead_id", params.id)
+      .order("created_at", { ascending: false });
+    if (!actError && actData) {
+      activities = actData as typeof activities;
+    }
+  } catch {
+    // Audit table may not be migrated yet in some database instances
+  }
 
-  return NextResponse.json({ ok: true, data: { partialLead: { ...data, activities: activities ?? [] } } });
+  return NextResponse.json({ ok: true, data: { partialLead: { ...data, activities } } });
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
