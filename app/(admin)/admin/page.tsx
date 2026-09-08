@@ -1,5 +1,6 @@
 import AdminDashboardClient from "./dashboard-client";
 import { fetchAdminStats, fetchAdminCharts } from "@/lib/admin/queries";
+import { requireStaff } from "@/lib/server/require-staff";
 import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,15 @@ export default async function AdminDashboardPage() {
     return <AdminDashboardClient />;
   }
 
-  const [statsResult, chartsResult] = await Promise.all([fetchAdminStats(), fetchAdminCharts()]);
+  const auth = await requireStaff();
+  if (!auth.ok) {
+    return <div>Not authorized</div>;
+  }
+
+  const [statsResult, chartsResult] = await Promise.all([
+    fetchAdminStats(auth.identity),
+    fetchAdminCharts(auth.identity),
+  ]);
 
   // If either half failed, fall through with no seed and let the hook do what
   // it always did — fetch on mount, and drop to the mock dataset if that fails

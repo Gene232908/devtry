@@ -15,7 +15,8 @@ export function formatDate(iso: string) {
   });
 }
 
-export function formatPhoneDisplay(e164: string) {
+export function formatPhoneDisplay(e164: string | undefined | null) {
+  if (!e164) return "—";
   return e164.replace(/^(\+971)(\d{2})(\d{3})(\d{4})$/, "$1 $2 $3 $4");
 }
 

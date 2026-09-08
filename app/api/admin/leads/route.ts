@@ -36,11 +36,19 @@ export async function GET() {
     return NextResponse.json({ ok: false, error: { message: "Database is not configured." } }, { status: 503 });
   }
 
-  const { data, error } = await getSupabaseAdmin()
+  let query = getSupabaseAdmin()
     .from("leads")
     .select(
-      "id, created_at, full_name, phone_e164, email, make, model, trim, year, mileage_km, condition, option_level, description, emirate, status, estimated_value_aed, notes, is_duplicate, is_spam",
-    )
+      "id, created_at, full_name, phone_e164, email, make, model, trim, year, mileage_km, condition, option_level, description, emirate, status, estimated_value_aed, notes, is_duplicate, is_spam, call_center_id, purchaser_id"
+    );
+
+  if (auth.identity.role === "call_center") {
+    query = query.eq("call_center_id", auth.identity.userId);
+  } else if (auth.identity.role === "purchaser") {
+    query = query.eq("purchaser_id", auth.identity.userId);
+  }
+
+  const { data, error } = await query
     .order("created_at", { ascending: false })
     .limit(MAX_LEADS);
 

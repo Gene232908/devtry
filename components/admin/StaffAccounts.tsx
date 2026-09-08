@@ -284,6 +284,19 @@ export function StaffAccounts({ viewer, initialStaff, canManageStaff }: Props) {
                 placeholder="name@example.com"
                 onChange={(e) => updateDraft("email", e.target.value)}
               />
+              
+              {!editTarget && (
+                <Input
+                  label="Password"
+                  name="staff-password"
+                  type="text"
+                  value={draft.password ?? ""}
+                  error={draftErrors.password}
+                  disabled={saving}
+                  placeholder="At least 6 characters"
+                  onChange={(e) => updateDraft("password", e.target.value)}
+                />
+              )}
               <Input
                 label="Display name"
                 name="staff-displayName"
@@ -350,7 +363,7 @@ export function StaffAccounts({ viewer, initialStaff, canManageStaff }: Props) {
                 id="staff-submit-btn"
               >
                 {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                {saving ? "Saving…" : editTarget ? "Save changes" : "Send invite"}
+                {saving ? "Saving…" : editTarget ? "Save changes" : "Create account"}
               </Button>
             </div>
           </div>

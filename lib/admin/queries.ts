@@ -93,7 +93,7 @@ export type AdminStats = {
  * At 300ms per round trip to this project's database, that is the difference
  * between a dashboard that opens and one that hesitates.
  */
-export async function fetchAdminStats(): Promise<QueryResult<AdminStats>> {
+export async function fetchAdminStats(identity?: { role: string; userId: string }): Promise<QueryResult<AdminStats>> {
   if (!isSupabaseConfigured()) return NOT_CONFIGURED;
 
   const supabase = getSupabaseAdmin();
@@ -101,8 +101,19 @@ export async function fetchAdminStats(): Promise<QueryResult<AdminStats>> {
   // the server may run anywhere (e.g. Vercel defaults to UTC), but the business is UAE-based.
   const startOfToday = startOfUaeDayUtc();
 
+  let leadsQuery = supabase.from("leads").select("status, created_at").limit(SESSION_SCAN_CAP);
+  let partialLeadsQuery = supabase.from("partial_leads").select("id", { count: "exact", head: true }).is("converted_lead_id", null);
+
+  if (identity?.role === "call_center") {
+    leadsQuery = leadsQuery.eq("call_center_id", identity.userId);
+    partialLeadsQuery = partialLeadsQuery.eq("call_center_id", identity.userId);
+  } else if (identity?.role === "purchaser") {
+    leadsQuery = leadsQuery.eq("purchaser_id", identity.userId);
+    partialLeadsQuery = partialLeadsQuery.eq("purchaser_id", identity.userId);
+  }
+
   const [leadRows, visitorRows, whatsapp, callClicks, incomplete] = await Promise.all([
-    supabase.from("leads").select("status, created_at").limit(SESSION_SCAN_CAP),
+    leadsQuery,
     // Distinct people, not page loads — see countDistinctSessions. Bounded by
     // the same UAE day start as `newToday` below, so the figure returns to zero
     // at UAE midnight instead of dragging the previous six days along with it.
@@ -116,7 +127,7 @@ export async function fetchAdminStats(): Promise<QueryResult<AdminStats>> {
     supabase.from("events").select("id", { count: "exact", head: true }).eq("type", "call_click"),
     // Abandoned forms still waiting on someone. Converted rows are excluded, so
     // this only ever counts people who are not already leads.
-    supabase.from("partial_leads").select("id", { count: "exact", head: true }).is("converted_lead_id", null),
+    partialLeadsQuery,
   ]);
 
   const leads = (leadRows.data ?? []) as Array<{ status: string; created_at: string }>;
@@ -180,9 +191,9 @@ function countByDay(
 
 
 /** The two 7-day series behind the Overview charts. */
-export async function fetchAdminCharts(): Promise<
-  QueryResult<{ visitors: ChartPoint[]; submissions: ChartPoint[] }>
-> {
+export async function fetchAdminCharts(
+  identity?: { role: string; userId: string }
+): Promise<QueryResult<{ visitors: ChartPoint[]; submissions: ChartPoint[] }>> {
   if (!isSupabaseConfigured()) return NOT_CONFIGURED;
 
   const days = buildLastSevenUaeDays();
@@ -192,6 +203,14 @@ export async function fetchAdminCharts(): Promise<
   const rangeStart = days[0].startsAt.toISOString();
 
   const supabase = getSupabaseAdmin();
+  let leadsQuery = supabase.from("leads").select("created_at").gte("created_at", rangeStart);
+
+  if (identity?.role === "call_center") {
+    leadsQuery = leadsQuery.eq("call_center_id", identity.userId);
+  } else if (identity?.role === "purchaser") {
+    leadsQuery = leadsQuery.eq("purchaser_id", identity.userId);
+  }
+
   const [visitorsRes, leadsRes] = await Promise.all([
     supabase
       .from("events")
@@ -199,7 +218,7 @@ export async function fetchAdminCharts(): Promise<
       .eq("type", "page_view")
       .gte("created_at", rangeStart)
       .limit(SESSION_SCAN_CAP),
-    supabase.from("leads").select("created_at").gte("created_at", rangeStart),
+    leadsQuery,
   ]);
 
   if (visitorsRes.error || leadsRes.error) {
@@ -244,17 +263,24 @@ export async function fetchInventory(leadId?: string | null): Promise<QueryResul
 }
 
 /** Valuation forms started but never submitted. Converted rows are excluded. */
-export async function fetchPartialLeads(): Promise<QueryResult<{ partialLeads: PartialLead[] }>> {
+export async function fetchPartialLeads(identity?: { role: string; userId: string }): Promise<QueryResult<{ partialLeads: PartialLead[] }>> {
   if (!isSupabaseConfigured()) return NOT_CONFIGURED;
 
-  const { data, error } = await getSupabaseAdmin()
+  let query = getSupabaseAdmin()
     .from("partial_leads")
     .select(PARTIAL_LEAD_COLUMNS)
     // Only unconverted rows are ever returned, so someone who later completed
     // the form disappears from here automatically and is never shown in both
     // places.
-    .is("converted_lead_id", null)
-    .order("created_at", { ascending: false });
+    .is("converted_lead_id", null);
+
+  if (identity?.role === "call_center") {
+    query = query.eq("call_center_id", identity.userId);
+  } else if (identity?.role === "purchaser") {
+    query = query.eq("purchaser_id", identity.userId);
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: false });
 
   if (error) return { ok: false, message: error.message, status: 500 };
 

@@ -22,6 +22,8 @@ export type DbLead = {
   notes: string | null;
   is_duplicate: boolean | null;
   is_spam: boolean | null;
+  call_center_id: string | null;
+  purchaser_id: string | null;
 };
 
 // Maps a Supabase row to the camelCase `Lead` shape the admin UI already expects,
@@ -47,5 +49,7 @@ export function mapDbLead(r: DbLead): Lead {
     createdAt: r.created_at,
     isDuplicate: r.is_duplicate ?? undefined,
     isSpam: r.is_spam ?? undefined,
+    callCenterId: r.call_center_id ?? null,
+    purchaserId: r.purchaser_id ?? null,
   };
 }

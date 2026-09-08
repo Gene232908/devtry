@@ -78,12 +78,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { email, displayName, role } = parsed.data;
+  const { email, password, displayName, role } = parsed.data;
+  
+  if (!password) {
+    return NextResponse.json(
+      { ok: false, error: { message: "Validation failed.", fields: { password: "Password is required." } } },
+      { status: 400 },
+    );
+  }
+
   const supabase = getSupabaseAdmin();
 
-  // Step 1: Create Supabase Auth account (sends invite email).
-  const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(email, {
-    data: { display_name: displayName },
+  // Step 1: Create Supabase Auth account directly (bypassing invite email limits).
+  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { display_name: displayName },
   });
 
   if (authError) {

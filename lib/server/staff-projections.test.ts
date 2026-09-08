@@ -34,6 +34,8 @@ const SAMPLE: DbLead = {
   notes: "Customer called twice. Offer around AED 80k.",
   is_duplicate: false,
   is_spam: false,
+  call_center_id: null,
+  purchaser_id: null,
 };
 
 // ─── Owner ─────────────────────────────────────────────────────────────────

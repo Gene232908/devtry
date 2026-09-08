@@ -36,6 +36,8 @@ export type Lead = {
   createdAt: string;
   isDuplicate?: boolean;
   isSpam?: boolean;
+  callCenterId?: string | null;
+  purchaserId?: string | null;
 };
 
 export type LeadEvent = {

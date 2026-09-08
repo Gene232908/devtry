@@ -39,6 +39,8 @@ function messageFor(ev: DbLeadEvent): string {
         : "Car added to Inventory.";
     case "marked_spam":
       return meta.is_spam === false ? "Unmarked as spam." : "Marked as spam.";
+    case "recovered":
+      return "Lead recovered from an abandoned valuation form.";
     default:
       return ev.type;
   }

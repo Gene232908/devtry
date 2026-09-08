@@ -23,6 +23,8 @@ import {
 } from "@/lib/admin/partial-lead";
 import { STATUS_HINT, STATUS_LABEL } from "@/lib/format";
 import { LeadStatus } from "@/config/mock-data";
+import { useStaffOptions } from "@/lib/admin/use-staff-options";
+import { LeadAssignment } from "@/components/admin/LeadAssignment";
 
 // Same options and same wording as Customer Details — an abandoned form runs
 // through the same follow-up process as a lead.
@@ -46,6 +48,7 @@ function todayInputValue(): string {
 
 export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
   const router = useRouter();
+  const { staffOptions, canAssign, loading: staffLoading } = useStaffOptions();
 
   // Shown exactly as stored. Opening this record used to flip New to Pending,
   // which destroyed the one signal that says nobody has picked it up yet — a
@@ -383,6 +386,32 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
         </div>
 
         <div className="flex flex-col gap-6">
+          {!staffLoading && (
+            <LeadAssignment
+              assignment={{
+                callCenterId: partial.call_center_id ?? null,
+                purchaserId: partial.purchaser_id ?? null,
+              }}
+              staffOptions={staffOptions}
+              canAssign={canAssign}
+              onSave={async (assignment) => {
+                try {
+                  const res = await fetch(`/api/admin/partial-leads/${partial.id}/assignment`, {
+                    method: "PATCH",
+                    body: JSON.stringify(assignment),
+                  });
+                  if (res.ok) {
+                    router.refresh();
+                    return true;
+                  }
+                  return false;
+                } catch {
+                  return false;
+                }
+              }}
+            />
+          )}
+
           <Card className="flex flex-col gap-3 p-5">
             <h3 className="text-fluid-0 text-text">Contact</h3>
             <a href={waHref} target="_blank" rel="noopener noreferrer">

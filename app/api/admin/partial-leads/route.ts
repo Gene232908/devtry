@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchPartialLeads } from "@/lib/admin/queries";
+import { requireStaff } from "@/lib/server/require-staff";
 
 // Admin-only (gated by middleware.ts, which requires a session for /api/admin/*).
 // Lists valuation forms that were started but never submitted.
@@ -15,7 +16,12 @@ import { fetchPartialLeads } from "@/lib/admin/queries";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const result = await fetchPartialLeads();
+  const auth = await requireStaff();
+  if (!auth.ok) {
+    return NextResponse.json({ ok: false, error: { message: auth.message } }, { status: auth.status });
+  }
+
+  const result = await fetchPartialLeads(auth.identity);
 
   if (!result.ok) {
     return NextResponse.json({ ok: false, error: { message: result.message } }, { status: result.status });
