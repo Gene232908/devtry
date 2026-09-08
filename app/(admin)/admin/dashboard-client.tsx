@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -18,19 +19,44 @@ import {
 import { StatCard } from "@/components/admin/StatCard";
 import { ResetCountdown } from "@/components/admin/ResetCountdown";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
+// recharts is ~105 kB and is used by these two components and nowhere else in
+// the app. Statically imported it made the Overview 223 kB of First Load JS
+// against 102-116 kB for every other admin screen — the heaviest route by far,
+// and therefore the slowest to compile in development and the slowest to become
+// interactive in production.
+//
+// Loading them on demand keeps recharts out of the dashboard's critical path:
+// the six stat cards and Recent Leads paint from the server render, and the
+// charts arrive after. `ssr: false` because they measure their own container to
+// size themselves and have nothing meaningful to render server-side, and the
+// skeleton below reserves their height so nothing shifts when they land.
+const VisitorsChart = dynamic(
+  () => import("@/components/admin/VisitorsChart").then((m) => m.VisitorsChart),
+  { ssr: false, loading: () => <ChartPlaceholder title="Website Visitors" /> },
+);
+
+const SubmissionsChart = dynamic(
+  () => import("@/components/admin/SubmissionsChart").then((m) => m.SubmissionsChart),
+  { ssr: false, loading: () => <ChartPlaceholder title="Form Submissions" /> },
+);
 import { OverviewDateFilter, type DateFilterValue } from "@/components/admin/OverviewDateFilter";
-import { SalesOverviewChart } from "@/components/admin/SalesOverviewChart";
-import { SalesPerformanceGauge } from "@/components/admin/SalesPerformanceGauge";
-import { RecentTransactionsTable } from "@/components/admin/RecentTransactionsTable";
-import { TopMarketsWidget } from "@/components/admin/TopMarketsWidget";
-import { TopMakesWidget } from "@/components/admin/TopMakesWidget";
+import { RecentLeads } from "@/components/admin/RecentLeads";
 import { useLeads } from "@/lib/admin/leads-store";
 import { useAdminStats, type AdminStatsSeed } from "@/lib/admin/use-admin-stats";
 import { useFreshServerData } from "@/lib/admin/use-fresh-server-data";
-import { formatNumber, LEAD_PIPELINE, STATUS_LABEL } from "@/lib/format";
+import { formatNumber, LEAD_PIPELINE, STATUS_HINT, STATUS_LABEL } from "@/lib/format";
 import { endOfUaeDayUtc, uaeDayStringToUtc } from "@/lib/uae-time";
 
+/**
+ * One icon per pipeline stage.
+ *
+ * Shape carries the meaning alongside the label, so the row is scannable
+ * without reading eight headings — and a colour-blind reader loses nothing,
+ * since nothing here is distinguished by colour alone.
+ */
 const PIPELINE_ICON = {
   new: Sparkles,
   pending: CircleDashed,
@@ -42,6 +68,12 @@ const PIPELINE_ICON = {
   closed: XCircle,
 } as const;
 
+/**
+ * `seed` carries the counts and both chart series produced during the server
+ * render in `page.tsx`, so the six cards and both charts paint with real
+ * figures on the first frame instead of showing skeletons while the browser
+ * makes two more HTTP calls.
+ */
 export default function AdminDashboardClient({ seed }: { seed?: AdminStatsSeed }) {
   const [dateFilter, setDateFilter] = useState<DateFilterValue>({
     preset: "week",
@@ -71,15 +103,6 @@ export default function AdminDashboardClient({ seed }: { seed?: AdminStatsSeed }
     });
   }, [leads, dateFilter.from, dateFilter.to]);
 
-  const totalDealVolumeAed = useMemo(() => {
-    const source = filteredLeads && filteredLeads.length > 0 ? filteredLeads : leads;
-    return source.reduce((sum, l) => sum + (l.estimatedValueAed || 135000), 0);
-  }, [filteredLeads, leads]);
-
-  const dealCount = useMemo(() => {
-    return stats.byStatus?.["deal"] ?? filteredLeads.filter((l) => l.status === "deal").length;
-  }, [stats.byStatus, filteredLeads]);
-
   async function refreshAll() {
     setRefreshing(true);
     try {
@@ -98,12 +121,8 @@ export default function AdminDashboardClient({ seed }: { seed?: AdminStatsSeed }
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Top Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-fluid-3 text-text">Sales Overview</h1>
-          <p className="text-xs text-text-faint">Executive performance, valuation pipeline, and real-time deal metrics</p>
-        </div>
+        <h1 className="font-display text-fluid-3 text-text">Overview</h1>
         <Button variant="outline" size="sm" onClick={() => void refreshAll()} disabled={refreshing}>
           <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
           {refreshing ? "Refreshing" : "Refresh"}
@@ -117,36 +136,27 @@ export default function AdminDashboardClient({ seed }: { seed?: AdminStatsSeed }
         isLoading={statsLoading}
       />
 
-      {/* Compact Executive Pipeline Status Strip */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-8">
-        {LEAD_PIPELINE.map((status) => {
-          const Icon = PIPELINE_ICON[status];
-          const count = stats.byStatus?.[status] ?? 0;
-          const isDeal = status === "deal";
-
-          return (
-            <div
-              key={status}
-              className={`flex flex-col justify-between rounded-xl border p-3 transition-all ${
-                isDeal
-                  ? "border-gold/50 bg-gradient-to-br from-gold/15 to-surface-2 shadow-sm shadow-gold/5"
-                  : "border-border/70 bg-surface-1/70 hover:border-border hover:bg-surface-2/60"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="truncate text-[11px] font-medium text-text-muted">{STATUS_LABEL[status]}</span>
-                <Icon className={`h-3.5 w-3.5 shrink-0 ${isDeal ? "text-gold" : "text-text-faint"}`} />
-              </div>
-              <div className={`mt-2 text-xl font-bold ${isDeal ? "text-gold" : "text-text"}`}>
-                {statsLoading ? "—" : formatNumber(count)}
-              </div>
-            </div>
-          );
-        })}
+      {/* The pipeline, one card per stage. */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        {LEAD_PIPELINE.map((status) => (
+          <StatCard
+            key={status}
+            label={STATUS_LABEL[status]}
+            value={formatNumber(stats.byStatus?.[status] ?? 0)}
+            hint={
+              isBacklogActive
+                ? `Leads at '${STATUS_LABEL[status]}' for ${dateFilter.label}.`
+                : STATUS_HINT[status]
+            }
+            icon={PIPELINE_ICON[status]}
+            accent={status === "deal"}
+            isLoading={statsLoading}
+          />
+        ))}
       </div>
 
       {/* Engagement & Visitor counters */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard
           label="Message Us clicks"
           value={formatNumber(stats.whatsappClicks)}
@@ -200,40 +210,34 @@ export default function AdminDashboardClient({ seed }: { seed?: AdminStatsSeed }
         />
       </div>
 
-      {/* Modern Bento Grid matching Reference Layout */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-        {/* Top Left: 2/3 width - Sales & Valuation Flow */}
-        <div className="lg:col-span-8">
-          <SalesOverviewChart
-            submissions={submissions}
-            visitors={visitors}
-            isLoading={statsLoading}
-            periodLabel={dateFilter.label}
-            totalVolumeAed={totalDealVolumeAed}
-          />
-        </div>
-
-        {/* Top Right: 1/3 width - Sales Performance Speedometer Gauge */}
-        <div className="lg:col-span-4">
-          <SalesPerformanceGauge
-            dealCount={dealCount}
-            totalLeads={stats.totalLeads}
-            totalVolumeAed={totalDealVolumeAed}
-            isLoading={statsLoading}
-          />
-        </div>
-
-        {/* Bottom Left: 2/3 width - Recent Leads & Transactions Table */}
-        <div className="lg:col-span-8">
-          <RecentTransactionsTable leads={filteredLeads} isLoading={leadsLoading} />
-        </div>
-
-        {/* Bottom Right: 1/3 width - Top Markets & Top Vehicle Makes */}
-        <div className="flex flex-col gap-5 lg:col-span-4">
-          <TopMarketsWidget leads={filteredLeads} isLoading={leadsLoading} />
-          <TopMakesWidget leads={filteredLeads} isLoading={leadsLoading} />
-        </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <VisitorsChart data={visitors} isLoading={statsLoading} periodLabel={dateFilter.label} />
+        <SubmissionsChart data={submissions} isLoading={statsLoading} periodLabel={dateFilter.label} />
       </div>
+
+      <RecentLeads leads={filteredLeads} isLoading={leadsLoading} />
     </div>
+  );
+}
+
+/**
+ * Stands in while a chart's code is still downloading.
+ *
+ * Deliberately the same shell the chart itself renders — same card, same
+ * heading, same `h-48` plot area — so the charts do not push the page around
+ * when they arrive. A placeholder of a different height would trade the old
+ * slow first paint for layout shift, which is worse.
+ */
+function ChartPlaceholder({ title }: { title: string }) {
+  return (
+    <Card className="p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-fluid-0 text-text">{title}</h3>
+        <span className="text-fluid--1 text-text-faint">This Week</span>
+      </div>
+      <div className="h-48">
+        <Skeleton className="h-full w-full" />
+      </div>
+    </Card>
   );
 }
