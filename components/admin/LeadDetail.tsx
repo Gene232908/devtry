@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Calendar, Eye, Lock, MessageCircle, Phone, Save } from "lucide-react";
+import { ArrowLeft, Calendar, Lock, Save } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -14,64 +14,34 @@ import { MarkSpamAction } from "@/components/admin/MarkSpamAction";
 import { useLeads } from "@/lib/admin/leads-store";
 import { useUnsavedGuard } from "@/lib/admin/use-unsaved-guard";
 import { mockLeadEvents, Lead, LeadStatus } from "@/config/mock-data";
+import { type Draft, draftFromLead } from "@/lib/admin/lead-draft";
 import {
   DETAIL_STATUS_OPTIONS,
   formatAed,
   formatDate,
-  formatPhoneDisplay,
+  formatScheduledInspection,
   requiresPurchasePrice,
   STATUS_HINT,
   STATUS_LABEL,
 } from "@/lib/format";
-import {
-  formatEventTimestamp,
-  formatViewSummary,
-  type LeadEvent,
-  type LeadViewSummary,
-} from "@/lib/admin/lead-events";
+import { type LeadEvent, type LeadViewSummary } from "@/lib/admin/lead-events";
 import { INVENTORY_STATUS_LABEL, type InventoryItem } from "@/lib/admin/inventory";
 import { useStaffOptions } from "@/lib/admin/use-staff-options";
 import { LeadAssignment } from "@/components/admin/LeadAssignment";
+import { LeadActivityCard } from "@/components/admin/LeadActivityCard";
+import { LeadVehicleCard } from "@/components/admin/LeadVehicleCard";
+import { LeadContactCard } from "@/components/admin/LeadContactCard";
 import { useStaffIdentity } from "@/lib/admin/staff-identity-context";
 import { hasCapability } from "@/lib/auth/permissions";
 import { statusChoicesForRole } from "@/lib/auth/lead-visibility";
 import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 import { demoInventory } from "@/config/demo-admin-data";
-import { whatsappLink } from "@/config/brand";
 
-// Every status the pipeline knows, used as the fallback option list for roles
-// that are not restricted to a subset (see statusChoicesForRole).
 const SELECTABLE = new Set<string>(DETAIL_STATUS_OPTIONS);
 
-type Draft = {
-  status: LeadStatus;
-  notes: string;
-  purchasePrice: string;
-  purchasedAt: string;
-  inspectionScheduledAt: string;
-};
-
-/** Shown until the real timeline loads, so the card is never blank. */
 const FALLBACK_EVENTS = (createdAt: string): LeadEvent[] => [
   { id: "auto", type: "lead_created", message: "Lead submitted via website valuation form.", createdAt },
 ];
-
-/** `yyyy-mm-dd` in local time, for a native date input. */
-function todayInputValue(): string {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
-function draftFromLead(lead: Lead): Draft {
-  return {
-    status: lead.status,
-    notes: lead.notes ?? "",
-    purchasePrice: "",
-    purchasedAt: todayInputValue(),
-    inspectionScheduledAt: lead.inspectionScheduledAt ? lead.inspectionScheduledAt.slice(0, 16) : "",
-  };
-}
 
 export function LeadDetail({ lead }: { lead: Lead }) {
   const { updateLead } = useLeads();
@@ -81,9 +51,6 @@ export function LeadDetail({ lead }: { lead: Lead }) {
   const router = useRouter();
   const isPurchaser = identity?.role === "purchaser";
 
-  // Only the statuses this role is actually allowed to set. Offering more
-  // would invite a click the API then rejects — the dropdown and the rule now
-  // come from the same definition, so they cannot drift apart.
   const roleStatusOptions = useMemo(() => {
     const allowed = statusChoicesForRole(identity?.role) ?? DETAIL_STATUS_OPTIONS;
     return allowed.map((s) => ({
@@ -93,12 +60,9 @@ export function LeadDetail({ lead }: { lead: Lead }) {
     }));
   }, [identity]);
 
-  // Edits live here until Save. Nothing on this page writes through on blur —
-  // a half-typed value or a mis-clicked status must not reach the database.
   const [draft, setDraft] = useState<Draft>(() => draftFromLead(lead));
   const [saved, setSaved] = useState<Draft>(() => draftFromLead(lead));
   const [errors, setErrors] = useState<{ status?: string; notes?: string; purchasePrice?: string; inspectionScheduledAt?: string }>({});
-  // The car bought from this lead, if the deal has already been recorded.
   const [car, setCar] = useState<InventoryItem | null>(null);
   const [justSaved, setJustSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -118,25 +82,11 @@ export function LeadDetail({ lead }: { lead: Lead }) {
 
   const guard = useUnsavedGuard(dirty);
 
-  // Clears the transient "Saved" label if the page unmounts before it expires.
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => {
     if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
   }, []);
 
-  // Opening a lead used to promote New -> Pending automatically and persist it.
-  // That is gone: reading a lead is not the same as working it, and the silent
-  // write meant a glance — or a mis-click from the list — permanently destroyed
-  // the one signal that says "nobody has picked this up yet". A lead now stays
-  // New until someone deliberately moves it on.
-  //
-  // The fact that it was opened is not lost; it is recorded as a view in the
-  // Activity timeline below, which is where "has anyone looked at this?"
-  // belongs — as history, not as a status change.
-
-  // What was paid lives on the inventory record, so it is fetched rather than
-  // read off the lead. Loading it also fills the form, letting the owner
-  // correct a mistyped price by editing the figure already shown.
   const loadCar = useCallback(async () => {
     if (ADMIN_PREVIEW) {
       setCar(demoInventory.find((i) => i.leadId === lead.id) ?? null);
@@ -147,7 +97,7 @@ export function LeadDetail({ lead }: { lead: Lead }) {
       const body = await res.json();
       if (res.ok && body.ok) setCar(body.data.items[0] ?? null);
     } catch {
-      // Non-fatal: the rest of the lead still works without it.
+      // Non-fatal
     }
   }, [lead.id]);
 
@@ -155,18 +105,8 @@ export function LeadDetail({ lead }: { lead: Lead }) {
     void loadCar();
   }, [loadCar]);
 
-  // The activity timeline, and the record that this page was opened.
-  //
-  // The view is posted BEFORE the timeline is read, so the visit someone is
-  // making right now is the one they see at the top — reading first would show
-  // a summary that is always one visit stale.
-  // Read-only. Kept separate from recording a view so that refreshing the
-  // timeline after a save cannot also inflate the visit count — saving a note
-  // is not a second visit.
   const fetchTimeline = useCallback(async () => {
     if (ADMIN_PREVIEW) {
-      // A walkthrough must not write to the audit log, and must look the same
-      // every time it is opened.
       setEvents(mockLeadEvents[lead.id] ?? FALLBACK_EVENTS(lead.createdAt));
       setViews({ count: 0, lastAt: null });
       return;
@@ -180,43 +120,27 @@ export function LeadDetail({ lead }: { lead: Lead }) {
         setViews(body.data.views);
       }
     } catch {
-      // Leaves the fallback entry in place rather than an empty card.
+      // Leaves fallback in place
     }
   }, [lead.id, lead.createdAt]);
 
-  // StrictMode runs effects twice in development. The POST is deduped server
-  // side anyway, but the ref keeps the double-invoke from firing two rounds of
-  // requests on every open.
   const viewLoggedRef = useRef(false);
   useEffect(() => {
     if (viewLoggedRef.current) return;
     viewLoggedRef.current = true;
 
-    void (async () => {
-      if (!ADMIN_PREVIEW) {
-        try {
-          // Recorded BEFORE the timeline is read, so the visit being made right
-          // now is included — reading first would always be one visit stale.
-          await fetch(`/api/admin/leads/${lead.id}/events`, { method: "POST" });
-        } catch {
-          // Best-effort. A lead must still open if the record fails.
-        }
+    void fetchTimeline();
+    if (!ADMIN_PREVIEW) void (async () => {
+      try {
+        const response = await fetch(`/api/admin/leads/${lead.id}/events`, { method: "POST" });
+        const body = await response.json();
+        if (response.ok && body.ok && body.data.recorded) await fetchTimeline();
+      } catch {
+        // Best-effort
       }
-      await fetchTimeline();
     })();
   }, [lead.id, fetchTimeline]);
 
-  // Seeds the two purchase fields from the saved car, once, without marking the
-  // form dirty.
-  //
-  // It touches ONLY those two fields. It used to rebuild the whole draft with
-  // `...draftFromLead(lead)`, which meant that the moment the car finished
-  // loading — immediately after saving a Deal — the status field was silently
-  // reset from the `lead` prop. That prop comes from the shared leads store and
-  // can still hold the pre-save value, so the field reverted to Pending with no
-  // visible change, and the next Save wrote that stale status back to the
-  // database. In production this moved a lead deal -> pending twice, leaving its
-  // car orphaned in Inventory. The API now refuses that move as well.
   const seededRef = useRef(false);
   useEffect(() => {
     if (!car || seededRef.current) return;
@@ -228,39 +152,26 @@ export function LeadDetail({ lead }: { lead: Lead }) {
     };
 
     setDraft((d) => ({ ...d, ...purchase }));
-    // Mirrored into `saved` so filling these in does not read as an unsaved edit.
     setSaved((s) => ({ ...s, ...purchase }));
   }, [car]);
 
-  // The unsaved draft wins over the stored value so an agent picking a time sees
-  // the card update as they type; falls back to what is on the lead for everyone
-  // who cannot edit it.
   const scheduledInspectionAt = draft.inspectionScheduledAt || lead.inspectionScheduledAt || null;
-
   const priceRequired = requiresPurchasePrice(draft.status);
-  // A sold car's purchase price is frozen into its commission entry; changing
-  // it afterwards would leave the ledger disagreeing with what was invoiced.
   const priceLocked = car?.status === "sold";
-
-  /**
-   * A recorded deal cannot be undone from this dropdown.
-   *
-   * Keyed on the SAVED status and the existence of a car, not on the draft —
-   * the lock has to reflect what the database will actually allow, and that is
-   * decided by whether inventory exists (see PATCH /api/leads/[id]). Reading
-   * the draft instead would lock the field the instant someone picked "Deal",
-   * before anything was saved and while they could still change their mind.
-   */
-  const dealLocked = lead.status === "deal" && car !== null;
+  const dealLocked = lead.status === "deal" && Boolean(car);
 
   function validate(): boolean {
     const next: typeof errors = {};
-
     if (!draft.status) next.status = "Choose a status.";
-    if (!draft.notes.trim()) next.notes = "Notes are required before saving.";
+    if (!draft.notes.trim()) next.notes = "Add a short note explaining what happened.";
 
-    if (draft.status === "inspection_scheduled" && !draft.inspectionScheduledAt.trim()) {
-      next.inspectionScheduledAt = "Please select the scheduled date and time for inspection.";
+    if (!isPurchaser && draft.status === "inspection_scheduled") {
+      if (!draft.inspectionScheduledAt.trim()) {
+        next.inspectionScheduledAt = "Choose a date and time for the inspection.";
+      } else {
+        const time = new Date(draft.inspectionScheduledAt).getTime();
+        if (Number.isNaN(time)) next.inspectionScheduledAt = "Choose a valid date and time.";
+      }
     }
 
     if (priceRequired && !priceLocked) {
@@ -287,9 +198,6 @@ export function LeadDetail({ lead }: { lead: Lead }) {
     const ok = await updateLead(lead.id, {
       status: draft.status,
       notes: draft.notes,
-      // Only the agent scheduling the visit sends this. A purchaser's draft holds
-      // the same value it was seeded with, and echoing it back would make a
-      // read-only field look like an edit. The API ignores it from them anyway.
       ...(isPurchaser
         ? {}
         : {
@@ -297,8 +205,6 @@ export function LeadDetail({ lead }: { lead: Lead }) {
               ? new Date(draft.inspectionScheduledAt).toISOString()
               : null,
           }),
-      // Only sent at Deal. The server writes these to the car's inventory
-      // record, not to the lead, and creates that record if it is the first time.
       ...(recordingPurchase
         ? {
             purchasePriceAed: Number(draft.purchasePrice),
@@ -314,29 +220,8 @@ export function LeadDetail({ lead }: { lead: Lead }) {
       return;
     }
 
-    // Pick up the car that recording the deal just created, so the link to
-    // Inventory appears without a reload.
     if (recordingPurchase) void loadCar();
-
-    // Drop the client-side Router Cache.
-    //
-    // Inventory and Commission are Server Components now, so their data is
-    // fetched during a server render rather than by the browser after mount.
-    // The App Router caches those rendered payloads per navigation, which meant
-    // marking a lead as a Deal and then clicking Inventory could show a copy
-    // rendered BEFORE the car existed — "Cars owned 0" next to a car that had
-    // just been bought. The pages are force-dynamic, so the only thing standing
-    // between them and fresh data is this cache.
-    //
-    // This is the cost of moving those screens to the server: the old
-    // fetch-on-mount was always fresh by accident. Invalidating here is the
-    // deliberate version of the same guarantee, and it runs on every save
-    // because a status change alone can move a lead in and out of those screens.
     router.refresh();
-
-    // The save just wrote status_change / note_updated rows. Re-read them so
-    // the note that was typed a second ago is visible in the timeline without
-    // a page reload — an audit trail nobody can see working is not trusted.
     void fetchTimeline();
 
     setSaved(draft);
@@ -346,99 +231,55 @@ export function LeadDetail({ lead }: { lead: Lead }) {
     savedTimerRef.current = setTimeout(() => setJustSaved(false), 2200);
   }
 
-
   return (
-    <div className="flex flex-col gap-6">
-      <Link href="/admin/leads" className="flex items-center gap-2 text-fluid--1 text-text-muted hover:text-gold">
+    <div className="flex flex-col gap-6 font-sans">
+      {/* Breadcrumb */}
+      <Link
+        href="/admin/leads"
+        className="inline-flex items-center gap-2 text-sm text-text-muted hover:text-gold transition-colors self-start"
+      >
         <ArrowLeft className="h-4 w-4" /> Back to leads
       </Link>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      {/* Header: Customer Name, Status, Date */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-white/[0.08] pb-5">
         <div>
-          <h1 className="font-display text-fluid-3 text-text">{lead.fullName || "Customer"}</h1>
-          <p className="mt-1 text-fluid--1 text-text-muted">Submitted {formatDate(lead.createdAt)}</p>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-text tracking-tight">
+            {lead.fullName || "Customer"}
+          </h1>
+          <p className="mt-1 text-sm text-text-muted">
+            Submitted {formatDate(lead.createdAt)}
+            {lead.location ? ` · ${lead.location}` : ""}
+            {" · Web Lead"}
+          </p>
         </div>
-        <StatusPill status={lead.status} />
+        <div>
+          <StatusPill status={lead.status} />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.3fr_1fr]">
-        <div className="flex flex-col gap-6">
-          <Card className="flex flex-col gap-4 p-5">
-            <h3 className="text-fluid-0 text-text">Vehicle</h3>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-4 text-fluid--1 sm:grid-cols-4">
-              <Detail label="Make" value={lead.make} />
-              <Detail label="Model" value={lead.model} />
-              <Detail label="Trim" value={lead.trim || "—"} />
-              <Detail label="Year" value={String(lead.year)} />
-              <Detail label="Mileage" value={`${lead.mileageKm.toLocaleString()} km`} />
-              <Detail
-                label="Option Level"
-                value={lead.optionLevel ?? (lead.condition ? lead.condition.charAt(0).toUpperCase() + lead.condition.slice(1) : "—")}
-              />
-              <Detail label="Location" value={lead.location || "—"} />
-              {canViewContact && <Detail label="Phone" value={formatPhoneDisplay(lead.phoneE164)} />}
-              {canViewContact && <Detail label="Email" value={lead.email || "—"} />}
-              <Detail label="Source" value="Web" />
-            </div>
-            {lead.description ? (
-              <div className="border-t border-border pt-4">
-                <p className="text-text-faint">Seller&apos;s description</p>
-                <p className="mt-1.5 text-fluid--1 font-light leading-6 text-text">{lead.description}</p>
-              </div>
-            ) : null}
-          </Card>
+      {/* Main 2-Column Grid */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.25fr_1fr] items-start">
+        {/* LEFT COLUMN: Vehicle Details, Customer Contact, Activity */}
+        <div className="flex flex-col gap-6 min-w-0">
+          <LeadVehicleCard lead={lead} />
 
-          <Card className="flex flex-col gap-3 p-5">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-fluid-0 text-text">
-                Notes <span className="text-danger">*</span>
-              </h3>
-              {dirty && <span className="text-fluid--1 text-warning">Unsaved changes</span>}
-            </div>
-            <textarea
-              value={draft.notes}
-              onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
-              rows={4}
-              placeholder="What happened with this lead? Required before saving."
-              className={`w-full rounded-card border bg-surface-2 p-3 text-fluid-0 text-text outline-none focus:gold-glow focus:border-gold ${
-                errors.notes ? "border-danger" : "border-border"
-              }`}
+          {/* Customer Contact */}
+          {canViewContact && (
+            <LeadContactCard
+              fullName={lead.fullName}
+              phoneE164={lead.phoneE164}
+              carSummary={`${lead.year} ${lead.make} ${lead.model}`}
             />
-            {errors.notes && (
-              <p className="text-fluid--1 text-danger" role="alert">
-                {errors.notes}
-              </p>
-            )}
-          </Card>
+          )}
 
-          <Card className="flex flex-col gap-3 p-5">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h3 className="text-fluid-0 text-text">Activity</h3>
-              {/* Views are summarised here rather than listed below, so opening
-                  a lead repeatedly cannot bury the actions taken on it. */}
-              <span className="flex items-center gap-1.5 text-fluid--1 text-text-muted">
-                <Eye className="h-3.5 w-3.5 text-text-faint" />
-                {formatViewSummary(views)}
-              </span>
-            </div>
-            <ul className="flex flex-col gap-3">
-              {events.map((ev) => (
-                <li key={ev.id} className="flex gap-3 text-fluid--1">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
-                  <div>
-                    <p className="text-text">{ev.message}</p>
-                    {/* Date AND time: "notes updated" three times in one
-                        afternoon is a different story from three times in a
-                        month, and a bare date cannot tell them apart. */}
-                    <p className="text-text-faint">{formatEventTimestamp(ev.createdAt)}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </Card>
+          {/* Activity & Notes History */}
+          <LeadActivityCard events={events} views={views} />
         </div>
 
-        <div className="flex flex-col gap-6">
+        {/* RIGHT COLUMN: Assigned Team & Status / Notes Disposition */}
+        <div className="flex flex-col gap-6 min-w-0">
+          {/* Assigned Team */}
           {!staffLoading && (
             <LeadAssignment
               assignment={{
@@ -446,77 +287,27 @@ export function LeadDetail({ lead }: { lead: Lead }) {
                 purchaserId: lead.purchaserId ?? null,
               }}
               staffOptions={staffOptions}
+              leadId={lead.id}
               canAssign={canAssign}
-              onSave={async (assignment) => {
-                try {
-                  const res = await fetch(`/api/admin/leads/${lead.id}/assignment`, {
-                    method: "PATCH",
-                    body: JSON.stringify(assignment),
-                  });
-                  if (res.ok) {
-                    router.refresh();
-                    void fetchTimeline();
-                    return true;
-                  }
-                  return false;
-                } catch {
-                  return false;
-                }
-              }}
             />
           )}
 
-          {canViewContact && lead.phoneE164 && (
-            <Card className="flex flex-col gap-3 p-5">
-              <h3 className="text-fluid-0 text-text">Contact customer</h3>
-              <a
-                href={whatsappLink(
-                  `Hi ${lead.fullName ? lead.fullName.split(" ")[0] : ""}, regarding your ${lead.year} ${lead.make} ${lead.model} valuation with CarVibe Dubai…`,
-                  lead.phoneE164,
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button className="w-full">
-                  <MessageCircle className="h-4 w-4" /> Message on WhatsApp
-                </Button>
-              </a>
-              <a href={`tel:${lead.phoneE164}`}>
-                <Button variant="outline" className="w-full">
-                  <Phone className="h-4 w-4" /> Call {formatPhoneDisplay(lead.phoneE164)}
-                </Button>
-              </a>
-              <p className="text-fluid--1 text-text-faint">
-                WhatsApp opens the chat pre-filled — use the call icon inside WhatsApp for a voice/video call.
-              </p>
-            </Card>
-          )}
-
+          {/* Status & Notes (Unified Call Update) */}
           <Card className="flex flex-col gap-4 p-5">
-            <h3 className="text-fluid-0 text-text">Status &amp; purchase</h3>
+            <h3 className="text-base font-semibold text-text">Status &amp; Notes</h3>
 
-            {/* Once a deal is recorded the status is fixed, and the control
-                says so rather than pretending otherwise.
-
-                This is not a UI preference — the API refuses to move a lead out
-                of Deal while a car exists for it, because doing so strands that
-                car in Inventory holding money no lead claims to have spent. A
-                dropdown that offers choices the server will reject is worse than
-                no dropdown: it invites the click and then blames the person. */}
             {dealLocked ? (
               <div className="flex flex-col gap-1.5">
-                <span className="text-fluid--1 font-medium uppercase tracking-[0.14em] text-text-faint">Status</span>
-                <div className="flex h-12 items-center justify-between gap-3 rounded-card border border-gold/40 bg-gold/5 px-4">
-                  <span className="text-fluid-0 text-gold">{STATUS_LABEL[lead.status]}</span>
+                <span className="text-xs font-medium uppercase tracking-wider text-text-faint">Status</span>
+                <div className="flex h-11 items-center justify-between gap-3 rounded-card border border-gold/40 bg-gold/5 px-4">
+                  <span className="text-sm font-medium text-gold">{STATUS_LABEL[lead.status]}</span>
                   <Lock className="h-4 w-4 shrink-0 text-text-muted" />
                 </div>
-                <span className="text-fluid--1 text-text-muted">
+                <span className="text-xs text-text-muted">
                   This car is in Inventory. Withdraw it there if the purchase did not go ahead.
                 </span>
               </div>
             ) : (
-              /* The current status shows as the placeholder while it is one of
-                 the automatic states, so the field still reads correctly. */
               <Select
                 label="Status *"
                 placeholder={STATUS_LABEL[draft.status] ?? "Select"}
@@ -527,7 +318,7 @@ export function LeadDetail({ lead }: { lead: Lead }) {
               />
             )}
 
-            {/* Scheduled Inspection Date & Time Picker — Agents & Admin only when scheduling */}
+            {/* Scheduled Inspection Picker (Agents & Admin only when scheduling) */}
             {!isPurchaser && draft.status === "inspection_scheduled" && (
               <Input
                 label="Scheduled Inspection Date & Time *"
@@ -538,31 +329,21 @@ export function LeadDetail({ lead }: { lead: Lead }) {
               />
             )}
 
-            {/* Read-only record of when the customer is coming in — the one
-                thing a purchaser most needs off this page, and the thing they
-                must not be able to change. Shown only once a time actually
-                exists: it used to render for every purchaser and every lead
-                being scheduled, with the words "Scheduled by Call Center Agent"
-                standing in for a date, which reads as a confirmed appointment
-                that nobody had booked. */}
             {scheduledInspectionAt && (
               <div className="flex flex-col gap-1 rounded-card border border-gold/40 bg-gold/5 p-4">
-                <div className="flex items-center gap-2 font-medium text-gold text-fluid-0">
+                <div className="flex items-center gap-2 font-medium text-gold text-sm">
                   <Calendar className="h-4 w-4 shrink-0" />
                   <span>Scheduled Inspection</span>
                 </div>
-                <p className="text-fluid-0 font-semibold text-text">
+                <p className="text-sm font-semibold text-text">
                   {formatScheduledInspection(scheduledInspectionAt)}
                 </p>
-                <p className="text-fluid--2 text-text-muted">
+                <p className="text-xs text-text-muted">
                   Customer scheduled to visit facility for car inspection and negotiation.
                 </p>
               </div>
             )}
 
-            {/* Money is asked for at Deal and nowhere else — that is the moment
-                the car was actually bought. Saving here also puts the car into
-                Inventory, so the owner never re-types the vehicle. */}
             {priceRequired && (
               <>
                 <Input
@@ -581,7 +362,7 @@ export function LeadDetail({ lead }: { lead: Lead }) {
                   disabled={priceLocked}
                   onChange={(e) => setDraft((d) => ({ ...d, purchasedAt: e.target.value }))}
                 />
-                <p className="-mt-1 text-fluid--1 text-text-faint">
+                <p className="-mt-1 text-xs text-text-faint">
                   {priceLocked
                     ? "This car has been sold, so the price it was bought for can no longer be changed."
                     : "Exactly what you paid the customer. Saving adds this car to your Inventory."}
@@ -592,15 +373,44 @@ export function LeadDetail({ lead }: { lead: Lead }) {
             {car && (
               <Link
                 href="/admin/inventory"
-                className="flex items-center justify-between gap-3 rounded-card border border-border px-3 py-2.5 text-fluid--1 hover:border-gold/50"
+                className="flex items-center justify-between gap-3 rounded-card border border-border px-3 py-2.5 text-sm hover:border-gold/50 transition-colors"
               >
                 <span className="text-text-muted">
                   In Inventory · <span className="text-text">{INVENTORY_STATUS_LABEL[car.status]}</span>
                 </span>
-                <span className="text-gold">{formatAed(car.purchasePriceAed)}</span>
+                <span className="text-gold font-medium">{formatAed(car.purchasePriceAed)}</span>
               </Link>
             )}
 
+            {/* The current note is editable here; every saved version is kept
+                separately in Activity as the permanent follow-up history. */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-xs font-medium uppercase tracking-wider text-text-muted">
+                  Follow-up note <span className="text-danger">*</span>
+                </label>
+                {dirty && <span className="text-xs font-medium text-warning">Unsaved changes</span>}
+              </div>
+              <textarea
+                value={draft.notes}
+                onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
+                rows={4}
+                placeholder="What happened with this lead? Required before saving."
+                className={`w-full rounded-card border bg-surface-2 p-3 text-sm text-text outline-none focus:gold-glow focus:border-gold ${
+                  errors.notes ? "border-danger" : "border-border"
+                }`}
+              />
+              {errors.notes && (
+                <p className="text-xs text-danger" role="alert">
+                  {errors.notes}
+                </p>
+              )}
+              <p className="text-xs text-text-faint">
+                Saving keeps this as the latest note and records this version in Activity.
+              </p>
+            </div>
+
+            {/* Save Button */}
             <Button
               className="w-full"
               onClick={() => void save()}
@@ -612,7 +422,7 @@ export function LeadDetail({ lead }: { lead: Lead }) {
               {justSaved && !dirty ? "Saved" : "Save changes"}
             </Button>
             {saveError && (
-              <p className="-mt-1 text-fluid--1 text-danger" role="alert">
+              <p className="-mt-1 text-xs text-danger" role="alert">
                 {saveError}
               </p>
             )}
@@ -641,30 +451,6 @@ export function LeadDetail({ lead }: { lead: Lead }) {
         onConfirm={guard.leave}
         onCancel={guard.stay}
       />
-    </div>
-  );
-}
-
-/** e.g. "Tue, 09 Sep 2026, 14:30" — day of week included because a bare date
- *  is the one part of an appointment people mis-read. */
-function formatScheduledInspection(value: string): string {
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleString("en-GB", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function Detail({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0">
-      <p className="text-text-faint">{label}</p>
-      <p className="mt-0.5 break-words text-text">{value}</p>
     </div>
   );
 }
