@@ -15,19 +15,12 @@
 
 ## Last completed work
 
-**2026-07-17 (most recent):** `FINISH THE PRODUCT` executed — restored the Supabase/Twilio backend (previously built on `wip-backup-before-milestone1`) into `main`, adapted to the current valuation form's fields (Trim, Describe Your Car, Basic/Mid/Full Option). Admin dashboard and public valuation form both try the real backend first and gracefully fall back to mock/demo mode if it's unreachable. Full details, verification, and the one remaining manual step (running migration 0006) are in `WORK_LOG.md` under that date — read it before continuing this work.
-
-Final Milestone 1 landing polish is in place: the approved hero section was preserved and given a blur-to-sharp focus-in animation, while the separate full-page intro was reduced to a lightweight opacity fade to avoid stacking heavy blur filters. The client `dubaii.jpeg` Defender photo is used in the How It Works section with a fully blended top gradient, the loading screen was removed, and the previous footer video band was merged into a single compact footer with no visible divider lines.
-
-Milestone 1 meeting materials were generated under `docs/meetings/`: `Milestone1_Report_2026-07-12.md` and `Milestone1_Report_2026-07-12.docx`. The Word file includes a simple non-technical script, live demo walkthrough, and likely client question scenarios.
-
-The active local workspace is `E:\Github\carvibe`. Use `E:\Github\Open-CarVibe.cmd` for the isolated VS Code profile or `E:\Github\CarVibe-Shell.cmd` for a terminal; both route CarVibe project caches and temporary data to `E:\Github\.carvibe-dev`. Git, Node.js, and VS Code executables remain installed on `C:`, but project files, `.git`, dependencies, build output, npm cache, Git global identity, and isolated editor data are on `E:`. The former `D:\github\carvibe` data was moved to the backup `E:\Github\.carvibe-d-backup-20260804`; no CarVibe files remain on `D:`.
-
-Tightened "Why Choose Us" sizing after the client said it took up more than a full screen's height - swapped the spacious `py-section` padding token for an explicit compact `min-h-[540px]/[580px]`, cut the statement text size roughly in half (`text-fluid-2/3` instead of `text-fluid-4/5`), and tightened all the internal spacing/button sizes for a leaner, more minimalist proportion.
-
-Earlier in the same day: upgraded "Why Choose Us" from a flat black carousel to a premium full-bleed photo carousel: a real background image (Range Rover) under a Hero-style gradient, glass-style circular arrow buttons, a small "01 / 04" slide counter, and a segmented Instagram-Stories-style progress bar showing the auto-advance timing per slide. Also added "How It Works" (`#sell-your-car`) and "Brands" (`#brands`) to the navbar - both real page sections that previously had no nav link.
-
-Earlier in the same day: rebuilt "Why Choose Us" as a 4-slide auto-advancing trust-statement carousel, styled after a client-supplied 21st.dev reference: each slide is a large statement with gold-highlighted key phrases (fairness, speed/clarity, negotiation balance, UAE-wide convenience), a short bold tagline, and a "Get Your Free Valuation" CTA, auto-advancing every 7 seconds with arrow and dot navigation that resets the timer on manual use. Replaced the previous image/stats/trust-points layout entirely; removed the now-unused `trustPoints`/`businessStats` config.
+**2026-09-09:** Dashboard UI/UX and chart visibility overhaul completed.
+- Solved single-color confusion: 8-stage progressive chromatic conversion funnel with stage retention %, operational urgency inventory aging (Emerald, Sky, Amber, Coral Red), and tri-color staff performance.
+- Fixed invisible gross profit: Implemented Dual Y-Axis so gross profit (e.g. AED 1,500) has its own vertical scale and stands tall alongside high revenue (AED 20,000) with vibrant Emerald styling and a Gross Margin % badge.
+- Fixed single-day ("Today only") views: replaced screen-spanning walls and invisible 1-point area voids with bounded bars (`maxBarSize={48-52}`) and executive single-day comparative cards for revenue and profit.
+- Upgraded KPI cards and secondary cards with glowing icon avatars (Coins, TrendingUp, CarFront, WalletCards), accent colors, margin badges, and luxury dark borders.
+- Preserved 100% of underlying business logic and database queries. Verified with `tsc --noEmit`, `eslint`, `vitest` (192 passing), and `build:check`.
 
 Earlier in the same day: added a scroll-triggered fade/blur reveal animation to the footer's three columns (staggered timing) and a subtle gold-tinted top glow, based on a client-supplied reference footer component. Implemented with a small local `RevealOnScroll` helper using `IntersectionObserver` + CSS transitions rather than installing the reference's `motion` package, and kept the footer's real content/links (no fake pages) and its seamless blend with the video section above it (skipped the reference's rounded-card border look, which would have reintroduced a seam).
 
@@ -69,4 +62,8 @@ Review the pushed Milestone 1 public landing package, live site, and meeting pac
 
 ## Exact next action
 
-Run `supabase/migrations/0006_trim_and_option_level.sql` in the Supabase SQL Editor (dashboard -> SQL Editor -> paste -> run), then do one real end-to-end valuation form submission on the live site to confirm a lead lands in the `leads` table with `trim`/`description`/`option_level` populated and shows correctly on `/admin/leads`. Separately: review `http://localhost:3000/` on desktop and phone, confirm any Vercel deployment check from GitHub, and use `docs/meetings/Milestone1_Report_2026-07-12.docx` for the July 12 meeting.
+Apply `supabase/migrations/0026_partial_lead_csr_handoff.sql` in the intended
+Supabase SQL Editor, then use a safe test record: capture an incomplete form,
+confirm it appears only for its assigned CSR, complete its details, select
+**Inspection Scheduled**, and confirm it becomes one Lead with an assigned
+Purchaser. Do not deploy or push this task until the user explicitly asks.

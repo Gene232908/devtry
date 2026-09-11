@@ -15,6 +15,41 @@ Read this for authentication, authorization, database, API, upload, personal-dat
 - Keep secrets server-side.
 - Never expose Supabase service-role keys to the browser.
 
+## 2026-09-10 Lead-view audit
+
+- `POST` and `GET /api/admin/leads/[id]/events` require an active staff
+  identity and enforce the same lead-visibility rule as the rest of the CRM.
+- A lead view stores the authenticated actor plus a name/role snapshot. Views
+  are deduplicated per staff member for 30 minutes, not across every viewer.
+- The Activity timeline is shared only with staff permitted to view that lead;
+  Super Admin can see every recorded agent and purchaser view.
+- Saving a follow-up note or status change stores the authenticated actor and
+  role snapshot server-side. The browser cannot choose who receives credit in
+  the history.
+
+## 2026-09-11 Assigned-team notes
+
+- Call Centre staff and Purchasers can read the shared follow-up Notes field
+  only on leads assigned to them. This is required for a safe handoff: the next
+  person can see the last call outcome and agreed action.
+- Lead row scoping remains enforced server-side before notes reach the browser.
+  Operational staff do not receive unassigned or another staff member's lead.
+- Notes are operational working notes, not a channel for exporting customer or
+  financial data across leads. Final retention and staff-use policy still needs
+  client/legal approval before production.
+
+## 2026-09-11 Lead email notifications
+
+- Gmail SMTP credentials are server-only environment variables. They are never
+  returned by Settings, client JavaScript, API responses, or logs.
+- Each new lead reads the saved `settings.notify_email` recipient at send time.
+  Only an owner can change it through the Settings API.
+- Email delivery failure cannot discard a submitted lead. The lead is stored
+  first, then a safe server-side error is logged for a failed notification.
+- New-lead emails contain customer information, so the saved recipient must be
+  a designated business operator. Retention and access policy need approval
+  before production use.
+
 ## Authorization
 
 - The browser is untrusted.
@@ -23,6 +58,15 @@ Read this for authentication, authorization, database, API, upload, personal-dat
 - Deny by default.
 - Prevent self-promotion to privileged roles.
 - Test cross-user, cross-role, and cross-branch access.
+
+## 2026-09-09 Executive Overview
+
+- The executive Overview and `/api/admin/overview` require an active `admin` or
+  owner-level `manager` profile through `requireAdmin()`.
+- Financial, inventory exposure, and staff commission data are intentionally
+  unavailable to operational staff.
+- Demo records remain included for the current local/demo phase at the client's
+  direction and must be excluded before production reporting is relied upon.
 
 ## Authentication and abuse protection
 
@@ -88,6 +132,27 @@ The project still requires qualified UAE legal/compliance review before producti
 - The current implementation remains UI/mock only; real backend storage must normalize and validate phone numbers server-side, rate-limit OTP, protect lead data with trusted authorization/RLS, and document retention/deletion before production.
 
 ## Public repository rule
+
+## Settings owner-only boundary — 2026-09-10
+
+- Call Centre and Purchaser roles have no `viewSettings` capability. Settings
+  is hidden from both navigation surfaces and direct page access redirects to
+  Leads.
+- The Settings page and GET API independently require an owner role because
+  they read through service-role data access; hiding a link is not permission.
+
+## Incomplete-form access boundary — 2026-09-10
+
+- Incomplete forms contain unverified personal data. The detail/list routes
+  enforce `viewIncompleteForms` server-side and scope Call Centre users to their
+  assigned captures.
+- Purchasers cannot view incomplete forms through the page, query helpers, or
+  detail API. They receive access only after a CSR converts a verified capture
+  to an inspection-scheduled real lead.
+- Assignment selection and conversion use server-side service-role operations;
+  public clients cannot provide either staff ID.
+- The capture and follow-up database functions are explicitly executable only
+  by `service_role` after migration 0026.
 
 Never commit:
 

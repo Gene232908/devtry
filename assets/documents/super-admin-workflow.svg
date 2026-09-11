@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1900" height="420" viewBox="0 0 1900 420" role="img" aria-labelledby="title description">
+  <title id="title">Customer workflow</title>
+  <desc id="description">A left to right flow from valuation form to commission, with a no branch for cars not purchased.</desc>
+  <rect width="1900" height="420" fill="#fff"/>
+  <style>
+    .box{fill:#fff;stroke:#000;stroke-width:2.5}.line{fill:none;stroke:#000;stroke-width:3}.main{font-family:Arial,Calibri,sans-serif;font-size:25px;fill:#000;text-anchor:middle}.sub{font-family:Arial,Calibri,sans-serif;font-size:19px;fill:#000;text-anchor:middle}.label{font-family:Arial,Calibri,sans-serif;font-size:19px;fill:#000;text-anchor:middle}
+  </style>
+  <defs><marker id="arrow" markerWidth="11" markerHeight="11" refX="9" refY="3.5" orient="auto"><path d="M0 0 L0 7 L10 3.5 Z" fill="#000"/></marker></defs>
+
+  <rect class="box" x="20" y="55" width="200" height="95"/><text class="main" x="120" y="92">Customer submits</text><text class="sub" x="120" y="123">valuation form</text>
+  <rect class="box" x="270" y="55" width="200" height="95"/><text class="main" x="370" y="92">Call Centre</text><text class="sub" x="370" y="123">contacts customer</text>
+  <rect class="box" x="520" y="55" width="200" height="95"/><text class="main" x="620" y="92">Inspection</text><text class="sub" x="620" y="123">is booked</text>
+  <rect class="box" x="770" y="55" width="200" height="95"/><text class="main" x="870" y="92">Purchaser</text><text class="sub" x="870" y="123">handles the car</text>
+  <path class="line" marker-end="url(#arrow)" d="M220 102H255"/><path class="line" marker-end="url(#arrow)" d="M470 102H505"/><path class="line" marker-end="url(#arrow)" d="M720 102H755"/>
+
+  <path class="line" marker-end="url(#arrow)" d="M970 102H995"/>
+  <path class="box" d="M1085 35 L1175 102 L1085 169 L995 102 Z"/>
+  <text class="main" x="1085" y="96">Car bought?</text><text class="sub" x="1085" y="125">Yes or No</text>
+
+  <path class="line" marker-end="url(#arrow)" d="M1175 102H1200"/><text class="label" x="1190" y="55">Yes</text>
+  <rect class="box" x="1210" y="55" width="235" height="95"/><text class="main" x="1327.5" y="92">Inventory</text><text class="sub" x="1327.5" y="123">car is bought</text>
+  <path class="line" marker-end="url(#arrow)" d="M1445 102H1470"/>
+  <rect class="box" x="1480" y="55" width="150" height="95"/><text class="main" x="1555" y="112">Sold</text>
+  <path class="line" marker-end="url(#arrow)" d="M1630 102H1655"/>
+  <rect class="box" x="1665" y="55" width="215" height="95"/><text class="main" x="1772.5" y="112">Commission</text>
+
+  <path class="line" marker-end="url(#arrow)" d="M1085 169V245H970"/>
+  <text class="label" x="1040" y="228">No</text>
+  <rect class="box" x="700" y="200" width="260" height="95"/><text class="main" x="830" y="238">Not Purchased</text><text class="sub" x="830" y="269">record reason and close</text>
+</svg>

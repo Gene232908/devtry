@@ -203,6 +203,39 @@ changes what someone does next.
   would need a new table. Deferred deliberately — the audit trail matters most
   after the money moves, and that is after conversion.
 
+## ADR-005 — Incomplete-form CSR recovery and Purchaser handoff
+
+**Date:** 2026-09-10
+**Status:** Accepted
+
+### Context
+
+An incomplete form contains unverified, sometimes missing details. Treating it
+as a normal lead too early exposes it to the Purchaser team and makes pipeline
+reporting less trustworthy.
+
+### Decision
+
+New incomplete forms are round-robin assigned to an active Call Centre agent.
+That CSR verifies and completes the customer and vehicle details during the
+follow-up. Selecting **Inspection Scheduled** requires those details plus an
+inspection time, then creates the real lead and round-robin assigns an active
+Purchaser. The later inspection, negotiation, deal, and not-purchased work
+happens only on that real lead.
+
+Purchasers cannot list or open incomplete forms. Owners retain visibility and
+may reassign the Call Centre owner, but no Purchaser is assigned before the
+conversion.
+
+### Consequences
+
+- A saved capture is not counted as a confirmed lead.
+- The handoff is auditable through the converted lead and its assignment event.
+- A conversion rechecks the partial record before linking it, so a concurrent
+  second conversion cannot leave a second live lead behind.
+- Migration `0026_partial_lead_csr_handoff.sql` is required before this flow is
+  active against a Supabase database.
+
 ## Template
 
 ## ADR-XXX — Decision title

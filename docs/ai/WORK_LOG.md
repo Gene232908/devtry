@@ -4,6 +4,187 @@ This is the factual source for reports.
 
 Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
+## 2026-09-11
+
+### Completed
+
+- Pre-deployment verification and clean git author configuration:
+  - Configured local Git repository identity to `carvibe025 <carvibeduba025@gmail.com>`.
+  - Scanned all 619 project files for developer personal names or emails. Removed all occurrences from database seed scripts (`supabase/migrations/0002_seed.sql`) and notification test mocks (`lib/server/lead-notifications.test.ts`), establishing pure `carvibe025` and `carvibeduba025@gmail.com` identity across all code, comments, components, and functions.
+  - Formatted and created clean atomic commits on local branch `improvement` strictly with author and committer `carvibe025 <carvibeduba025@gmail.com>`. Preserved 100% of working functional code without alterations.
+  - Verified `npm test` passing (18/18 test suites, 196 tests) and `npx tsc --noEmit` clean (0 errors).
+
+- Redesigned the Notes History and Activity UI on the Lead Detail page for audit clarity and mobile-first responsiveness:
+  - Replaced confusing `#1`/`#2` numbered badges with explicit revision status pills (`Latest Note (Current)` vs `Revision #...`).
+  - Elevated author name and role badge with high visibility, ensuring staff identity is never truncated.
+  - Formatted timestamps cleanly with dedicated clock icons and high-contrast styling.
+  - Placed each note text inside a dedicated, high-contrast message container with bulletproof word-break wrapping (`whitespace-pre-wrap break-words break-all [overflow-wrap:anywhere] min-w-0 max-w-full overflow-hidden`) to eliminate horizontal container blowout on long unbroken strings across mobile and desktop viewports.
+  - Consolidated raw notes from the main screen into a clean Activity card with a prominent "Notes History" modal button and inline "View note" shortcuts.
+  - Added `min-w-0` to grid column containers in `LeadDetail.tsx` and `PartialLeadDetail.tsx` to safeguard against CSS grid intrinsic width expansion. Verified with `npm test` (18/18 test suites, 196 tests passing) and `npx tsc --noEmit` (0 errors).
+
+- Updated the Super Admin Manual PDF with an executive-friendly explanation of manual reassignment in Section 4: clarified that manual reassignments never break or reset the automatic queue, transfer the customer immediately with an Activity audit record, and allow future website leads to continue rotating fairly across active staff without interruption. Rebuilt PDF cleanly (17 pages).
+
+- Created a production-facing Super Admin Manual source and PDF covering role scope, hierarchy, automatic queueing, dashboard calculations, status control, incomplete-form conversion, inventory, commission, safety controls, settings, escalation, and operating checklists. Excluded demo data, local setup, secrets, and developer procedures.
+
+- Expanded the Dashboard Walkthrough Only script with a formula guide for revenue, gross profit, unpaid staff commission, margin, current-stock amounts and age, comparison percentage change, and the Record Check score.
+
+- Optimized the Executive Dashboard client bundle: deferred the heavy chart modules until after the Dashboard shell and KPI/action cards are interactive. The primary Dashboard route chunk reduced from about 85 KB to about 50 KB after the production build, without changing Dashboard calculations, filtering, comparison, or chart interactions.
+
+- Reduced repeated sidebar navigation work: removed the automatic 250ms post-mount server refresh that ran across multiple admin screens after a navigation had already painted. Freshness remains on browser focus, visible-tab polling, and manual refresh actions.
+
+- Resolved local multi-page `ChunkLoadError`: three Next.js servers had been running simultaneously on ports 3000, 3001, and 3002 while sharing the same generated `.next` output. Stopped the conflicting servers, archived the stale generated cache, built fresh, and started one production server on port 3000. Verified all admin routes return their expected protected redirect and the Settings page chunk returns HTTP 200.
+
+- Added a dedicated Dashboard Walkthrough Only PDF. It covers the Dashboard's date and comparison controls, KPIs and margin formula, charts, stock aging, alerts versus pipeline versus record checks, and staff metrics with concise presenter scenarios.
+
+- New-lead email update: removed the empty email placeholder from valuation-lead notifications because the public valuation flow does not collect a customer email address. Added a regression test for the notification content.
+
+- Presentation script update: added a dedicated Inventory Overview explanation that accurately distinguishes money tied up in unsold stock, the average age of current unsold stock, and the count of cars over the 90-day threshold. Included a practical two-car example and a direct "do not confuse these" answer.
+
+- Security & Stability Hardening (Audit Remediation):
+  - **Secured Staff Profile Deletion**: Added `requireAdmin()` check and `would_remove_last_owner` guard to `DELETE /api/admin/profiles/[id]` to prevent unauthorized profile deletions and protect the last owner from accidental lockout.
+  - **Closed Inventory Data Leak**: Added `requireStaff()` and capability verification to `GET /api/admin/inventory` so operational staff cannot dump inventory and profit figures, while preserving single-lead status checks in `LeadDetail`.
+  - **Secured Blocked Numbers Access**: Added `requireStaff()` and `hasCapability("viewBlockedNumbers")` check to `GET /api/admin/blocked-numbers`.
+  - **Gated Demo Lead Controls**: Added `requireAdmin()` to `POST` and `DELETE /api/admin/demo-leads`, and hidden `DemoLeadControls` in the UI from non-admin accounts.
+  - **Fixed Lead Notes Disappearing Bug**: Updated `projectLeadForCallCenter` and `projectLeadForPurchaser` in `lib/server/staff-projections.ts` to include `notes` so assigned staff can read their own follow-up notes upon reload.
+  - **Fixed Incomplete Lead Conversion**: Handled null `purchaserId` gracefully in `app/api/admin/partial-leads/[id]/route.ts` instead of throwing a blocking 409 conflict when no purchaser is active.
+  - **Optimized Wide Date Ranges (All Time)**: Downsampled trend points when the date range exceeds 60 days in `lib/admin/executive-overview.ts` to eliminate chart lag while preserving exact KPI totals.
+  - Verified with `npx tsc --noEmit` (0 errors) and `npm run build` (23/23 routes compiled with 0 errors).
+
+## 2026-09-10
+
+### Completed
+
+- Lead Detail & Incomplete Valuation Workspace Alignment (Email Removal & Space Balance):
+  - Addressed client feedback requesting removal of email field, elimination of wide spaces, and unified layout across Lead Detail, Incomplete Forms, Purchaser, and Super Admin views:
+    - **Email Completely Removed**: Removed email field from Customer Contact card across all lead workspaces.
+    - **Eliminated Awkward Whitespace**: Replaced the 2-column contact grid with a balanced, cohesive direct phone card featuring a 1-click clipboard Copy button (`Copied ✓`), and direct WhatsApp and Call buttons. Added `items-start` to main grids to prevent vertical card stretching.
+    - **Incomplete Valuation Workspace Overhaul (`PartialLeadDetail.tsx`)**:
+      - Applied identical CarVibe brand-aligned styling (Montserrat / Manrope typography, deep frosted black card surfaces, warm gold accents).
+      - Reorganized into standard unified layout:
+        - Left column: Captured details card, direct phone contact card (no email), and activity timeline.
+        - Right column: Assigned team card and unified Follow-up & Disposition card (Status dropdown, inspection scheduling fields, notes textarea, save button, and block/delete actions).
+    - **Rule 1 Compliance (<500 lines)**:
+      - Decomposed `PartialLeadDetail.tsx` (previously 716 lines) into:
+        - `PartialLeadDetail.tsx` (477 lines)
+        - `PartialLeadCapturedCard.tsx` (56 lines)
+        - `PartialLeadActivityCard.tsx` (64 lines)
+        - `PartialLeadConversionFields.tsx` (163 lines)
+        - `LeadContactCard.tsx` (92 lines)
+      - `LeadDetail.tsx` brought down to 451 lines.
+    - **100% Functionality Preserved**: Preserved all state, API interactions, unsaved guard dialogs, validations, phone blocking, capture deletion, and conversion to real leads.
+  - Verified with `npx tsc --noEmit` (0 errors), `npm run lint` (0 warnings, 0 errors), `npm test` (193 tests passed), and `npm run build:check`.
+
+- Simplified the Dashboard comparison control into plain choices: Previous Period, Same Time Last Year, and an optional custom earlier period. The normal path needs one click and automatically keeps both periods the same number of UAE days; changing the primary date filter clears comparison to prevent unequal periods.
+
+- Replaced the duplicate Follow-up Status panel with a distinct Lead Pipeline view: New Leads, Contacted, Inspection Scheduled, Under Negotiation, and Deals. Needs Attention remains the only cross-business urgency list. Each pipeline row opens Leads with a validated, visible matching status filter and clears safely back to the normal list. Verified `npx tsc --noEmit`, `npm run lint`, `npm test` (192 tests), and `npm run build:check`.
+
+- Replaced the Super Admin Commission page's single-category dropdown with an All-by-default checkbox filter for Agents, Purchasers, and Developer. Agent and Purchaser rows can now be shown together without hiding their different 2% and 10% rates. Payment routing now follows the selected staff record's role, so filtering multiple categories cannot settle a record through the wrong state list. Verified `npx tsc --noEmit`, `npm run lint`, and `npm test` (192 tests).
+
+- Corrected the Overview This Week preset so it applies its real UAE seven-day date range instead of retaining the Today range after the default was changed to Today. Direct database verification confirmed 70 weekly submissions, 19 weekly visitors, AED 345,000 revenue, and 3 cars sold for the current demo data.
+
+- Frosted Pitch-Black Glassmorphism Topbar & Navigation Upgrade:
+  - Upgraded `components/admin/Topbar.tsx` to a luxury, deep pitch-black frosted glass aesthetic (`bg-black/85 backdrop-blur-2xl backdrop-saturate-150 border-b border-white/[0.08] shadow-[0_4px_30px_rgba(0,0,0,0.85)]`).
+  - Added subtle frosted ice top hairline accent (`before:via-white/15`).
+  - Redesigned the user profile menu button into a sleek frosted glass pill with glowing amber avatar badge, clear typography, and a frosted dropdown menu (`bg-[#050508]/95 backdrop-blur-2xl border-white/[0.12]`).
+  - Harmonized `components/admin/Sidebar.tsx` with matching deep frosted black styling (`bg-[#050508]/90 backdrop-blur-2xl border-r border-white/[0.08]`) and clean active link states.
+
+- Dashboard Performance & Lag Optimization:
+  - Addressed client report of dashboard lag during interactions, scrolling, and date filtering:
+    - **GPU Compositing Optimization**: Removed redundant `backdrop-blur-md` from nested `<Card>` components in `components/ui/Card.tsx`, replacing it with high-performance deep dark surfaces (`bg-[#0c0c0f] border-white/[0.08]`). This eliminated massive GPU fill-rate throttling during scrolling across the 15+ dashboard bento cards.
+    - **Client-Side In-Memory Cache (`use-executive-overview.ts`)**: Implemented an in-memory Map cache (`overviewCache`). Repeated date range toggles (e.g. switching between "Today", "Last 7 Days", and "This Month") now render instantaneously with 0ms network latency and zero layout shift. Manual "Refresh" bypasses and invalidates the cache for fresh server queries.
+    - **Recharts Path Animation Optimization**: Disabled continuous SVG path interpolation animations (`isAnimationActive={false}`) across all 6 dashboard charts (`FinancialTrendChart`, `VisitorsChart`, `SubmissionsChart`, `StaffPerformanceChart`, `InventoryAgingChart`, and `PipelineFunnelChart`). Charts now paint immediately without blocking the JS main thread.
+    - **Fixed Seed Date Filter Mismatch (`ExecutiveDashboard.tsx`)**: Synchronized initial date filter preset and label with the actual seed range length to prevent immediate redundant re-fetching upon page load.
+  - Verified with `tsc --noEmit` (0 errors), `npm run lint` (0 warnings), `npm test` (192 passing tests), and `npm run build:check` (all 23 routes successfully built and optimized).
+
+## 2026-09-09
+
+### Completed
+
+- Optimized sidebar transitions by removing pending spinners, using prefetched 30-second client route payloads for immediate page paint, and moving freshness work to a quiet post-paint revalidation while retaining mutation refresh and live-data update behavior.
+
+- Reduced lead-detail Activity latency by parallelizing the initial timeline read and named-view audit write, with a conditional refresh only when a distinct new view is stored.
+
+- Implemented named, access-controlled lead-view audit events. Super Admin and other authorized viewers can now see which agent or purchaser opened a lead and when; repeated opens are deduplicated per staff member rather than globally.
+
+- Corrected the Duplicate Leads attention filter so it shows both records in a phone-matched duplicate pair, rather than only the later record flagged as duplicate. Added clear row labels for the repeat and earlier submission.
+
+- Fixed the Assigned Team edge case for deactivated staff: historical owners remain visible and are labelled `(inactive)` rather than appearing unassigned.
+
+- Replaced editable team-assignment controls on completed and incomplete lead detail pages with an always-visible, read-only Assigned Team card. Super Admin can see the current Call Centre and Purchaser owner without changing the automatic assignment.
+
+- Corrected Overview follow-up and record-check scope: first-contact and later-follow-up leads are now mutually exclusive, and the commission check only includes cars sold in the selected period. Added visible card explanations so users can understand the counts without referring to external documentation.
+
+- Completed the Executive Overview comparison experience. The comparison picker is now named and explained in plain language, loads a second full date-range response, and passes it to all visual sections. Pipeline uses paired period bars; visitor and submission charts add gray comparison series; stock and staff show comparison totals. Live operational panels remain selected-period-only by design so historical alerts are not falsely presented as exact past snapshots.
+
+- Executive Overview Comparison UI/UX & Visibility Overhaul:
+  - Addressed client feedback that comparison was invisible or difficult to interpret:
+    - Added high-visibility amber glassmorphism **Comparison Status Banner** in `components/admin/ExecutiveDashboard.tsx` prominently showing `Primary Range: [From] → [To] vs Comparison Range: [From] → [To]` with a quick `[Clear comparison ✕]` button.
+    - Updated `ExecutiveKpiCard.tsx` with dedicated `comparisonValue` prop: cards now explicitly display both primary and prior values side-by-side with delta (e.g. `AED 345,000` with `Prior: AED 240,000 (+43.8%)`, `3` with `Prior: 2 cars (+50.0%)`, `AED 580` with `Prior: AED 580 (0.0%)`).
+    - Fixed `FinancialTrendChart` in `components/admin/FinancialTrendChart.tsx`: added dual comparison series (Slate `#64748B` comparison revenue bars and dashed `#94A3B8` gross profit line), dual Y-axis scaling, and multi-period legend. Single-day views also display prior metrics.
+    - Upgraded `PipelineFunnelChart` in `components/admin/ExecutiveCharts.tsx`: paired primary stage bars with comparison bars, added distinct period legend (`Selected Period` vs `Comparison Period`), and dual tooltips.
+    - Fixed visitor and submission summation bugs in `VisitorsChart.tsx` and `SubmissionsChart.tsx`: primary counters now only calculate selected period counts rather than erroneously adding comparison data, added `Prior: X` header badges and Recharts `Legend`.
+    - Modularized `FinancialTrendChart.tsx` to maintain full compliance with Rule 1 (<500 lines per file).
+
+- Operational Alerts & Attention-Focused Navigation UX Overhaul:
+  - Addressed client feedback where clicking items in "Needs attention", "Follow-up Status", and "Record Check" navigated to generic pages without filtering or highlighting the specific issues:
+    - Updated `lib/admin/executive-overview.ts` to attach specific attention query parameters (`?attention=first-contact`, `?attention=stalled`, `?attention=missing-car`, `?attention=duplicate`, `?attention=aging`, `?attention=missing-commission`).
+    - Upgraded `ExecutivePanels.tsx`: all items in `FollowUpPanel`, `OperationalAlerts`, and `DataQualityPanel` are now interactive clickable links featuring smooth hover animations, chevrons (`ChevronRight`), and cool glassmorphism styling.
+    - Updated `lib/admin/use-leads-filter.ts` with `attentionFilter` support: automatically filters leads for `first-contact` (new/pending >24h), `stalled` (open leads >3d), `missing-car` (missing vehicle specs), and `duplicate` leads.
+    - Upgraded `components/admin/leads-table/index.tsx`: displays a high-impact **Attention Focus Banner** (with count, description, and `Clear attention filter ✕` button) that appears only when redirected from the dashboard.
+    - Upgraded `InventoryClient` (`app/(admin)/admin/inventory/inventory-client.tsx`): handles `attention=aging` by filtering for vehicles in stock > 90 days and bypassing single-month limits, rendering a dedicated Inventory Watch Banner.
+    - Upgraded `IncompleteValuationsClient` and `CommissionClient`: added matched Attention Banners when opened via dashboard alerts.
+    - Wrapped client components in `<Suspense>` across `admin/leads`, `admin/inventory`, `admin/incomplete`, and `admin/commission` to ensure optimal App Router rendering.
+
+- Single-Day / "Today" View Chart UX Upgrade:
+  - Addressed client feedback that single-day views in `VisitorsChart` and `SubmissionsChart` showed an empty Cartesian grid with one lonely bar in the center.
+  - Replaced the single-point Cartesian charts with an Executive 2-Card Layout matching `FinancialTrendChart` above:
+    - In `VisitorsChart.tsx`: Card 1 displays **Daily Traffic** (`todayVisitors`, Cyan styling, unique sessions subtitle, comparison delta if active) and Card 2 displays **Conversion Rate** (`conversionRate%`, `todaySubmissions` inquiries, visual progress bar, and visitor-to-lead ratio).
+    - In `SubmissionsChart.tsx`: Card 1 displays **New Inquiries** (`todaySubmissions`, Amber styling, valuation requests subtitle, comparison delta if active) and Card 2 displays **Lead Intake** (`conversionRate% Rate`, visual progress bar, and active pipeline indicator).
+    - Multi-day views continue to use the high-contrast AreaChart and BarChart with comparison series.
+
+
+
+- Simplified Executive Overview wording for non-technical readers. Inventory cards now clearly explain money spent on cars for sale, how long cars have been in stock, and which cars have waited more than 90 days. Related chart, alert, staff, and record-check wording was also made more direct; dashboard calculations and data flow were not changed.
+
+- Dashboard UI/UX Overhaul & Chart Visibility Fixes:
+  - Addressed client feedback regarding confusing single-palette gold colors, invisible gross profit, and broken single-day / "Today" views.
+  - Implemented Dual Y-Axis and high-visibility Gross Profit in `components/admin/ExecutiveCharts.tsx`: Gross Profit now has its own vertical scale and distinct vibrant Emerald `#10B981` styling so small margins (e.g. AED 1,500 on AED 20k revenue) stand tall and prominent rather than hugging the bottom baseline. Added instant Gross Margin % badge in the chart header.
+  - Fixed "Today only" single-point chart views:
+    - In `FinancialTrendChart`: Implemented an executive 2-column comparison layout for single-day periods with prominent Revenue and glowing Gross Profit cards/bars and margin callouts.
+    - In `VisitorsChart.tsx`: Replaced empty/invisible single-point AreaChart with a glowing Cyan `#0EA5E9` column bar (`maxBarSize={52}`) and top count label (`5 visitors`), plus total visitor counter.
+    - In `SubmissionsChart.tsx`: Added `maxBarSize={48}` to prevent screen-spanning 100%-wide bars, added warm Amber `#F59E0B` gradient, top count label, and total submissions header badge.
+  - Overhauled color palette and legends:
+    - `PipelineFunnelChart`: Replaced monochromatic yellow with an 8-stage progressive chromatic funnel (Cyan -> Blue -> Violet -> Purple -> Pink -> Orange -> Emerald -> Amber) and added stage retention % labels (`LabelList`).
+    - `InventoryAgingChart`: Switched from 4 muddy brown/gold shades to operational urgency colors (Emerald 0-30d, Sky Blue 31-60d, Amber 61-90d, Coral Red 90+d) with centered stock count.
+    - `StaffPerformanceChart`: Implemented crisp tri-color series (Electric Indigo for Assigned, Warm Amber for Handled, Vibrant Emerald for Deals) with `maxBarSize={22}`.
+  - Upgraded `ExecutiveKpiCard.tsx` with glowing icon avatars (Coins, TrendingUp, CarFront, WalletCards), accent colors, margin badges, and luxury dark borders.
+  - Upgraded secondary inventory cards ("Cash tied up", "Average stock age", "Inventory watch") with icon avatars and conditional warning styling.
+  - Follow-up refinements per client feedback:
+    - Added role filter dropdown to `StaffPerformanceChart` (`All Staff`, `Agents Only`, `Purchasers Only`) allowing quick filtering by role.
+    - Fixed dark gray on black text bug in Recharts tooltips (e.g. `Count : 3 (100% retention)`): added `EXECUTIVE_TOOLTIP_ITEM_STYLE` (`#F3F4F6`) and `EXECUTIVE_TOOLTIP_LABEL_STYLE` (`#FFFFFF`) across all chart tooltips for 100% contrast.
+    - Improved X-axis and Y-axis tick contrast in `RECESSIVE_AXIS` (`#9CA3AF` stroke, `#D1D5DB` tick text fill) so staff names and numbers are crisp and legible.
+    - Removed gold shadows from cards and `app/globals.css` (`.card-shadow` updated from gold tint to clean neutral glass shadow).
+    - Upgraded `Card.tsx` and all dashboard cards to a cool, refreshing glassmorphism aesthetic (`border-white/10 bg-[#141417]/80 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.35)]`).
+    - Harmonized Typography & Theme Alignment (Natural vs AI look):
+      - Replaced oversized geometric `font-display font-bold` with CarVibe's native `font-sans` (`Manrope`) with `font-semibold tracking-tight tabular-nums`.
+      - Proportioned currency labels: split `AED` into a subtle, smaller indicator (`text-xs sm:text-sm font-semibold tracking-wider text-[#a39c90]`) so the currency code doesn't overpower numerical metrics.
+      - Refined Gross Profit color balance: preserved prominent Emerald `#10B981` styling on numerals while muting the currency prefix to prevent over-saturated "crypto/AI template" aesthetics.
+      - Aligned KPI card labels to CarVibe's warm design palette (`text-[#a39c90]`, `text-[#f5f3ef]`, Title Case / refined uppercase tracking).
+      - Updated single-day Revenue & Gross Profit metrics in `components/admin/ExecutiveCharts.tsx` with proportional AED prefix and `font-sans`.
+  - Preserved 100% of underlying business logic, database queries, and APIs.
+
+### Verification
+
+- `npx tsc --noEmit` passed after the comparison update.
+- `npm run lint` passed with 0 warnings or errors after the comparison update.
+
+- `npm run lint` passed with 0 warnings or errors after the copy update.
+
+- `npx tsc --noEmit` passed with 0 errors.
+- `npm run lint` passed with 0 warnings or errors.
+- `npm run test` passed: 192 tests passing across 16 files.
+- `npm run build:check` completed successfully with all static and dynamic pages generated.
+
 ## 2026-09-08
 
 ### Completed
@@ -1014,3 +1195,77 @@ log's history.
   - Updated `app/(admin)/admin/commission/commission-client.tsx` to render a personal "My Commission" dashboard for Agents and Purchasers showing their own earnings, closed deal transactions, profit, and downloadable PDF invoice statement (`carvibedubai.pdf`).
 - Verification: `npx tsc --noEmit` passed clean; `npx vitest run` passed all 142 tests.
 
+## 2026-09-10 Dashboard comparison visual clarity
+
+- Replaced generic comparison hover text on the sales, visitors, and
+  submissions charts with paired-date cards. The financial chart also displays
+  a visible selected-versus-earlier date guide and no longer exposes its filled
+  profit area as a duplicate `profit` legend item.
+- Verification: `npx tsc --noEmit`, `npm run lint`, `npm test` (192 tests),
+  and `npm run build` passed. Production server was restarted on local port 3000.
+
+## 2026-09-10 Incomplete-form CSR handoff
+
+- New incomplete captures are assigned round-robin to active Call Centre staff.
+- The CSR works the recovery stages, manually confirms missing customer and car
+  details, then uses a clear conversion action to schedule an inspection.
+- The conversion creates a real lead, keeps the CSR owner, and server-assigns
+  an active Purchaser. Purchasers cannot open incomplete captures.
+- Added migration `0026_partial_lead_csr_handoff.sql`; it has not been applied
+  to any remote database in this task.
+- Replaced free-text Make, Model, Trim, and Emirate inputs during CSR conversion
+  with dependent Vehicle Catalog and emirate dropdowns. Make and Model are
+  validated server-side before the real lead is created.
+- Verification: `npx tsc --noEmit`, `npm run lint`, `npm test` (193 passed),
+  and `npm run build` passed. Production server restarted on local port 3000.
+- Verification: `npx tsc --noEmit`, `npm run lint`, `npm test` (192 passed),
+  and `npm run build` passed.
+
+## 2026-09-10 Demo script update
+
+- Updated the Incomplete Forms section in the admin demo script with the plain
+  CSR-to-Purchaser handoff explanation, exact conversion action, and Anna
+  scenario. Regenerated the local PDF handout.
+
+## 2026-09-10 Lead activity history
+
+- Limited the lead detail Activity card to the five newest events so the page
+  stays readable during normal work.
+- Added `See full details` for older activity. Its dialog keeps a compact
+  viewport (about ten entries) and scrolls internally for the remaining
+  timeline without making the page or dialog excessively tall.
+- Verification: `npx tsc --noEmit`, `npm test` (193 passed), `npm run lint`,
+  and `npm run build` passed. Production server restarted on local port 3000.
+
+## 2026-09-11 New-lead email notification
+
+- Added server-only Gmail SMTP delivery after a verified valuation lead is
+  stored. The recipient is read fresh from Settings for every new lead.
+- Added an owner-only Send test email control in Settings and verified the
+  configured sender accepted a real test message for the saved recipient.
+
+## 2026-09-11 Activity audit and assigned-team notes
+
+- Audited the Activity quick view and full-history dialog: the card keeps the
+  newest five events visible, while the complete history scrolls inside the
+  dialog without expanding the page.
+- Confirmed the approved workflow rule that assigned Call Centre staff and
+  Purchasers can read shared follow-up notes for their own leads. Updated the
+  stale privacy tests and security policy to match this limited access.
+
+## 2026-09-11 - Super Admin lead reassignment
+
+- Added a Super Admin-only reassignment control to the lead detail page.
+- Active Call Centre and Purchaser accounts can be selected, and a reason is required before saving.
+- Reassignment is recorded in lead Activity with the selected owners and reason; automatic round-robin for future leads is unchanged.
+- Updated the Dashboard walkthrough and Super Admin manual sources with a plain-language explanation and scenario.
+## 2026-09-11 - Call Centre Agent Manual
+
+- Audited the existing Call Centre permissions, lead visibility, status choices, round-robin assignment, incomplete-form recovery, inspection handoff, notes, and Activity flow.
+- Created a plain-language Call Centre Agent Manual based on the implemented workflow only.
+
+## 2026-09-11 - Purchaser Manual
+
+- Audited the implemented Purchaser visibility rules, status choices, inspection handoff, Deal validation, Inventory creation, notes/activity, and commission access.
+- Created `output/pdf/purchaser-manual.pdf` using only behavior present in the source code.
+- Kept the manual plain, natural, and limited to Purchaser responsibilities; Call Centre and Super Admin-only actions are explicitly excluded.
