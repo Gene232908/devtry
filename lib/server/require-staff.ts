@@ -28,33 +28,37 @@ export type StaffCheck =
   | { ok: false; status: 401 | 403; message: string };
 
 export const requireStaff = cache(async function requireStaff(): Promise<StaffCheck> {
-  const supabase = getSupabaseServer();
+  try {
+    const supabase = getSupabaseServer();
 
-  // Verify JWT locally (same approach as middleware.ts and require-admin.ts).
-  const { data: claims } = await supabase.auth.getClaims();
-  const userId = claims?.claims.sub;
-  if (!userId) {
-    return { ok: false, status: 401, message: "Not authenticated." };
+    // Verify JWT locally (same approach as middleware.ts and require-admin.ts).
+    const { data: claims } = await supabase.auth.getClaims();
+    const userId = claims?.claims.sub;
+    if (!userId) {
+      return { ok: false, status: 401, message: "Not authenticated." };
+    }
+
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("role, is_active, display_name")
+      .eq("id", userId)
+      .single();
+
+    if (error || !profile) {
+      // No profile row = not a staff member. Fail closed.
+      return { ok: false, status: 403, message: "No staff account found." };
+    }
+
+    if (profile.is_active === false) {
+      // Account has been disabled. Even a valid JWT must not grant access.
+      return { ok: false, status: 403, message: "Account is disabled. Contact the owner." };
+    }
+
+    const role = profile.role as StaffRole;
+    const identity = buildIdentity(userId, role, profile.display_name as string | null);
+
+    return { ok: true, identity };
+  } catch {
+    return { ok: false, status: 401, message: "Not authenticated or database not configured." };
   }
-
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("role, is_active, display_name")
-    .eq("id", userId)
-    .single();
-
-  if (error || !profile) {
-    // No profile row = not a staff member. Fail closed.
-    return { ok: false, status: 403, message: "No staff account found." };
-  }
-
-  if (profile.is_active === false) {
-    // Account has been disabled. Even a valid JWT must not grant access.
-    return { ok: false, status: 403, message: "Account is disabled. Contact the owner." };
-  }
-
-  const role = profile.role as StaffRole;
-  const identity = buildIdentity(userId, role, profile.display_name as string | null);
-
-  return { ok: true, identity };
 });

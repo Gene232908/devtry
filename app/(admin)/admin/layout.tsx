@@ -50,7 +50,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   // Slow path (first load or cookie expired): full DB check via requireStaff().
-  const auth = await requireStaff();
+  const auth = await requireStaff().catch(() => ({ ok: false as const, status: 401 as const, message: "Not authenticated." }));
   const identity = auth.ok ? auth.identity : null;
   return <AdminShell identity={identity}>{children}</AdminShell>;
 }
