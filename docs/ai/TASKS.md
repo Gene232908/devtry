@@ -2,6 +2,15 @@
 
 ## Current objective
 
+- [x] 2026-09-09 Dashboard UI/UX & Chart Visibility Overhaul:
+  - Fixed single-color gold ambiguity with intuitive multi-color systems: progressive chromatic 8-stage funnel with conversion percentages, operational urgency inventory aging colors (Emerald -> Sky -> Amber -> Red), and tri-color staff performance.
+  - Implemented Dual Y-Axis and prominent Gross Profit visualization so profit values (e.g. AED 1,500) are never dwarfed by high revenue (AED 20,000), plus added a Gross Margin % badge.
+  - Fixed "Today only" single-point views across charts: bounded bars (`maxBarSize={48-52}`) and executive single-day comparative cards for revenue & profit.
+  - Enhanced KPI cards with luxury glowing icon avatars, accent borders, and margin tags.
+  - All automated checks verified: `tsc --noEmit`, `eslint`, `vitest` (192 tests), `build:check`.
+
+- [x] 2026-09-09 Rebuilt the owner-only Overview as a responsive CEO dashboard using existing records only: financial KPIs, custom historical comparison, timestamp-based conversion journey, revenue/profit, visitors, submissions, inventory aging, assigned-lead staff performance, follow-up alerts, and data-quality checks. Source attribution and Overview audit activity remain deliberately out of scope.
+
 - [x] 2026-09-08 Implemented Step 1 from plan.md: roles, access boundaries, and staff accounts (branch: `improvement`).
   - `lib/auth/permissions.ts`, `lib/admin/staff-schema.ts`, `0023_staff_roles_permissions.sql`, `require-staff.ts`, `require-admin.ts` (updated), `staff-projections.ts`, `StaffAccounts.tsx`, staff API routes, settings page wiring, route guards on leads/commission/catalog/blocklist. Tests: 30 passing.
   - **Next**: Run `0023_staff_roles_permissions.sql` against a test Supabase instance and verify one full owner → add call centre → disable → re-enable cycle. Then proceed to Step 2 (attribution) or Step 6 (Nodemailer) per client priority.
@@ -97,5 +106,11 @@
 - [x] 2026-06-30 How It Works and Contact changed to unique non-photo layouts instead of reusing the hero image.
 
 ## Update rule
+
+### Next action — Incomplete-form handoff
+
+- [ ] Apply `supabase/migrations/0026_partial_lead_csr_handoff.sql` to the
+  intended Supabase project, then run one controlled CSR-to-Purchaser handoff
+  with non-production data.
 
 Every coding session must leave one clear next action.

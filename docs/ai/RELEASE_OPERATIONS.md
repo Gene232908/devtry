@@ -13,6 +13,16 @@ Keep separate:
 
 Do not reuse production secrets or real personal data outside production.
 
+### Lead notification email
+
+- Set `LEAD_NOTIFICATION_SMTP_USER` and
+  `LEAD_NOTIFICATION_SMTP_APP_PASSWORD` in each environment. Use a Gmail app
+  password, never an account password.
+- `LEAD_NOTIFICATION_FROM` is optional. The notification recipient is not an
+  environment variable: it is the owner-managed Notify email in Settings.
+- After deployment, an owner should save the desired recipient and use
+  **Send test email** in Settings before accepting live leads.
+
 ## CI checks
 
 Run applicable checks:

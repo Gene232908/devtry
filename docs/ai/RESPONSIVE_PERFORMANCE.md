@@ -18,6 +18,34 @@ Check approximately:
 
 - Start with one-column mobile layouts.
 - Add columns only when readable.
+
+## 2026-09-09 Executive Overview
+
+- Admin sidebar performance: do not call `router.refresh()` immediately after a
+  server-rendered page mounts. It forces a second server render shortly after a
+  prefetched navigation paints and appears as a duplicate loading delay. Keep
+  freshness through explicit user actions, focus/visibility refresh, and the
+  bounded visible-tab polling interval instead.
+- Executive Dashboard chart performance: load Recharts visualizations on demand
+  rather than in the initial Dashboard JavaScript. KPI cards, date controls,
+  and action panels remain interactive while the chart bundle downloads; each
+  chart reserves its final layout space to prevent content shifting.
+
+- Bento grids collapse from four KPI cards to one column. Wide staff details
+  remain in a scrollable table instead of shrinking financial values below a
+  readable size.
+- Single-day ("Today") chart rendering: Recharts AreaChart and LineChart without
+  connecting data points render invisible voids or isolated dots. Handled by
+  dedicated single-day executive comparison cards for financial metrics and
+  bounded column BarCharts (`maxBarSize={48-52}`) for web traffic and submissions,
+  preventing horizontal bar expansion across the viewport.
+- Financial charts utilize Dual Y-Axis (Revenue Left, Gross Profit Right) so that
+  narrow profit margins (e.g. 5-10%) remain visibly prominent and readable.
+- Initial data is server-rendered; date changes call one owner-only aggregation
+  endpoint. Existing Recharts visuals remain client-rendered for correct
+  container measurement.
+- Each aggregation query is capped at 5,000 existing rows. Database-side
+  summaries may be needed when records approach that limit.
 - Prevent page-level horizontal scrolling.
 - Use responsive padding, gaps, and max-width containers.
 - Use fluid font sizes or `clamp()` where useful.
@@ -26,6 +54,16 @@ Check approximately:
 - Give tables a safe mobile strategy.
 - Make dialogs fit and scroll inside the viewport.
 - Do not rely on hover-only behavior.
+
+## 2026-09-10 Commission category filter
+
+- The Super Admin Commission category control uses real checkbox inputs inside labels, with 40px option rows and a 44px trigger. It closes on outside click or Escape and keeps the wide commission table scrollable on small screens rather than compressing financial figures.
+- Selecting categories changes only the existing client-side presentation; it adds no database request. Refresh uses the same authorized staff and developer endpoints that existed before.
+
+## 2026-09-10 Executive action panels
+
+- Needs Attention remains the cross-business urgent-action list. The neighboring Lead Pipeline card uses five compact, clickable current-stage rows rather than repeating those alert counts.
+- Pipeline stage links pass validated `status`, `from`, and `to` query values to the existing Leads Directory, visibly retain the matching checkbox filter, and apply the same UAE date range as the Dashboard number. No extra overview request or new database query is introduced by a click.
 
 ## Performance rules
 
@@ -154,3 +192,28 @@ Report:
 - The floating WhatsApp button was removed after mobile verification showed it could overlap narrow-screen content and repeated the same action already available in the hero and contact section.
 - Brand and body-type sections are now passive guidance cards instead of extra buttons.
 - Fresh preview checks on `http://localhost:3021` showed CSS loaded, no horizontal overflow at 375px and 1440px, no floating WhatsApp overlap, and the mobile menu opening correctly.
+## 2026-09-10 Lead detail activity loading
+
+- Lead detail loads its activity timeline immediately while recording a view in
+  parallel. It only reloads once if that write creates a new distinct view
+  event, avoiding a serial write-then-read delay on every lead open.
+- Named view events store a name/role snapshot, so normal timeline reads do not
+  need a separate profile lookup to render them.
+
+## 2026-09-10 Sidebar navigation
+
+- Sidebar destinations use Next.js prefetching and keep their dynamic route
+  payload in the client Router Cache for 30 seconds. Clicking a prefetched or
+  recently visited page paints it immediately without replacing its icon with a
+  loading spinner.
+- Server-rendered admin screens quietly revalidate 250 ms after they become
+  visible. The cached screen remains usable during that refresh, while mutation
+  refreshes, focus refreshes, and visible-tab polling keep the existing data
+  behavior intact.
+
+## 2026-09-10 Overview comparison readability
+
+- Comparison charts retain their compact responsive layout but use an explicit
+  hover card that names both matched dates and groups selected versus earlier
+  values. This avoids asking the user to infer date alignment from slate chart
+  marks alone.

@@ -75,6 +75,18 @@ These do not create new public lead fields today. The actual lead capture remain
 
 ## Required final outputs
 
+## Incomplete-form recovery handoff — implemented locally 2026-09-10
+
+- `partial_leads.call_center_id` owns the unverified recovery record.
+- Open partial records have no `purchaser_id`; Purchaser ownership starts only
+  after conversion to `leads` at Inspection Scheduled.
+- `partial_lead_events.type` accepts `assigned` as well as note and status
+  events, so recovery ownership is auditable.
+- `capture_partial_lead` receives a server-selected CSR ID. The public browser
+  never selects an assignee.
+- `partial_leads.status` supports historical lead vocabulary in the database,
+  while the UI exposes only pre-conversion stages. Migration 0026 must be run.
+
 After `FINISH THE PRODUCT`:
 
 - SQL migrations.

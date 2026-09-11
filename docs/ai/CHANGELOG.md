@@ -4,8 +4,123 @@ Use reverse chronological order.
 
 ## Unreleased
 
+### Fixed
+
+- **Clean git author and zero-personal-identity verification for deployment.** Configured repository local git author and committer to pure carvibe025 (carvibeduba025@gmail.com). Sanitized database seed and test mock data to remove developer names and personal emails, verifying 0 personal occurrences across 600+ project files prior to online publishing.
+
+- **Lead Notes History & Activity audit UI.** Redesigned the Notes History modal and Activity timeline on the Lead Detail view. Replaced ambiguous numbered circle badges with clear revision status badges (`Latest Note` vs `Revision #...`), elevated author and role visibility, added high-contrast timestamps with dedicated clock icons, and enclosed note contents in structured message bubbles with strict word-break wrapping (`break-all`, `[overflow-wrap:anywhere]`) so unbroken text never blows out horizontal layout on mobile or desktop. Added `min-w-0` to grid columns to prevent CSS grid width distortion.
+
+- **Faster Dashboard first interaction.** Deferred the heavy chart library until after the Dashboard shell and KPI/action cards render, reducing the Dashboard route's initial JavaScript from roughly 85 KB to 50 KB while preserving all chart behavior.
+
+- **Repeated sidebar loading delay.** Removed an automatic second server refresh that ran 250ms after many admin pages opened, so a prefetched navigation no longer immediately re-renders and appears to load twice.
+
+- **Local chunk-loading failures.** Rebuilt the generated Next output after removing conflicting local Next.js servers. The app now runs from one fresh production server on port 3000, preventing stale page chunks from being requested from an older server.
+
 ### Added
 
+- **Production Super Admin Manual.** Added a plain-white, Arial-based operations manual covering the complete Super Admin workflow without developer, demo, local-environment, or secret-management instructions.
+
+- **Dashboard formula coaching.** The Dashboard walkthrough-only PDF now includes plain-language formulas and a two-sale scenario for all money, stock, comparison, and data-quality calculations shown in the overview.
+
+- **Dashboard walkthrough-only script.** A separate color-coded PDF now provides one natural presentation script for the entire Business Overview, including direct explanations, examples, and distinctions between related Dashboard metrics.
+
+- **Cleaner new-lead email.** Website valuation notifications now contain only captured valuation information; they no longer show an empty customer-email placeholder.
+
+- **Clear Inventory Overview coaching.** The demo script now explains the difference between money in unsold cars, average age of current stock, and the 90-day slow-stock warning with a practical scenario.
+
+- **Owner-managed new-lead email.** A verified website lead is stored first, then sent through server-only Gmail SMTP to the current Notify email in Settings. Super Admin can save a new recipient and use **Send test email** to validate the currently saved destination.
+
+- **Attributed follow-up history.** Saving a Follow-up note keeps the latest note in the customer record and preserves the saved version in Activity with its timestamp plus the authenticated CSR, Purchaser, or Super Admin name and role. Status updates receive the same attribution.
+
+- **Lead Detail & Incomplete Form Workspace Alignment (Email Removal & Space Balance).** Redesigned customer record workspaces (`/admin/leads/[id]` and `/admin/incomplete/[id]`):
+  - Aligned strictly with the CarVibe brand theme: deep frosted black backgrounds, hairline borders, and warm gold accents.
+  - Completely removed email field from Customer Contact card across all lead workspaces.
+  - Replaced 2-column contact cards with balanced, compact direct phone sections featuring a 1-click clipboard Copy button (`Copied ✓`) and direct WhatsApp and Call buttons, eliminating awkward empty spaces.
+  - Aligned the Incomplete Valuation (`PartialLeadDetail`) screen with the same unified 2-column layout (Captured details + Contact + Timeline on left; Assigned team + Follow-up/Conversion/Actions on right).
+  - Preserved 100% of functional requirements, form state, validations, and API integrations with zero logic changes.
+  - Modularized components (`PartialLeadCapturedCard.tsx`, `PartialLeadActivityCard.tsx`, `PartialLeadConversionFields.tsx`, `LeadContactCard.tsx`) keeping all files strictly under the 500-line limit mandated by Rule 1.
+
+- **Assigned-team follow-up notes.** Call Centre staff and Purchasers can read the Notes field for leads assigned to them, so the latest call outcome and next action survive the workflow handoff. Server-side row scoping still prevents access to another staff member's lead.
+
+- **Focused lead activity history.** The lead detail Activity card now shows the five newest events first. When older activity exists, `See full details` opens the complete newest-first timeline in a contained, scrollable dialog that keeps approximately ten rows visible at once.
+
+- **Simple, fair Dashboard comparisons.** The dashboard now starts with plain choices: Previous Period, Same Time Last Year, or an optional custom earlier period. Dates are calculated automatically to the same length as the primary Dashboard selection. Changing the primary date filter clears the old comparison, preventing misleading one-day-versus-month results.
+
+- **Distinct Lead Pipeline dashboard card.** Replaced the duplicated Follow-up Status card with New Leads, Contacted, Inspection Scheduled, Under Negotiation, and Deals. Each stage now opens the Leads Directory with that stage selected, while Needs Attention remains the dedicated urgent-action list.
+
+- **Super Admin Commission multi-select.** Commission now opens with All selected. The checkbox filter can show any combination of Agents, Purchasers, and Developer statements. Mixed staff rows visibly state their role and rate, while Pay always uses the selected staff member's stored role instead of the current filter.
+
+- **Correct live-week Overview filter.** Selecting This Week now passes the actual UAE seven-day range to the dashboard instead of retaining the Today range behind a This Week label.
+
+- **Frosted Pitch-Black Glassmorphism Topbar & Navigation.** Replaced the admin Topbar and Sidebar styling with a deep, pitch-black frosted glass aesthetic (`bg-black/85 backdrop-blur-2xl backdrop-saturate-150 border-b border-white/[0.08] shadow-[0_4px_30px_rgba(0,0,0,0.85)]`), frosted ice hairline accents, luxury user profile pill with amber avatar badge, and frosted glass dropdown menu.
+
+- **Dashboard Performance & Lag Elimination.**
+  - Removed GPU-heavy `backdrop-blur-md` from nested `<Card>` components, switching to high-performance deep dark surfaces (`bg-[#0c0c0f] border-white/[0.08]`) that eliminate compositing lag during scrolling.
+  - Implemented an in-memory client cache (`overviewCache` in `use-executive-overview.ts`) for instant, 0ms date range toggling between "Today", "This Week", and "This Month".
+  - Disabled blocking Recharts frame-by-frame SVG animations (`isAnimationActive={false}`) across all 6 dashboard charts for instant rendering.
+  - Aligned initial seed range and date filter state to avoid redundant re-fetches on initial mount.
+
+- **Smoother admin navigation.** Removed the sidebar loading spinner and made prefetched or recently visited admin pages paint immediately from a 30-second client route cache. Server-rendered data then revalidates quietly without blocking navigation; mutations and live refreshes keep their existing behavior.
+
+- **Faster lead activity loading.** Lead detail now loads Activity in parallel with the audit-view write and refreshes only after a newly recorded view. Normal named view events avoid an unnecessary profile lookup.
+
+- **Named lead-view activity.** Every distinct agent or purchaser view is now recorded with the authenticated staff name, role, and timestamp, and appears in the shared Activity timeline. View events are access-controlled and deduplicated per viewer.
+
+- **Duplicate-pair review.** The Duplicate Leads attention view now includes both the flagged repeat submission and its earlier matching submission, with visible labels that explain which is which.
+
+- **Accurate inactive-assignee display.** The read-only Assigned Team card includes inactive staff records and labels them `(inactive)`, so an existing assignment never appears as `Unassigned` just because the staff account was disabled.
+
+- **Read-only lead ownership for Super Admin.** Replaced editable Call Centre and Purchaser assignment dropdowns in completed and incomplete lead detail pages with an always-visible Assigned Team card. It shows the assigned staff member or `Unassigned`; workflow assignment is no longer editable from these detail screens.
+
+- **Operational Alerts & Attention-Focused Navigation UX Overhaul.**
+  - **Clickable Dashboard Panels**: All items in "Needs attention", "Follow-up Status", and "Record Check" (`ExecutivePanels.tsx`) are now interactive clickable links with chevrons, hover effects, and target query parameters (`?attention=...`).
+  - **Dynamic Attention Filters in Leads Directory**: `useLeadsFilter` and `LeadsTable` dynamically filter leads when redirected from dashboard alerts:
+    - `first-contact`: Filters new/pending leads waiting >24h.
+    - `stalled`: Filters open leads with no activity for 3+ days.
+    - `missing-car`: Filters leads submitted without make, model, or year.
+    - `duplicate`: Filters duplicate lead submissions.
+  - **Prominent Attention Filter Banners**: Renders a rich glassmorphic status banner at the top of `/admin/leads`, `/admin/inventory`, `/admin/incomplete`, and `/admin/commission` showing the exact issue, matching count, and a one-click `Clear attention filter ✕` button to restore full views.
+  - **Inventory Aging Deep-Link**: Navigating from "Cars waiting too long" automatically unconstrains month filters and highlights unsold inventory older than 90 days.
+  - **Normal Navigation Preserved**: When entering sections normally via sidebar, attention banners remain hidden and default views are untouched.
+
+- **Clear, non-overlapping follow-up buckets.** Leads waiting for first contact are no longer also counted as needing a later follow-up. The Overview states this directly, and its commission record check only evaluates cars sold during the selected date range.
+
+- **Single-Day / "Today" View Executive 2-Card Layout Upgrade.**
+  - Replaced the single-point Cartesian coordinate charts in `VisitorsChart` and `SubmissionsChart` (which left an empty grid with 1 solitary bar) with an Executive 2-Card Layout that matches `FinancialTrendChart`:
+    - **Website Visitors (`VisitorsChart.tsx`)**: Card 1 displays **Daily Traffic Volume** (Large Cyan session counter, date pill, unique sessions logged) and Card 2 displays **Lead Conversion Rate** (visual progress bar, conversion % badge, inquiries-to-visitors ratio).
+    - **Car Submissions (`SubmissionsChart.tsx`)**: Card 1 displays **New Valuation Inquiries** (Large Amber request counter, date pill, direct seller submissions) and Card 2 displays **Lead Intake Rate** (traffic-to-lead efficiency gauge, active pipeline flow, inquiries count).
+    - Preserves multi-day AreaChart and BarChart representations when selecting multi-day periods.
+
+- **Executive Overview Comparison UI/UX & Visibility Overhaul.**
+  - **Dual-Date Comparison Banner**: Implemented a glassmorphic amber banner in `ExecutiveDashboard` displaying `Active Comparison Mode: Primary Range: [From] → [To] vs Comparison Range: [From] → [To]` with an instant one-click reset (`Clear comparison ✕`).
+  - **Side-by-Side KPI Card Metrics**: Upgraded `ExecutiveKpiCard` to display both primary and prior values (e.g., `AED 345,000` with `Prior: AED 240,000 (+43.8%)`, `AED 26,500` with `Prior: AED 21,500 (+23.3%)`, `3` with `Prior: 2 cars (+50.0%)`, `AED 580` with `Prior: AED 580 (0.0%)`).
+  - **Sales & Profit Dual Comparison Series**: Added `Revenue (Comparison)` in muted slate `#64748B` alongside amber bars and `Gross Profit (Comparison)` as a dashed `#94A3B8` line alongside the emerald profit curve in `FinancialTrendChart`.
+  - **Funnel Paired Series & Legend**: Added explicit period legends and side-by-side comparison bars for the 8-stage conversion funnel in `PipelineFunnelChart`.
+  - **Chart Count Calculation Fixes**: Fixed visitor and lead submission aggregation bugs in `VisitorsChart` and `SubmissionsChart` so primary counters only reflect the selected timeframe while cleanly presenting comparison totals in badges and legends.
+  - **Architecture Rule 1 Compliance**: Modularized `FinancialTrendChart` into `components/admin/FinancialTrendChart.tsx` ensuring all files stay strictly below 500 lines.
+
+- **Full Overview comparison mode.** The selected comparison range now loads its own complete dashboard data. Financial cards retain percentage changes; the Lead Journey uses paired bars, Visitors and Car Submissions show a gray comparison series, and inventory/staff charts show clear comparison totals. Operational alerts remain explicitly scoped to the selected period because they are live-status checks.
+
+- **Plain-language Executive Overview copy.** Replaced technical inventory and performance wording with practical labels and explanations, without changing any calculations or data shown.
+
+- **Executive Dashboard UI/UX & Chart Visibility Overhaul.**
+  - **High-Visibility Gross Profit & Dual Y-Axis**: Enhanced `FinancialTrendChart` with dual Y-axis scaling (Revenue on Left, Gross Profit on Right) and vibrant Emerald styling so gross profit values are prominent and never dwarfed by revenue. Added a Gross Margin % header pill.
+  - **Single-Day / "Today" View Fixes**:
+    - Revenue & Profit: Executive 2-column comparison layout with luxury Amber and glowing Emerald cards, clear values, and margin percentages.
+    - Website Visitors: Replaced 1-point empty AreaChart with a glowing Cyan `#0EA5E9` bar column and top count label.
+    - Car Submissions: Added `maxBarSize={48}` to prevent full-width stretching, with Amber gradient and count badge.
+  - **Intuitive Multi-Color Palette & Legends**:
+    - Progressive 8-stage chromatic conversion funnel (`PipelineFunnelChart`) with retention percentage badges.
+    - Operational urgency inventory aging palette (Emerald, Sky Blue, Amber, Coral Red) with center vehicle counter.
+    - Tri-color staff performance series (Indigo, Amber, Emerald) with role selector dropdown (`All Roles`, `Agents Only`, `Purchasers Only`).
+  - **Tooltip & Axis Contrast Polish**: Fixed low-contrast dark-on-dark text in Recharts tooltips (`Count : X (Y% retention)`) with explicit bright `#F3F4F6` text and pure white labels; boosted axis tick contrast to `#D1D5DB`.
+  - **Cool Glassmorphism Aesthetic**: Removed gold-tinted box-shadows from all cards and `.card-shadow`, replacing them with sleek neutral glass borders (`border-white/10`) and subtle depth (`bg-[#141417]/80 backdrop-blur-md`).
+  - **Natural Typography & Brand Alignment**: Replaced oversized geometric bold fonts that felt like generic AI templates with CarVibe's native `font-sans` (`Manrope`). Decoupled the `AED` currency prefix into a subtle, smaller indicator (`text-xs sm:text-sm font-semibold tracking-wider text-[#a39c90]`), balanced Gross Profit numerals with soft emerald tones while keeping currency prefixes clean, and aligned card labels to Title Case / crisp tracking.
+  - **Executive KPI Cards**: Elevated with luxury icon avatars (Coins, TrendingUp, CarFront, WalletCards), accent colors, margin badges, and clean borders.
+  - **Secondary Cards**: Added icon pills and urgent alert styling for inventory watch (>90 days).
+  - Preserved 100% of existing business logic, calculations, and data endpoints.
+
+- **Executive Overview dashboard.** Rebuilt the owner Overview into a CEO-focused bento dashboard using existing financial, staff, lead, inventory, and event records. Added custom comparison ranges, financial and operational charts, inventory aging, assigned-lead staff performance, alerts, and data-quality summaries.
 - **Disabled Account Security Guard.** Gated `POST /api/admin/login` and `middleware.ts` against disabled staff accounts (`is_active: false`). If an account has been disabled by the owner, any sign-in attempt is rejected with HTTP 403 status and displays an explicit alert message: `"Your account has been disabled by the owner."` Any active session for a disabled account is immediately terminated and redirected to the login screen.
 - **Agent & Purchaser Lead Assignment Fix.** Fixed staff ID resolution in `lib/admin/leads-store.tsx` so Agent 1 (oldest account in line) and subsequent round-robin assigned agents/purchasers immediately see their assigned customer leads on their dashboard across all environments.
 - **Dynamic Role Header Tag.** Updated topbar header next to logo to display the exact role title: `| Call Center Agent`, `| Purchaser`, or `| Super Admin`.
@@ -14,7 +129,7 @@ Use reverse chronological order.
   - **Purchaser**: Leads, Inventory, Commission, Settings.
 - **Personal "My Commission" View.** Agents and Purchasers see a personal "My Commission" screen listing their own closed deals, total profit, 2%/10% commission earnings, and downloadable PDF invoice statement (`carvibedubai.pdf`). Super Admin maintains full multi-tab management view across all staff and developer statements.
 - **Overview Historical Backlog & Time-Machine Date Filtering.** Allows administrators to backlog and backtrack all metrics across any timeframe (Year, Month, and Week/Day ranges e.g. Days 1–7):
-  - Fast presets: `This Week` (default 7-day view), `Today`, `This Month`, `Last Month`, `All Time`, and `Custom Backlog`.
+  - Fast presets: `Today` (default view), `This Week`, `This Month`, `Last Month`, `All Time`, and `Custom Backlog`.
   - Backlog drilldown: Year selector (2024+), Month selector (January–December or Full Year), and Week/Day range selector (Days 1–7, 8–14, 15–21, 22–28, 29–end, or custom Day X to Y).
   - Pipeline stage counters (New, Pending, Contacted, Inspection Scheduled, Inspected, Under Negotiation, Deal, Not Purchased) and engagement metrics (Message Us clicks, Call Now clicks, Incomplete forms, and Visitors) recalculate to match the selected historical window.
   - Interactive charts (`Website Visitors` AreaChart and `Car Submissions` BarChart) plot daily data points across the exact selected range.
@@ -159,3 +274,32 @@ Use reverse chronological order.
   not touch non-demo leads, and both controls disappear permanently after a
   successful delete. Added migration `0020_demo_lead_runs.sql` for the
   server-side one-time state.
+
+## 2026-09-10 Overview comparison clarity
+
+- Dashboard comparison charts now explain the exact date pair on hover (for
+  example, selected 08 Sept versus earlier 01 Sept) and group values into
+  clear Selected and Earlier sections. Chart legends use the actual earlier
+  date range, and the duplicate unlabeled profit legend entry was removed.
+
+## 2026-09-10 Incomplete-form recovery handoff
+
+- Incomplete forms now go to Call Centre first, not Purchasers. A CSR must
+  complete and confirm details before converting a capture into a real Lead.
+- **Convert to Lead & Schedule Inspection** creates the real lead, records the
+  booking, retains the CSR owner, and server-assigns an active Purchaser.
+- Detail/list/API access now prevents Purchasers from seeing unverified
+  incomplete forms. Assignment is recorded in the partial activity timeline.
+- Added migration `0026_partial_lead_csr_handoff.sql` for status compatibility,
+  automatic CSR assignment, and service-role-only function access.
+- CSR conversion now uses dependent Make, Model, optional Trim, and Emirate
+  dropdowns fed by the live Vehicle Catalog. The server rejects an invalid
+  Make/Model combination even if a request is manually crafted.
+
+## 2026-09-10 Demo script
+
+- Added a simplified Incomplete Forms explanation and an easy-to-present CSR
+  confirmation and Purchaser handoff scenario to the admin demo PDF.
+- **Super Admin lead reassignment.** Added secure owner dropdowns and required reason capture on lead details. Reassignments are recorded in Activity and do not change future round-robin order.
+- **Call Centre Agent Manual.** Added a simple operations manual covering only the current agent workflow, allowed statuses, incomplete-form conversion, inspection handoff, notes, Activity, permissions, and daily checklist.
+- **Purchaser Manual.** Added a plain-language manual based on the existing Purchaser workflow: inspection handoff, assigned leads, allowed statuses, Deal requirements, Inventory, notes/activity, commission, limitations, and daily checklist.
