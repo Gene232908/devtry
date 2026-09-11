@@ -4,6 +4,7 @@ import { normalizeWhatsappPhone } from "@/lib/whatsapp/phone";
 import { readOtpProof } from "@/lib/whatsapp/otp-proof";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { pickNextAssignee } from "@/lib/server/lead-assignment";
+import { sendNewLeadNotification } from "@/lib/server/lead-notifications";
 
 // Flags a lead as duplicate if the same verified phone submitted within this window.
 const DUPLICATE_WINDOW_DAYS = 30;
@@ -132,7 +133,7 @@ export async function POST(req: NextRequest) {
     call_center_id: callCenterId,
   };
 
-  const { data, error } = await supabase.from("leads").insert(insertRow).select("id").single();
+  const { data, error } = await supabase.from("leads").insert(insertRow).select("id, created_at").single();
 
   if (error || !data) {
     return err("server_error", "Couldn't submit your details. Please try again.", 500);
@@ -165,6 +166,41 @@ export async function POST(req: NextRequest) {
     });
   } catch {
     // non-fatal
+  }
+
+  // The recipient is read from Settings for every submission, rather than from
+  // an environment variable or hard-coded address. An owner can therefore save
+  // a new Notify email and the very next lead goes to the new destination.
+  // Email is deliberately after the database write: an SMTP outage must never
+  // make a real customer think their valuation request was lost.
+  try {
+    const { data: settings, error: settingsError } = await supabase
+      .from("settings")
+      .select("notify_email")
+      .eq("id", 1)
+      .maybeSingle();
+    const recipient = typeof settings?.notify_email === "string" ? settings.notify_email.trim() : "";
+
+    if (!settingsError && recipient) {
+      await sendNewLeadNotification(recipient, {
+        id: data.id,
+        fullName: v.fullName,
+        phoneE164: phone,
+        email: v.email && v.email.length > 0 ? v.email : null,
+        make: v.make,
+        model: v.model,
+        trim: v.trim || null,
+        year: Number(v.year),
+        mileageKm: Number(v.mileageKm),
+        emirate: v.location,
+        createdAt: data.created_at,
+      });
+    }
+  } catch (notificationError) {
+    // Do not expose mail provider details or customer data to the public form.
+    // The lead is already stored; this server-side log makes delivery failures
+    // observable without converting them into lost customer submissions.
+    console.error("[POST /api/leads] New-lead notification failed:", notificationError instanceof Error ? notificationError.message : "unknown error");
   }
 
   return NextResponse.json({ ok: true, data: { id: data.id } });

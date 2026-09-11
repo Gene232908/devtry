@@ -5,6 +5,7 @@ import { hashIp } from "@/lib/whatsapp/otp-hash";
 import { getClientIp } from "@/lib/server/ip";
 import { isRateLimited } from "@/lib/rate-limit";
 import { hasOpenLead } from "@/lib/server/enquiry";
+import { pickNextAssignee } from "@/lib/server/lead-assignment";
 
 // Captures a valuation form that was started but never submitted, so a visitor
 // who types their name and number and then leaves is still reachable.
@@ -85,6 +86,10 @@ export async function POST(req: NextRequest) {
   if (await hasOpenLead(getSupabaseAdmin(), phone)) return ok(false);
 
   const step = int(body.furthestStep) ?? 1;
+  // An incomplete form is a CSR recovery task first. It is intentionally not
+  // handed to Purchasers until a CSR has confirmed the person and booked an
+  // inspection, at which point it becomes a real lead.
+  const callCenterId = await pickNextAssignee("call_center", "partial_leads");
 
   try {
     const { error } = await getSupabaseAdmin().rpc("capture_partial_lead", {
@@ -99,6 +104,7 @@ export async function POST(req: NextRequest) {
       p_year: int(body.year),
       p_mileage_km: int(body.mileageKm),
       p_description: str(body.description),
+      p_call_center_id: callCenterId,
     });
     if (error) return ok(false);
   } catch {

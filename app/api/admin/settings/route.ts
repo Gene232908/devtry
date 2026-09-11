@@ -32,8 +32,13 @@ export async function GET() {
     return NextResponse.json({ ok: false, error: { message: "Database is not configured." } }, { status: 503 });
   }
 
-  // Reading is staff-wide in RLS (settings_staff_select), and middleware has
-  // already established that the caller is signed-in staff.
+  const auth = await requireAdmin();
+  if (!auth.ok) {
+    return NextResponse.json({ ok: false, error: { message: auth.message } }, { status: auth.status });
+  }
+
+  // This route reads with service-role access, so it must enforce the same
+  // owner-only boundary as the Settings page rather than relying on RLS.
   const supabase = getSupabaseAdmin();
   const [settingsRes, profilesRes] = await Promise.all([
     supabase.from("settings").select(SETTINGS_COLUMNS).eq("id", 1).single(),

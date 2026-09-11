@@ -118,6 +118,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const update: Record<string, unknown> = {};
   const events: LeadEventInsert[] = [];
+  const eventMeta = (meta: Record<string, unknown>) => ({
+    ...meta,
+    actor_name: auth.identity.displayName,
+    actor_role: auth.identity.role,
+  });
 
   // Checked before the deal branch below, so an agent cannot reach
   // record_lead_deal() — and a purchaser cannot walk a lead back to "contacted".
@@ -170,9 +175,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 
     if (current.status !== "deal") {
-      events.push({ lead_id: id, type: "status_change", meta: { from: current.status, to: "deal" } });
+      events.push({ lead_id: id, type: "status_change", meta: eventMeta({ from: current.status, to: "deal" }) });
     }
-    events.push({ lead_id: id, type: "car_purchased", meta: { purchase_price_aed: price } });
+    events.push({ lead_id: id, type: "car_purchased", meta: eventMeta({ purchase_price_aed: price }) });
   } else if (typeof body.status === "string") {
     if (!STATUSES.has(body.status)) {
       return NextResponse.json({ ok: false, error: { message: "Invalid status." } }, { status: 400 });
@@ -219,7 +224,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     if (body.status !== current.status) {
       update.status = body.status;
-      events.push({ lead_id: id, type: "status_change", meta: { from: current.status, to: body.status } });
+      events.push({ lead_id: id, type: "status_change", meta: eventMeta({ from: current.status, to: body.status }) });
     }
   }
 
@@ -255,20 +260,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ ok: false, error: { message: "Invalid value." } }, { status: 400 });
     }
     update.estimated_value_aed = value;
-    events.push({ lead_id: id, type: "value_updated", meta: { value } });
+    events.push({ lead_id: id, type: "value_updated", meta: eventMeta({ value }) });
   }
 
   if (typeof body.notes === "string" && body.notes !== (current.notes ?? "")) {
     update.notes = body.notes;
-    events.push({ lead_id: id, type: "note_updated", meta: {} });
+    events.push({ lead_id: id, type: "note_updated", meta: eventMeta({ note: body.notes }) });
   }
 
   if (typeof body.is_spam === "boolean" && body.is_spam !== current.is_spam) {
     update.is_spam = body.is_spam;
-    events.push({ lead_id: id, type: "marked_spam", meta: { is_spam: body.is_spam } });
+    events.push({ lead_id: id, type: "marked_spam", meta: eventMeta({ is_spam: body.is_spam }) });
     if (body.is_spam && current.status !== "closed") {
       update.status = "closed";
-      events.push({ lead_id: id, type: "status_change", meta: { from: current.status, to: "closed" } });
+      events.push({ lead_id: id, type: "status_change", meta: eventMeta({ from: current.status, to: "closed" }) });
     }
   }
 
@@ -308,7 +313,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         events.push({
           lead_id: id,
           type: "assigned",
-          meta: { purchaser_id: purchaserId, reason: "inspection_scheduled" },
+          meta: eventMeta({ purchaser_id: purchaserId, reason: "inspection_scheduled" }),
         });
       }
     }
@@ -339,10 +344,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   if (events.length > 0) {
-    try {
-      await supabase.from("lead_events").insert(events);
-    } catch {
-      // non-fatal: the update itself succeeded
+    const { error: eventError } = await supabase
+      .from("lead_events")
+      .insert(events.map((event) => ({ ...event, actor: userId })));
+    if (eventError) {
+      // The lead update has already succeeded. Keep that success truthful for
+      // the person saving, but make an audit-write failure visible to operators
+      // instead of silently dropping the history entry.
+      console.error("[PATCH /api/leads/[id]] Activity record failed:", eventError);
     }
   }
 

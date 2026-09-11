@@ -4,6 +4,8 @@ import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { blockedByPreview } from "@/lib/admin/preview-guard";
 import { fetchBlockedNumbers } from "@/lib/admin/queries";
 import { requireAdmin } from "@/lib/server/require-admin";
+import { requireStaff } from "@/lib/server/require-staff";
+import { hasCapability } from "@/lib/auth/permissions";
 
 // Admin-only (gated by middleware.ts). Manages the hard blocklist that
 // /api/otp/send checks before sending anything, so a blocked number can never
@@ -22,6 +24,13 @@ function bad(message: string, status = 400) {
 // over HTTP. Unchanged for callers; still the path used by Refresh and by every
 // block/unblock action that reloads the list afterwards.
 export async function GET() {
+  const auth = await requireStaff();
+  if (!auth.ok) return bad(auth.message, auth.status);
+
+  if (!hasCapability(auth.identity, "viewBlockedNumbers")) {
+    return bad("Not authorized to view blocked numbers.", 403);
+  }
+
   const result = await fetchBlockedNumbers();
   if (!result.ok) return bad(result.message, result.status);
 

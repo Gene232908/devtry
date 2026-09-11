@@ -24,13 +24,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const { callCenterId, purchaserId } = body as { callCenterId?: string | null; purchaserId?: string | null };
 
+  // A partial form is recovery work for Call Centre only. A Purchaser is
+  // assigned later, when the CSR confirms the details and converts it into an
+  // inspection-scheduled real lead.
+  if (purchaserId !== undefined && purchaserId !== null && purchaserId !== "") {
+    return NextResponse.json({ ok: false, error: { message: "Purchasers are assigned only after an incomplete form becomes a real lead." } }, { status: 400 });
+  }
+
   const supabase = getSupabaseAdmin();
 
   // Validate that the assigned staff members are actually active and have the correct role
-  if (callCenterId || purchaserId) {
+  if (callCenterId) {
     const ids = [];
     if (callCenterId) ids.push(callCenterId);
-    if (purchaserId) ids.push(purchaserId);
 
     const { data: staffProfiles, error: staffError } = await supabase
       .from("profiles")
@@ -47,12 +53,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         return NextResponse.json({ ok: false, error: { message: "Invalid call center assignee." } }, { status: 400 });
       }
     }
-    if (purchaserId) {
-      const p = profiles.get(purchaserId);
-      if (!p || p.role !== "purchaser" || !p.is_active) {
-        return NextResponse.json({ ok: false, error: { message: "Invalid purchaser assignee." } }, { status: 400 });
-      }
-    }
   }
 
   // Update partial lead
@@ -60,7 +60,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     .from("partial_leads")
     .update({
       call_center_id: callCenterId || null,
-      purchaser_id: purchaserId || null,
+      purchaser_id: null,
     })
     .eq("id", params.id);
 
@@ -70,7 +70,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   await supabase.from("partial_lead_events").insert({
     partial_lead_id: params.id,
     type: "assigned",
-    meta: { call_center_id: callCenterId || null, purchaser_id: purchaserId || null },
+    meta: { call_center_id: callCenterId || null },
   });
 
   return NextResponse.json({ ok: true });
