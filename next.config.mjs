@@ -71,12 +71,13 @@ const nextConfig = {
     // once immediately afterwards — which doubled the cost of every sidebar
     // click and is what made the dashboard feel slow.
     //
-    // Setting this to 0 fixes the same staleness at the source: a navigation to
-    // a dynamic route always asks the server, so what arrives is already
-    // current and there is nothing left for a follow-up refresh to correct.
-    // One render per click instead of two.
+    // Keep prefetched and recently visited admin routes in the client Router
+    // Cache for 30 seconds. Sidebar links are prefetched, so their ready RSC
+    // payload can paint immediately instead of waiting for the UAE-to-Tokyo
+    // database round trip after every click. Mutations still call
+    // router.refresh(), and mounted data screens revalidate quietly below.
     staleTimes: {
-      dynamic: 0,
+      dynamic: 30,
       // Static routes (the public marketing pages) keep Next's default. They
       // have no per-request data and re-fetching them buys nothing.
       static: 300,
