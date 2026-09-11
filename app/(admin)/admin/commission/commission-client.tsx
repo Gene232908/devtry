@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { CheckCircle2, ChevronDown, Download, Eye, RefreshCw } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { CheckCircle2, Download, Eye, RefreshCw, ShieldAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -20,28 +21,13 @@ import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 import { demoCommissionStatements } from "@/config/demo-admin-data";
 
 import { useStaffIdentity } from "@/lib/admin/staff-identity-context";
+import {
+  COMMISSION_SCOPES,
+  CommissionScopeFilter,
+  type CommissionScope,
+} from "@/components/admin/CommissionScopeFilter";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
-
-type CommissionTab = "agents" | "purchasers" | "developer";
-
-const TAB_LABELS: Record<CommissionTab, string> = {
-  agents: "Agents",
-  purchasers: "Purchasers",
-  developer: "Developer",
-};
-
-const PAGE_TITLES: Record<CommissionTab, string> = {
-  agents: "Agent Commission",
-  purchasers: "Purchaser Commission",
-  developer: "Developer Commission",
-};
-
-const PAGE_DESCRIPTIONS: Record<CommissionTab, string> = {
-  agents: "Commission earned by call center agents for deals closed with customers (2% of profit per car).",
-  purchasers: "Commission earned by purchasers for deals closed with customers (10% of profit per car).",
-  developer: "Developer commission earned on all sold vehicles (2% of profit per car).",
-};
 
 // ─── Demo data for preview mode ─────────────────────────────────────────────
 
@@ -110,8 +96,9 @@ export default function CommissionClient({
   useFreshServerData();
   const identity = useStaffIdentity();
 
-  const [activeTab, setActiveTab] = useState<CommissionTab>("agents");
-  const [tabMenuOpen, setTabMenuOpen] = useState(false);
+  // Super Admin sees every commission category by default. This is a display
+  // filter only; authorization and payment remain enforced by server routes.
+  const [selectedScopes, setSelectedScopes] = useState<CommissionScope[]>([...COMMISSION_SCOPES]);
 
   // Agent/Purchaser commission data.
   //
@@ -133,11 +120,16 @@ export default function CommissionClient({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(initialError);
 
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const attention = searchParams.get("attention");
+  const isMissingCommission = attention === "missing-commission";
+
   // Detail view
   const [detailTarget, setDetailTarget] = useState<StaffCommission | null>(null);
 
   // Pay confirmation
-  const [payTarget, setPayTarget] = useState<{ staff: StaffCommission; tab: CommissionTab } | null>(null);
+  const [payTarget, setPayTarget] = useState<StaffCommission | null>(null);
   const [payBusy, setPayBusy] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
 
@@ -203,12 +195,12 @@ export default function CommissionClient({
       const now = new Date().toISOString();
       const updateFn = (prev: StaffCommission[]) =>
         prev.map((s) =>
-          s.id === payTarget.staff.id
+          s.id === payTarget.id
             ? { ...s, isPaidThisMonth: true, paidAt: now, totalCarsSold: 0, totalProfit: 0, totalCommission: 0 }
             : s,
         );
 
-      if (payTarget.tab === "agents") setAgents(updateFn);
+      if (payTarget.role === "call_center") setAgents(updateFn);
       else setPurchasers(updateFn);
 
       setPayBusy(false);
@@ -220,7 +212,7 @@ export default function CommissionClient({
       const res = await fetch("/api/admin/commission/staff/pay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ staffId: payTarget.staff.id }),
+        body: JSON.stringify({ staffId: payTarget.id }),
       });
       const body = await res.json();
       if (!res.ok || !body.ok) {
@@ -291,8 +283,18 @@ export default function CommissionClient({
 
   // ─── Computed summaries ───────────────────────────────────────────────────
 
-  const agentOutstanding = agents.reduce((n, a) => n + a.totalCommission, 0);
-  const purchaserOutstanding = purchasers.reduce((n, a) => n + a.totalCommission, 0);
+  const selectedStaff = useMemo(() => {
+    const rows: StaffCommission[] = [];
+    if (selectedScopes.includes("agents")) rows.push(...agents);
+    if (selectedScopes.includes("purchasers")) rows.push(...purchasers);
+    return rows;
+  }, [agents, purchasers, selectedScopes]);
+  const selectedStaffOutstanding = useMemo(
+    () => selectedStaff.reduce((total, staff) => total + staff.totalCommission, 0),
+    [selectedStaff],
+  );
+  const showsStaffCommission = selectedScopes.some((scope) => scope !== "developer");
+  const showsDeveloperCommission = selectedScopes.includes("developer");
 
   // Staff self-view filtering
   const myAgentList = useMemo(() => {
@@ -311,15 +313,13 @@ export default function CommissionClient({
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
-  const pageTitle = isStaffSelfViewer
-    ? "My Commission"
-    : PAGE_TITLES[activeTab];
+  const pageTitle = isStaffSelfViewer ? "My Commission" : "Commission";
 
   const pageDesc = isAgentViewer
     ? "Track your earnings and download statement invoices for your closed deals (2% of profit per car)."
     : isPurchaserViewer
     ? "Track your earnings and download statement invoices for your closed deals (10% of profit per car)."
-    : PAGE_DESCRIPTIONS[activeTab];
+    : "Review agent, purchaser, and developer commission in one place.";
 
   return (
     <div className="flex flex-col gap-6">
@@ -329,39 +329,41 @@ export default function CommissionClient({
           <p className="mt-1 text-fluid--1 text-text-muted">{pageDesc}</p>
         </div>
 
-        {/* Tab selector (Super Admin only) */}
+        {/* Multi-select role filter (Super Admin only). */}
         {!isStaffSelfViewer && (
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setTabMenuOpen((o) => !o)}
-              className="flex items-center gap-2 rounded-card border border-border bg-surface-2 px-4 py-2.5 text-fluid--1 text-text hover:bg-surface-2/80 transition-colors"
-            >
-              {TAB_LABELS[activeTab]}
-              <ChevronDown className="h-4 w-4 text-text-muted" />
-            </button>
-            {tabMenuOpen && (
-              <div className="absolute right-0 z-20 mt-1 w-44 rounded-card border border-border bg-surface py-1 card-shadow animate-fade-in">
-                {(Object.keys(TAB_LABELS) as CommissionTab[]).map((tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => {
-                      setActiveTab(tab);
-                      setTabMenuOpen(false);
-                    }}
-                    className={`block w-full px-4 py-2 text-left text-fluid--1 transition-colors ${
-                      activeTab === tab ? "bg-gold/10 text-gold" : "text-text hover:bg-surface-2"
-                    }`}
-                  >
-                    {TAB_LABELS[tab]}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <CommissionScopeFilter selected={selectedScopes} onChange={setSelectedScopes} />
         )}
       </div>
+
+      {isMissingCommission && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-amber-500/40 bg-amber-500/20 text-amber-400">
+              <ShieldAlert className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+                  Record Check Active
+                </span>
+              </div>
+              <p className="text-sm font-semibold text-white mt-0.5">
+                Sold Cars Missing Commission Check
+              </p>
+              <p className="text-xs text-gray-300">
+                Auditing completed vehicle sales to ensure all staff and developer commission payouts have been calculated and logged.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => router.replace("/admin/commission")}
+            className="flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-white/20"
+          >
+            <X className="h-3.5 w-3.5" />
+            Clear attention banner
+          </button>
+        </div>
+      )}
 
       {error && (
         <p className="text-fluid--1 text-danger" role="alert">
@@ -374,7 +376,7 @@ export default function CommissionClient({
         <StaffCommissionView
           totalOutstanding={myAgentList.reduce((n, a) => n + a.totalCommission, 0)}
           staffList={myAgentList}
-          tab="agents"
+          emptyLabel="agents"
           isStaffSelf={true}
           onViewDetails={setDetailTarget}
           onMarkPaid={() => {}}
@@ -385,7 +387,7 @@ export default function CommissionClient({
         <StaffCommissionView
           totalOutstanding={myPurchaserList.reduce((n, a) => n + a.totalCommission, 0)}
           staffList={myPurchaserList}
-          tab="purchasers"
+          emptyLabel="purchasers"
           isStaffSelf={true}
           onViewDetails={setDetailTarget}
           onMarkPaid={() => {}}
@@ -393,33 +395,20 @@ export default function CommissionClient({
       )}
 
       {/* ─── Super Admin Multi-Tab View ─────────────────────────────────── */}
-      {!isStaffSelfViewer && activeTab === "agents" && (
+      {!isStaffSelfViewer && showsStaffCommission && (
         <StaffCommissionView
-          totalOutstanding={agentOutstanding}
-          staffList={agents}
-          tab="agents"
+          totalOutstanding={selectedStaffOutstanding}
+          staffList={selectedStaff}
+          emptyLabel="selected staff"
           onViewDetails={setDetailTarget}
           onMarkPaid={(staff) => {
             setPayError(null);
-            setPayTarget({ staff, tab: "agents" });
+            setPayTarget(staff);
           }}
         />
       )}
 
-      {!isStaffSelfViewer && activeTab === "purchasers" && (
-        <StaffCommissionView
-          totalOutstanding={purchaserOutstanding}
-          staffList={purchasers}
-          tab="purchasers"
-          onViewDetails={setDetailTarget}
-          onMarkPaid={(staff) => {
-            setPayError(null);
-            setPayTarget({ staff, tab: "purchasers" });
-          }}
-        />
-      )}
-
-      {!isStaffSelfViewer && activeTab === "developer" && (
+      {!isStaffSelfViewer && showsDeveloperCommission && (
         <DeveloperCommissionView
           outstanding={devOutstanding}
           paidToDate={devPaid}
@@ -432,12 +421,21 @@ export default function CommissionClient({
         />
       )}
 
+      {!isStaffSelfViewer && selectedScopes.length === 0 && (
+        <Card className="p-8 text-center">
+          <p className="text-fluid-0 text-text">Choose at least one commission category.</p>
+          <p className="mt-1 text-fluid--1 text-text-muted">
+            Open the filter above and select Agents, Purchasers, Developer, or All.
+          </p>
+        </Card>
+      )}
+
       <div>
         <Button
           variant="outline"
           onClick={() => {
-            if (activeTab === "developer") void loadDeveloperStatements();
-            else void loadStaffCommission();
+            if (showsStaffCommission) void loadStaffCommission();
+            if (showsDeveloperCommission) void loadDeveloperStatements();
           }}
         >
           <RefreshCw className="h-4 w-4" /> Refresh
@@ -452,7 +450,7 @@ export default function CommissionClient({
           onClose={() => setDetailTarget(null)}
           onMarkPaid={() => {
             setPayError(null);
-            setPayTarget({ staff: detailTarget, tab: activeTab as "agents" | "purchasers" });
+            setPayTarget(detailTarget);
           }}
         />
       )}
@@ -464,8 +462,8 @@ export default function CommissionClient({
         description={
           payTarget ? (
             <>
-              This will mark <span className="text-text">{payTarget.staff.displayName}</span>&apos;s commission of{" "}
-              <span className="text-gold">{formatAed(payTarget.staff.totalCommission)}</span> as paid for this month.
+              This will mark <span className="text-text">{payTarget.displayName}</span>&apos;s commission of{" "}
+              <span className="text-gold">{formatAed(payTarget.totalCommission)}</span> as paid for this month.
               Their totals will reset to 0 for the next period.
             </>
           ) : null
@@ -516,14 +514,14 @@ export default function CommissionClient({
 function StaffCommissionView({
   totalOutstanding,
   staffList,
-  tab,
+  emptyLabel,
   isStaffSelf,
   onViewDetails,
   onMarkPaid,
 }: {
   totalOutstanding: number;
   staffList: StaffCommission[];
-  tab: CommissionTab;
+  emptyLabel: string;
   isStaffSelf?: boolean;
   onViewDetails: (staff: StaffCommission) => void;
   onMarkPaid: (staff: StaffCommission) => void;
@@ -552,7 +550,7 @@ function StaffCommissionView({
 
       {staffList.length === 0 ? (
         <Card className="p-8 text-center">
-          <p className="text-fluid-0 text-text">No {tab} found.</p>
+          <p className="text-fluid-0 text-text">No {emptyLabel} found.</p>
           <p className="mt-1 text-fluid--1 text-text-muted">
             Commission data will appear once staff are assigned and cars are sold.
           </p>
@@ -571,26 +569,31 @@ function StaffCommissionView({
             <table className="w-full min-w-[640px] table-fixed text-left text-fluid--1">
               <thead>
                 <tr className="border-b border-border text-text-faint">
-                  <th className="w-[20%] py-2 pr-4 font-normal">Name</th>
-                  <th className="w-[12%] py-2 pr-4 text-right font-normal">Cars Sold</th>
-                  <th className="w-[16%] py-2 pr-4 text-right font-normal">Total Profit</th>
+                  <th className="w-[22%] py-2 pr-4 font-normal">Name</th>
+                  <th className="w-[11%] py-2 pr-4 text-right font-normal">Cars Sold</th>
+                  <th className="w-[15%] py-2 pr-4 text-right font-normal">Total Profit</th>
                   {/* Extra right padding (pr-8, not pr-4) on purpose: this
                       column is right-aligned and the next one is left-aligned,
                       so their content would otherwise sit directly against
                       each other with nothing but the column boundary between
                       "AED 400" and "Unpaid". The padding pulls the number back
                       from that boundary to open up real breathing room. */}
-                  <th className="w-[18%] py-2 pr-8 text-right font-normal">
-                    Commission ({tab === "agents" ? "2%" : "10%"})
-                  </th>
-                  <th className="w-[12%] py-2 pr-4 font-normal">Status</th>
+                  <th className="w-[17%] py-2 pr-8 text-right font-normal">Commission</th>
+                  <th className="w-[13%] py-2 pr-4 font-normal">Status</th>
                   <th className="w-[22%] py-2 pr-1 font-normal"></th>
                 </tr>
               </thead>
               <tbody>
                 {staffList.map((staff) => (
                   <tr key={staff.id} className="border-b border-border last:border-0">
-                    <td className="py-3 pr-4 text-text font-medium">{staff.displayName}</td>
+                    <td className="py-3 pr-4">
+                      <p className="font-medium text-text">{staff.displayName}</p>
+                      {!isStaffSelf && (
+                        <p className="mt-0.5 text-[0.72rem] text-text-faint">
+                          {staff.role === "call_center" ? "Agent (2%)" : "Purchaser (10%)"}
+                        </p>
+                      )}
+                    </td>
                     <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{staff.totalCarsSold}</td>
                     <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{formatAed(staff.totalProfit)}</td>
                     <td className="py-3 pr-8 text-right tabular-nums text-gold">{formatAed(staff.totalCommission)}</td>

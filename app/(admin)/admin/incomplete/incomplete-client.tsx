@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Ban, Trash2 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Ban, Trash2, UsersRound, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatusPill } from "@/components/ui/Pill";
@@ -42,6 +43,11 @@ export default function IncompleteValuationsClient({
   // existed — which is exactly what happened: an empty table while two forms
   // sat in the database.
   useFreshServerData();
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const attention = searchParams.get("attention");
+  const isAttention = attention === "incomplete";
 
   const [rows, setRows] = useServerState<PartialLead[]>(initialRows);
   const [error, setError] = useState<string | null>(initialError);
@@ -121,6 +127,39 @@ export default function IncompleteValuationsClient({
         <p className="text-fluid--1 text-danger" role="alert">
           {error}
         </p>
+      )}
+
+      {isAttention && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-amber-500/40 bg-amber-500/20 text-amber-400">
+              <UsersRound className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+                  Follow-up Action Active
+                </span>
+                <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold text-white">
+                  {rows.length} {rows.length === 1 ? "form" : "forms"} found
+                </span>
+              </div>
+              <p className="text-sm font-semibold text-white mt-0.5">
+                Incomplete Valuation Forms
+              </p>
+              <p className="text-xs text-gray-300">
+                People who started the valuation form but did not finish it. Contact them to recover the lead.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => router.replace("/admin/incomplete")}
+            className="flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-white/20"
+          >
+            <X className="h-3.5 w-3.5" />
+            Clear attention banner
+          </button>
+        </div>
       )}
 
       {rows.length === 0 ? (
