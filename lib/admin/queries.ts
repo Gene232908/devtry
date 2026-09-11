@@ -307,6 +307,10 @@ export async function fetchInventory(leadId?: string | null): Promise<QueryResul
 export async function fetchPartialLeads(identity?: { role: string; userId: string }): Promise<QueryResult<{ partialLeads: PartialLead[] }>> {
   if (!isSupabaseConfigured()) return NOT_CONFIGURED;
 
+  // Purchasers only receive real leads after a CSR confirms the customer and
+  // books an inspection. An incomplete form is unverified recovery work.
+  if (identity?.role === "purchaser") return { ok: true, data: { partialLeads: [] } };
+
   let query = getSupabaseAdmin()
     .from("partial_leads")
     .select(PARTIAL_LEAD_COLUMNS)
@@ -317,8 +321,6 @@ export async function fetchPartialLeads(identity?: { role: string; userId: strin
 
   if (identity?.role === "call_center") {
     query = query.eq("call_center_id", identity.userId);
-  } else if (identity?.role === "purchaser") {
-    query = query.eq("purchaser_id", identity.userId);
   }
 
   const { data, error } = await query.order("created_at", { ascending: false });
@@ -329,21 +331,28 @@ export async function fetchPartialLeads(identity?: { role: string; userId: strin
 }
 
 /** Single incomplete valuation form with activities. */
-export async function fetchPartialLead(id: string): Promise<QueryResult<{ partialLead: PartialLead }>> {
+export async function fetchPartialLead(
+  id: string,
+  identity?: { role: string; userId: string },
+): Promise<QueryResult<{ partialLead: PartialLead }>> {
   if (!isSupabaseConfigured()) return NOT_CONFIGURED;
+  if (identity?.role === "purchaser") return { ok: false, message: "Not found.", status: 404 };
 
   const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase
+  let query = supabase
     .from("partial_leads")
     .select(PARTIAL_LEAD_COLUMNS)
     .eq("id", id)
-    .is("converted_lead_id", null)
-    .maybeSingle();
+    .is("converted_lead_id", null);
+
+  if (identity?.role === "call_center") query = query.eq("call_center_id", identity.userId);
+
+  const { data, error } = await query.maybeSingle();
 
   if (error) return { ok: false, message: error.message, status: 500 };
   if (!data) return { ok: false, message: "Not found.", status: 404 };
 
-  let activities: Array<{ id: string; type: "note_updated" | "status_changed"; meta: { from?: string; to?: string }; created_at: string }> = [];
+  let activities: Array<{ id: string; type: "note_updated" | "status_changed" | "assigned"; meta: { from?: string; to?: string }; created_at: string }> = [];
   try {
     const { data: actData, error: actError } = await supabase
       .from("partial_lead_events")

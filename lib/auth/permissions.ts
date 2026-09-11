@@ -45,7 +45,7 @@ export type Capability =
   | "exportCsv"         // trigger CSV download of lead data
   | "manageBlocklist"   // block / unblock phone numbers
   | "assignLeads"       // assign leads to call center or purchaser
-  | "viewSettings";     // read the Settings page (all roles can; write is admin only)
+  | "viewSettings";     // read the business Settings page (owner roles only)
 
 /**
  * The capability set for each role.
@@ -97,14 +97,12 @@ export const ROLE_CAPABILITIES: Record<StaffRole, Capability[]> = {
     "viewCommissions",
     "viewIncompleteForms",
     "viewBlockedNumbers",
-    "viewSettings",
   ],
   purchaser: [
     // Purchaser: see assigned leads, prices, inventory, and own commission.
     "viewPrices",
     "viewInventory",
     "viewCommissions",
-    "viewSettings",
   ],
 };
 

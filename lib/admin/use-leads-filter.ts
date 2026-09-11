@@ -5,8 +5,19 @@ import { Lead, LeadStatus } from "@/config/mock-data";
 import type { StaffRole } from "@/lib/auth/permissions";
 import { AGENT_STATUS_CHOICES, PURCHASER_VISIBLE_STATUSES } from "@/lib/auth/lead-visibility";
 import { FILTER_STATUS_OPTIONS } from "@/lib/format";
+import { uaeDayKey } from "@/lib/uae-time";
 
 export type SortKey = "date" | "value";
+
+type LeadCreatedRange = { from: string; to: string };
+
+function parseLeadCreatedRange(from: string | null | undefined, to: string | null | undefined): LeadCreatedRange | null {
+  if (typeof from !== "string" || typeof to !== "string") return null;
+  const validDateKey = (value: string) =>
+    /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
+  if (!validDateKey(from) || !validDateKey(to) || from > to) return null;
+  return { from, to };
+}
 
 /**
  * An agent's filter includes one status beyond what `AGENT_STATUS_CHOICES`
@@ -82,7 +93,14 @@ export function queuePriority(status: LeadStatus, role: StaffRole | undefined): 
   return status === "new" ? 0 : 1;
 }
 
-export function useLeadsFilter(leads: Lead[], role?: StaffRole) {
+export function useLeadsFilter(
+  leads: Lead[],
+  role?: StaffRole,
+  attentionFilter?: string | null,
+  statusFilter?: string | null,
+  createdFrom?: string | null,
+  createdTo?: string | null,
+) {
   // searchInput updates the text box instantly; search (debounced) drives
   // filtering, so typing doesn't re-filter/re-sort/re-render on every keystroke.
   const [searchInput, setSearchInput] = useState("");
@@ -93,7 +111,18 @@ export function useLeadsFilter(leads: Lead[], role?: StaffRole) {
   // the user on an empty table. Statuses starts pre-set for an operational
   // role instead of empty (see `defaultStatusesForRole`) — the one case where
   // "no filter chosen yet" and "the landing view" are deliberately different.
-  const [statuses, setStatuses] = useState<LeadStatus[]>(() => defaultStatusesForRole(role));
+  // If arriving via an attention filter, we start with no status restriction so
+  // all relevant leads (e.g. pending/contacted) appear immediately.
+  const requestedStatus = statusFilter && FILTER_STATUS_OPTIONS.some((status) => status === statusFilter)
+    ? (statusFilter as LeadStatus)
+    : null;
+  const createdRange = useMemo(
+    () => parseLeadCreatedRange(createdFrom, createdTo),
+    [createdFrom, createdTo],
+  );
+  const [statuses, setStatuses] = useState<LeadStatus[]>(() =>
+    attentionFilter ? [] : requestedStatus ? [requestedStatus] : defaultStatusesForRole(role)
+  );
   const [makes, setMakes] = useState<string[]>([]);
   const [emirates, setEmirates] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>("date");
@@ -106,8 +135,58 @@ export function useLeadsFilter(leads: Lead[], role?: StaffRole) {
     return () => clearTimeout(t);
   }, [searchInput]);
 
+  // A dashboard pipeline card arrives with a current-stage filter. Keep this
+  // in sync on client-side navigation so a second card click cannot retain the
+  // previous stage's checkbox selection.
+  useEffect(() => {
+    setStatuses(attentionFilter ? [] : requestedStatus ? [requestedStatus] : defaultStatusesForRole(role));
+    setPage(1);
+  }, [attentionFilter, requestedStatus, role]);
+
   const filtered = useMemo(() => {
     let result = leads;
+
+    // Apply attention-focused query filter from Executive Dashboard alerts
+    if (attentionFilter === "first-contact") {
+      const now = Date.now();
+      result = result.filter(
+        (l) =>
+          ["new", "pending"].includes(l.status) &&
+          now - new Date(l.createdAt).getTime() > 86_400_000,
+      );
+    } else if (attentionFilter === "stalled") {
+      const now = Date.now();
+      const openStatuses = ["new", "pending", "contacted", "inspection_scheduled", "inspected", "negotiating"];
+      result = result.filter(
+        (l) =>
+          openStatuses.includes(l.status) &&
+          now - new Date(l.createdAt).getTime() > 3 * 86_400_000,
+      );
+    } else if (attentionFilter === "missing-car") {
+      result = result.filter(
+        (l) => !l.make || !l.model || !l.year || !l.make.trim() || !l.model.trim(),
+      );
+    } else if (attentionFilter === "duplicate") {
+      // Show the flagged repeat *and* every visible lead with the same phone.
+      // The flagged row alone tells an admin there was a duplicate, but not
+      // which earlier submission caused it to be flagged.
+      const duplicatePhones = new Set(
+        leads.filter((lead) => lead.isDuplicate === true && lead.phoneE164).map((lead) => lead.phoneE164),
+      );
+      result = result.filter(
+        (lead) => lead.isDuplicate === true || Boolean(lead.phoneE164 && duplicatePhones.has(lead.phoneE164)),
+      );
+    }
+
+    // Pipeline drill-downs carry the same UAE date range used for the
+    // dashboard number, so the list count and the clicked card stay exact.
+    if (createdRange) {
+      result = result.filter((lead) => {
+        const day = uaeDayKey(new Date(lead.createdAt));
+        return day >= createdRange.from && day <= createdRange.to;
+      });
+    }
+
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       // Both are optional, not just possibly empty: a purchaser's leads never
@@ -138,7 +217,7 @@ export function useLeadsFilter(leads: Lead[], role?: StaffRole) {
       return sortDir === "asc" ? cmp : -cmp;
     });
     return sorted;
-  }, [leads, search, statuses, makes, emirates, sortKey, sortDir, role]);
+  }, [leads, search, statuses, makes, emirates, sortKey, sortDir, role, attentionFilter, createdRange]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, totalPages);

@@ -16,16 +16,17 @@ import type { DbLead } from "@/lib/admin/lead-mapper";
  *   entirely. Server projections are therefore the reliable enforcement layer.
  *
  * Field redaction policy (from plan.md):
- *   Call centre  → may see lead/car info and contact data; NOT prices or
- *                  financial metadata (purchase price, estimated value, notes
- *                  that contain financial content).
- *   Purchaser    → may see lead/car info and prices; NOT phone, email, or
- *                  contact-bearing notes.
+ *   Call centre  → may see lead/car info, contact data, and shared follow-up
+ *                  notes for their assigned leads; NOT prices or financial
+ *                  metadata (purchase price, estimated value).
+ *   Purchaser    → may see lead/car info, prices, and shared follow-up notes
+ *                  for their assigned leads; NOT phone or email.
  *   Owner        → full row, no filtering.
  *
- * Notes policy: arbitrary free-text notes can contain both money and contact
- * info. Rather than attempting regex redaction (which is unreliable), we
- * exclude notes entirely for call centre and purchaser. Only owners see notes.
+ * Notes policy: notes are deliberately shared within the assigned lead team so
+ * a CSR-to-Purchaser handoff has the call outcome and next action. Row scoping
+ * ensures operational staff receive only their own assigned leads; notes must
+ * never be used as a substitute for a separate cross-lead data export.
  */
 
 /** The safe shape of a lead as seen by operational staff. */
@@ -91,7 +92,8 @@ export function projectLeadForOwner(lead: DbLead): ProjectedLead {
 }
 
 /**
- * Call centre view: contact info present; prices and notes excluded.
+ * Call centre view: contact info and shared follow-up notes present; prices
+ * excluded.
  */
 export function projectLeadForCallCenter(lead: DbLead): ProjectedLead {
   return {
@@ -115,13 +117,14 @@ export function projectLeadForCallCenter(lead: DbLead): ProjectedLead {
     callCenterId: lead.call_center_id ?? null,
     purchaserId: lead.purchaser_id ?? null,
     inspectionScheduledAt: lead.inspection_scheduled_at ?? null,
+    notes: lead.notes ?? "",
     // estimatedValueAed intentionally absent
-    // notes intentionally absent (may contain financial data)
   };
 }
 
 /**
- * Purchaser view: prices present; contact info and notes excluded.
+ * Purchaser view: prices and shared follow-up notes present; contact info
+ * excluded.
  */
 export function projectLeadForPurchaser(lead: DbLead): ProjectedLead {
   return {
@@ -138,13 +141,13 @@ export function projectLeadForPurchaser(lead: DbLead): ProjectedLead {
     location: lead.emirate ?? undefined,
     status: lead.status,
     estimatedValueAed: lead.estimated_value_aed != null ? Number(lead.estimated_value_aed) : null,
+    notes: lead.notes ?? "",
     isDuplicate: lead.is_duplicate ?? undefined,
     isSpam: lead.is_spam ?? undefined,
     callCenterId: lead.call_center_id ?? null,
     purchaserId: lead.purchaser_id ?? null,
     inspectionScheduledAt: lead.inspection_scheduled_at ?? null,
     // fullName, phoneE164, email intentionally absent
-    // notes intentionally absent (may contain contact data)
   };
 }
 

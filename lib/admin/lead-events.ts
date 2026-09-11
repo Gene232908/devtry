@@ -23,6 +23,8 @@ export type LeadEvent = {
   type: string;
   message: string;
   createdAt: string;
+  note?: string;
+  actorLabel?: string;
 };
 
 export type LeadViewSummary = {

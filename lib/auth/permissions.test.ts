@@ -77,9 +77,10 @@ describe("ROLE_CAPABILITIES", () => {
     expect(ROLE_CAPABILITIES.purchaser).not.toContain("exportCsv");
   });
 
-  it("call_center and purchaser both have viewSettings", () => {
-    expect(ROLE_CAPABILITIES.call_center).toContain("viewSettings");
-    expect(ROLE_CAPABILITIES.purchaser).toContain("viewSettings");
+  it("keeps Settings limited to owner roles", () => {
+    expect(ROLE_CAPABILITIES.call_center).not.toContain("viewSettings");
+    expect(ROLE_CAPABILITIES.purchaser).not.toContain("viewSettings");
+    expect(ROLE_CAPABILITIES.admin).toContain("viewSettings");
   });
 });
 

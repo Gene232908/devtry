@@ -27,7 +27,7 @@ export type PartialLead = {
 
 export type PartialLeadActivity = {
   id: string;
-  type: "note_updated" | "status_changed";
+  type: "note_updated" | "status_changed" | "assigned";
   meta: { from?: string; to?: string };
   created_at: string;
 };
@@ -55,7 +55,7 @@ export const PARTIAL_LEAD_COLUMNS =
  * human judgement about where the conversation stands. A judgement made by
  * mistake has to be reversible, which means 'new' has to be offered.
  */
-export const PARTIAL_STATUSES = ["new", "pending", "contacted", "inspected", "deal", "closed"] as const;
+export const PARTIAL_STATUSES = ["new", "pending", "contacted", "inspection_scheduled"] as const;
 
 /** Everything the database will accept. Identical to the selectable list. */
 export const PARTIAL_STATUSES_ALLOWED = PARTIAL_STATUSES;
