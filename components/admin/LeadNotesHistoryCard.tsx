@@ -7,6 +7,7 @@ import { type LeadEvent } from "@/lib/admin/lead-events";
  * with a dedicated modal and overflow-safe typography.
  * Kept for backwards compatibility.
  */
-export function LeadNotesHistoryCard({ events: _events }: { events: LeadEvent[] }) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function LeadNotesHistoryCard(props: { events: LeadEvent[] }) {
   return null;
 }
