@@ -52,6 +52,7 @@ next-env.d.ts
 # local-only meeting/setup artifacts
 /*.exe
 /CarVibe_Meeting_Transcript_Pack.zip
+~$*
 ~$*.docx
 *.docx
 
