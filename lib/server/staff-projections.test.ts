@@ -74,8 +74,8 @@ describe("projectLeadForCallCenter", () => {
     expect(result.estimatedValueAed).toBeUndefined();
   });
 
-  it("does NOT expose notes (may contain financial data)", () => {
-    expect(result.notes).toBeUndefined();
+  it("exposes shared follow-up notes for the assigned CSR", () => {
+    expect(result.notes).toBe("Customer called twice. Offer around AED 80k.");
   });
 
   it("exposes vehicle details", () => {
@@ -100,8 +100,8 @@ describe("projectLeadForPurchaser", () => {
     expect(result.estimatedValueAed).toBe(85000);
   });
 
-  it("does NOT expose notes (may contain contact data)", () => {
-    expect(result.notes).toBeUndefined();
+  it("exposes shared follow-up notes for the assigned Purchaser", () => {
+    expect(result.notes).toBe("Customer called twice. Offer around AED 80k.");
   });
 
   it("exposes vehicle details", () => {
@@ -148,18 +148,18 @@ describe("selectProjection", () => {
 
 // ─── Notes exclusion ─────────────────────────────────────────────────────────
 
-describe("notes exclusion policy", () => {
+describe("shared follow-up notes policy", () => {
   const notesWithContact: DbLead = { ...SAMPLE, notes: "Call +971509999999 to confirm." };
   const notesWithMoney: DbLead = { ...SAMPLE, notes: "Profit margin AED 15000." };
 
-  it("call_center does not see notes even when they contain phone numbers", () => {
+  it("call_center sees notes for its assigned leads", () => {
     const result = projectLeadForCallCenter(notesWithContact);
-    expect(result.notes).toBeUndefined();
+    expect(result.notes).toBe("Call +971509999999 to confirm.");
   });
 
-  it("purchaser does not see notes even when they contain money figures", () => {
+  it("purchaser sees notes for its assigned leads", () => {
     const result = projectLeadForPurchaser(notesWithMoney);
-    expect(result.notes).toBeUndefined();
+    expect(result.notes).toBe("Profit margin AED 15000.");
   });
 });
 

@@ -110,6 +110,7 @@ export async function middleware(request: NextRequest) {
     // deliberately short-lived so it self-corrects rather than needing a purge.
     const PW_CHECKED_COOKIE = "cvd_pw_checked";
     const ROLE_COOKIE = "cvd_role";
+    const NAME_COOKIE = "cvd_display_name";
     const alreadyChecked = request.cookies.get(PW_CHECKED_COOKIE)?.value === user.id;
 
     let mustChangePassword = false;
@@ -120,7 +121,7 @@ export async function middleware(request: NextRequest) {
     if (!alreadyChecked) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("must_change_password, role, is_active")
+        .select("must_change_password, role, is_active, display_name")
         .eq("id", user.id)
         .single();
 
@@ -139,21 +140,21 @@ export async function middleware(request: NextRequest) {
       // otherwise setting a password would not take effect until the cookie
       // expired.
       if (!mustChangePassword) {
-        response.cookies.set(PW_CHECKED_COOKIE, user.id, {
+        const cookieOpts = {
           httpOnly: true,
-          sameSite: "lax",
+          sameSite: "lax" as const,
           secure: process.env.NODE_ENV === "production",
           path: "/",
           maxAge: 60 * 60,
-        });
+        };
+        response.cookies.set(PW_CHECKED_COOKIE, user.id, cookieOpts);
         // Cache role alongside — same lifetime, same scope.
-        response.cookies.set(ROLE_COOKIE, role, {
-          httpOnly: true,
-          sameSite: "lax",
-          secure: process.env.NODE_ENV === "production",
-          path: "/",
-          maxAge: 60 * 60,
-        });
+        response.cookies.set(ROLE_COOKIE, role, cookieOpts);
+        // Cache display name — lets the layout skip its own DB query on every nav.
+        const displayName = (profile?.display_name as string | null) ?? "";
+        if (displayName) {
+          response.cookies.set(NAME_COOKIE, displayName, cookieOpts);
+        }
       }
     }
 
@@ -174,8 +175,8 @@ export async function middleware(request: NextRequest) {
     // to /admin/leads. This is a UX convenience, not an authorization gate —
     // the server guard in each page is the real enforcer.
     if (role === "call_center") {
-      // Agent: Leads + Commission + Incomplete Forms + Blocked Numbers + Settings
-      const blocked = ["/admin", "/admin/inventory", "/admin/catalog", "/admin/staff"];
+      // Agent: Leads + Commission + Incomplete Forms + Blocked Numbers
+      const blocked = ["/admin", "/admin/inventory", "/admin/catalog", "/admin/staff", "/admin/settings"];
       if (blocked.includes(pathname)) {
         const redirectUrl = request.nextUrl.clone();
         redirectUrl.pathname = "/admin/leads";
@@ -184,8 +185,8 @@ export async function middleware(request: NextRequest) {
     }
 
     if (role === "purchaser") {
-      // Purchaser: Leads + Inventory + Commission + Settings
-      const blocked = ["/admin", "/admin/incomplete", "/admin/blocked", "/admin/catalog", "/admin/staff"];
+      // Purchaser: Leads + Inventory + Commission
+      const blocked = ["/admin", "/admin/incomplete", "/admin/blocked", "/admin/catalog", "/admin/staff", "/admin/settings"];
       if (blocked.includes(pathname)) {
         const redirectUrl = request.nextUrl.clone();
         redirectUrl.pathname = "/admin/leads";

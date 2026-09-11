@@ -18,8 +18,10 @@ import { useRouter } from "next/navigation";
  * Before these screens moved to the server they fetched on mount, so they were
  * always fresh — by accident. This is the deliberate version of that guarantee.
  *
- * Refreshing on mount covers arriving at the page; on focus covers coming back
- * to it; on a timer covers sitting and watching it. See POLL_MS.
+ * Refreshing on focus covers coming back to the browser tab; the timer covers
+ * sitting and watching it. The page itself already receives the server result
+ * during navigation, so a second forced refresh immediately after mount only
+ * repeats the same work and makes sidebar navigation look laggy. See POLL_MS.
  */
 /**
  * How often an open, VISIBLE admin screen re-reads itself.
@@ -42,22 +44,12 @@ export function useFreshServerData() {
   const router = useRouter();
 
   useEffect(() => {
-    // Deliberately does NOT refresh on mount.
-    //
-    // It used to, and that single line was the reason the dashboard felt slow:
-    // arriving at a page rendered it on the server for the navigation and then
-    // immediately rendered it again for the refresh. Every sidebar click paid
-    // twice — on Commission, twice for ~560ms.
-    //
-    // The staleness it was there to fix is now prevented instead of corrected:
-    // `experimental.staleTimes.dynamic = 0` in next.config.mjs stops the client
-    // Router Cache serving a previously visited admin route from memory, so the
-    // navigation itself always reaches the server and what it brings back is
-    // already current. Refreshing on top of that re-fetched data nobody had had
-    // time to read.
-    //
-    // The listeners below still do the rest of the job: coming BACK to the tab,
-    // and sitting watching an open page.
+    // Sidebar links are prefetched and the App Router can paint a cached route
+    // immediately. Do not call router.refresh() right after mount: that made
+    // every sidebar click perform a second server render about 250ms later,
+    // producing a visible second loading delay. Navigation itself loads the
+    // route data; focus, the 20-second timer, and explicit page actions keep
+    // it current after it has painted.
 
     function refreshIfVisible() {
       if (document.visibilityState === "visible") router.refresh();

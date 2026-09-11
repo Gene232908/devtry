@@ -26,6 +26,7 @@ import { getNextRoundRobinAssignee, type StaffMemberForRoundRobin } from "@/lib/
  */
 
 type Role = "call_center" | "purchaser";
+type AssignmentRecord = "leads" | "partial_leads";
 
 /** Active accounts for a role, oldest created first — the rotation order. */
 export async function loadActiveStaff(role: Role): Promise<StaffMemberForRoundRobin[]> {
@@ -47,9 +48,12 @@ export async function loadActiveStaff(role: Role): Promise<StaffMemberForRoundRo
 }
 
 /** How many leads already hold an assignee for this role — the rotation cursor. */
-async function assignedLeadCount(column: "call_center_id" | "purchaser_id"): Promise<number> {
+async function assignedRecordCount(
+  column: "call_center_id" | "purchaser_id",
+  record: AssignmentRecord,
+): Promise<number> {
   const { count, error } = await getSupabaseAdmin()
-    .from("leads")
+    .from(record)
     .select("id", { count: "exact", head: true })
     .not(column, "is", null);
 
@@ -65,13 +69,16 @@ async function assignedLeadCount(column: "call_center_id" | "purchaser_id"): Pro
  * because no agent account exists or the profiles query failed. An unassigned
  * lead is still visible to the owner, who can assign it by hand.
  */
-export async function pickNextAssignee(role: Role): Promise<string | null> {
+export async function pickNextAssignee(
+  role: Role,
+  record: AssignmentRecord = "leads",
+): Promise<string | null> {
   try {
     const staff = await loadActiveStaff(role);
     if (staff.length === 0) return null;
 
     const column = role === "call_center" ? "call_center_id" : "purchaser_id";
-    const position = await assignedLeadCount(column);
+    const position = await assignedRecordCount(column, record);
 
     return getNextRoundRobinAssignee(staff, role, position)?.id ?? null;
   } catch (e) {

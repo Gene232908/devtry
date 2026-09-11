@@ -2,7 +2,6 @@ export function formatAed(value: number | null | undefined) {
   if (value == null) return "—";
   return `AED ${value.toLocaleString("en-US")}`;
 }
-
 export function formatNumber(value: number) {
   return value.toLocaleString("en-US");
 }
@@ -14,7 +13,6 @@ export function formatDate(iso: string) {
     year: "numeric",
   });
 }
-
 export function formatPhoneDisplay(e164: string | undefined | null) {
   if (!e164) return "—";
   return e164.replace(/^(\+971)(\d{2})(\d{3})(\d{4})$/, "$1 $2 $3 $4");
@@ -113,4 +111,18 @@ export const FILTER_STATUS_OPTIONS = [
  */
 export function requiresPurchasePrice(status: string): boolean {
   return status === "deal";
+}
+
+/** e.g. "Tue, 09 Sep 2026, 14:30" — day of week included because a bare date is easy to mis-read. */
+export function formatScheduledInspection(value: string): string {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleString("en-GB", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
