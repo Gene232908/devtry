@@ -15,15 +15,22 @@ import { formatAed, formatDate } from "@/lib/format";
 // contact details are read on the detail page where opening the lead also marks
 // it as picked up.
 
-type Props = { lead: Lead };
+type Props = { lead: Lead; duplicateReview?: boolean };
 
-export const LeadRow = memo(function LeadRow({ lead }: Props) {
+export const LeadRow = memo(function LeadRow({ lead, duplicateReview = false }: Props) {
   return (
     <tr className="border-b border-border last:border-0 hover:bg-surface-2/50">
       <td className="py-3 pr-4">
-        <Link href={`/admin/leads/${lead.id}`} className="text-text hover:text-gold">
-          {lead.fullName || "Customer"}
-        </Link>
+        <div className="flex flex-col gap-1">
+          <Link href={`/admin/leads/${lead.id}`} className="text-text hover:text-gold">
+            {lead.fullName || "Customer"}
+          </Link>
+          {duplicateReview && (
+            <span className={lead.isDuplicate ? "text-[11px] font-medium text-warning" : "text-[11px] text-text-faint"}>
+              {lead.isDuplicate ? "Flagged repeat submission" : "Earlier matching submission"}
+            </span>
+          )}
+        </div>
       </td>
       <td className="py-3 pr-4 text-text-muted">
         {lead.year} {lead.make} {lead.model}

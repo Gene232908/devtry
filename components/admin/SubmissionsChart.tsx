@@ -1,10 +1,23 @@
 "use client";
 
-import { BarChart, Bar, LabelList, ResponsiveContainer, XAxis, Tooltip, YAxis } from "recharts";
+import {
+  BarChart,
+  Bar,
+  CartesianGrid,
+  LabelList,
+  Legend,
+  ResponsiveContainer,
+  XAxis,
+  Tooltip,
+  YAxis,
+} from "recharts";
+import { CarFront, CheckCircle2 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
+  CHART_GRID_STYLE,
   CHART_MARGIN,
+  ComparisonDayTooltip,
   EmptyChart,
   isEmptySeries,
   lastValueLabel,
@@ -12,44 +25,195 @@ import {
   RECESSIVE_AXIS,
 } from "@/components/admin/chart-parts";
 import type { ChartPoint } from "@/lib/admin/use-admin-stats";
+import type { ExecutiveOverview } from "@/lib/admin/executive-overview";
 
 export function SubmissionsChart({
   data,
+  comparisonData,
   isLoading,
   periodLabel = "New Submissions",
+  comparisonPeriodLabel,
 }: {
   data: ChartPoint[];
+  comparisonData?: ExecutiveOverview["trend"];
   isLoading?: boolean;
   periodLabel?: string;
+  comparisonPeriodLabel?: string;
 }) {
-  const values = data.map((d) => d.submissions ?? 0);
+  const chartData = data.map((point, index) => ({
+    ...point,
+    comparisonSubmissions: comparisonData?.[index]?.submissions ?? 0,
+    comparisonDay: comparisonData?.[index]?.day,
+  }));
+  const values = chartData.flatMap((d) => [d.submissions ?? 0, d.comparisonSubmissions ?? 0]);
+  const currentTotalSubmissions = data.reduce((sum, v) => sum + (v.submissions || 0), 0);
+  const isSingleDay = data.length === 1;
+  const comparisonSubmissions = comparisonData?.reduce((sum, item) => sum + item.submissions, 0);
+
+  const todaySubmissions = data[0]?.submissions ?? 0;
+  const todayVisitors = data[0]?.visitors ?? 0;
+  const conversionRate = todayVisitors > 0 ? ((todaySubmissions / todayVisitors) * 100).toFixed(1) : "0.0";
+  const compSubmissions = comparisonData?.[0]?.submissions;
 
   return (
-    <Card className="p-5">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-fluid-0 text-text">Car Submissions</h3>
-        <span className="text-fluid--1 text-text-faint">{periodLabel}</span>
+    <Card className="flex flex-col p-5 border-white/10 bg-[#141417]/80 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200 hover:border-amber-500/30">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400">
+            <CarFront className="h-4 w-4" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-fluid-0 text-text tracking-tight">Car Submissions</h3>
+            <span className="text-xs text-gray-400">Completed valuation requests</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-400 border border-amber-500/25">
+            {currentTotalSubmissions} {currentTotalSubmissions === 1 ? "lead" : "leads"}
+          </span>
+          {comparisonSubmissions !== undefined && (
+            <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-medium text-slate-300 border border-white/10">
+              Earlier: {comparisonSubmissions}
+            </span>
+          )}
+          <span className="rounded-full bg-white/5 px-2.5 py-0.5 text-xs font-medium text-gray-300 border border-white/10">
+            {periodLabel}
+          </span>
+        </div>
       </div>
+
       <div className="h-48">
         {isLoading ? (
           <Skeleton className="h-full w-full" />
         ) : isEmptySeries(values) ? (
-          <EmptyChart message="No submissions yet" />
+          <EmptyChart message="No submissions recorded yet" />
+        ) : isSingleDay ? (
+          // HIGH-IMPACT EXECUTIVE 2-CARD LAYOUT FOR SINGLE-DAY / TODAY
+          <div className="flex h-full flex-col justify-center">
+            <div className="grid grid-cols-2 gap-3 h-full">
+              {/* Card 1: New Submissions Volume */}
+              <div className="flex flex-col justify-between rounded-xl border border-amber-500/25 bg-amber-500/5 p-3.5 relative overflow-hidden backdrop-blur-sm">
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-400">
+                    <CarFront className="h-3.5 w-3.5 text-amber-400" />
+                    New Inquiries
+                  </span>
+                  <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] font-semibold text-amber-300 border border-white/10">
+                    {data[0].day}
+                  </span>
+                </div>
+
+                <div className="my-auto flex flex-col items-center justify-center py-1">
+                  <div className="flex items-baseline justify-center gap-1.5 font-sans">
+                    <span className="text-3xl font-semibold tracking-tight tabular-nums text-amber-400">
+                      {todaySubmissions}
+                    </span>
+                    <span className="text-xs text-amber-300/80">
+                      {todaySubmissions === 1 ? "valuation request" : "valuation requests"}
+                    </span>
+                  </div>
+                  {compSubmissions !== undefined && (
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      vs <strong className="text-gray-200">{compSubmissions}</strong> prior
+                    </p>
+                  )}
+                  <p className="text-[11px] text-gray-300 mt-0.5">Direct seller submissions</p>
+                </div>
+
+                <div className="text-center text-[10px] text-gray-400 border-t border-white/10 pt-1.5">
+                  Completed customer car valuations
+                </div>
+              </div>
+
+              {/* Card 2: Conversion Efficiency */}
+              <div className="flex flex-col justify-between rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-3.5 relative overflow-hidden backdrop-blur-sm">
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                    Lead Intake
+                  </span>
+                  <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-300 border border-emerald-500/30">
+                    {conversionRate}% Rate
+                  </span>
+                </div>
+
+                <div className="my-auto flex flex-col items-center justify-center py-1">
+                  <div className="flex items-baseline justify-center gap-1.5 font-sans">
+                    <span className="text-3xl font-semibold tracking-tight tabular-nums text-emerald-400">
+                      {todaySubmissions > 0 ? "Active" : "Quiet"}
+                    </span>
+                    <span className="text-xs text-emerald-300/80">
+                      pipeline flow
+                    </span>
+                  </div>
+                  {/* Progress Bar showing traffic-to-lead efficiency */}
+                  <div className="w-full max-w-[140px] bg-white/10 rounded-full h-1.5 mt-2 overflow-hidden">
+                    <div
+                      className="bg-gradient-to-r from-amber-500 to-emerald-400 h-full rounded-full transition-all duration-300"
+                      style={{ width: `${Math.min(100, Math.max(8, Number(conversionRate) * 2))}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-emerald-300/80 mt-1.5">
+                    {todaySubmissions} lead{todaySubmissions === 1 ? "" : "s"} from {todayVisitors} visitor{todayVisitors === 1 ? "" : "s"}
+                  </p>
+                </div>
+
+                <div className="text-center text-[10px] text-gray-400 border-t border-white/10 pt-1.5">
+                  Ready for agent call & inspection
+                </div>
+              </div>
+            </div>
+          </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={CHART_MARGIN}>
-              <XAxis dataKey="day" {...RECESSIVE_AXIS} fontSize={12} />
-              {/* Same reasoning as the Visitors chart: a hidden axis left the
-                  counts readable only on hover. */}
-              <YAxis {...RECESSIVE_AXIS} width={30} allowDecimals={false} domain={niceDomain(values)} />
-              <Tooltip
-                contentStyle={{ background: "var(--surface-2)", border: "1px solid var(--border-gold)", borderRadius: 8 }}
-                labelStyle={{ color: "var(--text-muted)" }}
-                cursor={{ fill: "rgba(212,175,55,.08)" }}
+            <BarChart data={chartData} margin={CHART_MARGIN}>
+              <defs>
+                <linearGradient id="submissionBarGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#F59E0B" stopOpacity={0.95} />
+                  <stop offset="100%" stopColor="#D97706" stopOpacity={0.5} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid {...CHART_GRID_STYLE} />
+              <XAxis dataKey="day" {...RECESSIVE_AXIS} fontSize={12} tick={{ fill: "#E5E7EB" }} />
+              <YAxis
+                {...RECESSIVE_AXIS}
+                width={30}
+                allowDecimals={false}
+                domain={niceDomain(values)}
               />
-              <Bar dataKey="submissions" fill="var(--gold)" radius={[4, 4, 0, 0]}>
+              <Tooltip
+                cursor={{ fill: "rgba(255, 255, 255, 0.05)" }}
+                content={(props) => <ComparisonDayTooltip {...props} selectedLabel={periodLabel} comparisonLabel={comparisonPeriodLabel} selectedValueKey="submissions" comparisonValueKey="comparisonSubmissions" valueLabel="submissions" selectedTone="amber" />}
+              />
+              {comparisonData && (
+                <Legend
+                  verticalAlign="top"
+                  align="right"
+                  height={24}
+                  iconType="rect"
+                  wrapperStyle={{ fontSize: "11px", color: "#E5E7EB" }}
+                />
+              )}
+              <Bar
+                dataKey="submissions"
+                name={`Selected: ${periodLabel}`}
+                fill="url(#submissionBarGrad)"
+                maxBarSize={comparisonData ? 24 : 48}
+                radius={[6, 6, 0, 0]}
+                isAnimationActive={false}
+              >
                 <LabelList dataKey="submissions" content={lastValueLabel(data.length)} />
               </Bar>
+              {comparisonData && (
+                <Bar
+                  dataKey="comparisonSubmissions"
+                  name={`Earlier: ${comparisonPeriodLabel ?? "Comparison"}`}
+                  fill="#64748B"
+                  maxBarSize={24}
+                  radius={[6, 6, 0, 0]}
+                  isAnimationActive={false}
+                />
+              )}
             </BarChart>
           </ResponsiveContainer>
         )}

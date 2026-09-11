@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
-import { uaeDayKey } from "@/lib/uae-time";
+import { buildLastSevenUaeDays, uaeDayKey } from "@/lib/uae-time";
 
 export type DateFilterValue = {
   preset: "week" | "today" | "month" | "last_month" | "all" | "custom";
@@ -128,10 +128,11 @@ export function OverviewDateFilter({ value, onChange, isLoading }: Props) {
   function applyPreset(preset: DateFilterValue["preset"]) {
     setIsOpen(false);
     if (preset === "week") {
+      const days = buildLastSevenUaeDays();
       onChange({
         preset: "week",
-        from: undefined,
-        to: undefined,
+        from: days[0].key,
+        to: days[days.length - 1].key,
         label: "This Week",
       });
       return;

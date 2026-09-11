@@ -5,16 +5,20 @@ import { Database, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { useLeads } from "@/lib/admin/leads-store";
+import { useStaffIdentity } from "@/lib/admin/staff-identity-context";
 
 type DemoStatus = "loading" | "available" | "active" | "deleted" | "error";
 
 export function DemoLeadControls() {
+  const identity = useStaffIdentity();
   const router = useRouter();
   const { refresh } = useLeads();
   const [status, setStatus] = useState<DemoStatus>("loading");
   const [leadCount, setLeadCount] = useState(0);
   const [busy, setBusy] = useState<"create" | "delete" | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const isOwner = identity?.role === "admin" || identity?.role === "manager";
 
   async function loadStatus() {
     const res = await fetch("/api/admin/demo-leads", { cache: "no-store" });
@@ -25,11 +29,12 @@ export function DemoLeadControls() {
   }
 
   useEffect(() => {
+    if (!isOwner) return;
     void loadStatus().catch((e: unknown) => {
       setStatus("error");
       setError(e instanceof Error ? e.message : "Could not load demo controls.");
     });
-  }, []);
+  }, [isOwner]);
 
   async function createDemoLeads() {
     setBusy("create");
@@ -67,7 +72,7 @@ export function DemoLeadControls() {
     }
   }
 
-  if (status === "loading" || status === "deleted") return null;
+  if (!isOwner || status === "loading" || status === "deleted") return null;
 
   if (status === "error") {
     return <span className="text-fluid--1 text-danger" role="alert">{error ?? "Demo controls are unavailable."}</span>;

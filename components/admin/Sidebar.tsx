@@ -17,7 +17,7 @@ import type { Capability } from "@/lib/auth/permissions";
 
 /**
  * Each sidebar item is gated by an optional capability. When the capability is
- * undefined the item is visible to everyone (e.g. Settings). When it is set,
+ * undefined the item is visible to everyone. When it is set,
  * the item only renders if the viewer holds that capability.
  */
 type SidebarItem = {
@@ -40,7 +40,7 @@ const ALL_ITEMS: SidebarItem[] = [
   { href: "/admin/blocked", label: "Blocked Numbers", icon: Ban, gate: "viewBlockedNumbers" },
   { href: "/admin/catalog", label: "Vehicle Catalog", icon: Car, gate: "viewCatalog" },
   { href: "/admin/staff", label: "Staff Accounts", icon: Users, gate: "manageStaff" },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
+  { href: "/admin/settings", label: "Settings", icon: Settings, gate: "viewSettings" },
 ];
 
 type Props = {
@@ -58,7 +58,7 @@ export function Sidebar({ className, capabilities }: Props) {
     : ALL_ITEMS;
 
   return (
-    <aside className={cn("flex h-full w-60 flex-col gap-1 border-r border-border-gold bg-bg-elev p-4", className)}>
+    <aside className={cn("flex h-full w-60 flex-col gap-1.5 border-r border-white/[0.08] bg-[#050508]/90 backdrop-blur-2xl p-4 shadow-[4px_0_24px_rgba(0,0,0,0.6)]", className)}>
       {items.map((item) => {
         const active = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
         const Icon = item.icon;
@@ -68,11 +68,13 @@ export function Sidebar({ className, capabilities }: Props) {
             href={item.href}
             prefetch={true}
             className={cn(
-              "flex items-center gap-3 rounded-card px-3 py-2.5 text-fluid--1 transition-colors",
-              active ? "bg-gold/15 text-gold" : "text-text-muted hover:bg-surface-2 hover:text-text",
+              "flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all",
+              active
+                ? "bg-white/[0.08] text-white border border-white/[0.12] shadow-[0_2px_12px_rgba(0,0,0,0.6)]"
+                : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-100 border border-transparent",
             )}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className={cn("h-4 w-4 transition-colors", active ? "text-amber-400" : "text-zinc-400")} />
             {item.label}
           </Link>
         );
