@@ -31,6 +31,13 @@ yarn-debug.log*
 yarn-error.log*
 dev-*.log
 .tmp/
+/tmp/*.log
+/tmp/docxcheck*/
+/tmp/pdfs/*.png
+/tmp/pdfs/*.html
+/tmp/pdfs/*.py
+/tmp/pdfs/dashboard-render/
+.next-stale-*/
 
 # local env files
 .env*.local

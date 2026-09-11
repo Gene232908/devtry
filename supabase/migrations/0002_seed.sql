@@ -28,13 +28,12 @@ on conflict (id) do update set
 -- Grant admin/manager roles to known emails (no-op if they haven't signed in yet).
 insert into public.profiles (id, role, email, display_name)
 select u.id,
-       case when u.email = 'carvibe025@gmail.com' then 'admin'::user_role
-            when u.email = 'genemathew232@gmail.com' then 'admin'::user_role
+       case when u.email in ('carvibe025@gmail.com', 'carvibeduba025@gmail.com') then 'admin'::user_role
             else 'manager'::user_role end,
        u.email,
        split_part(u.email, '@', 1)
 from auth.users u
-where u.email in ('carvibe025@gmail.com', 'genemathew232@gmail.com')
+where u.email in ('carvibe025@gmail.com', 'carvibeduba025@gmail.com')
 on conflict (id) do update set
   role  = excluded.role,
   email = excluded.email;
