@@ -76,8 +76,8 @@ const PIPELINE_ICON = {
  */
 export default function AdminDashboardClient({ seed }: { seed?: AdminStatsSeed }) {
   const [dateFilter, setDateFilter] = useState<DateFilterValue>({
-    preset: "week",
-    label: "This Week",
+    preset: "today",
+    label: "Today",
   });
 
   const activeStatsFilter = useMemo(() => {
@@ -233,7 +233,7 @@ function ChartPlaceholder({ title }: { title: string }) {
     <Card className="p-5">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-fluid-0 text-text">{title}</h3>
-        <span className="text-fluid--1 text-text-faint">This Week</span>
+        <span className="text-fluid--1 text-text-faint">Today</span>
       </div>
       <div className="h-48">
         <Skeleton className="h-full w-full" />

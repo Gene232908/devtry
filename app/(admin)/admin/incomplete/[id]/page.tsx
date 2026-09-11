@@ -19,7 +19,7 @@ export default async function IncompleteDetailPage({ params }: { params: { id: s
     return <div>Not authorized</div>;
   }
 
-  const result = await fetchPartialLead(params.id);
+  const result = await fetchPartialLead(params.id, auth.identity);
   if (!result.ok) {
     const fallback = demoPartialLeads.find((row) => row.id === params.id) ?? null;
     if (fallback) {

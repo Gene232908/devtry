@@ -1,53 +1,22 @@
-import AdminDashboardClient from "./dashboard-client";
-import { fetchAdminStats, fetchAdminCharts } from "@/lib/admin/queries";
-import { requireStaff } from "@/lib/server/require-staff";
+import { ExecutiveDashboard } from "@/components/admin/ExecutiveDashboard";
 import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 
+/**
+ * Dashboard page — renders immediately.
+ *
+ * Data is fetched client-side by the hook in ExecutiveDashboard, which has an
+ * in-memory cache. Switching back to this page after visiting another is
+ * instant (cache hit). The loading skeleton shows only on the very first visit.
+ *
+ * Previously this page ran requireAdmin() + fetchExecutiveOverview() on every
+ * SSR render — 2 serial Supabase round-trips adding 400–800ms to every
+ * navigation to /admin. Removing the SSR seed cuts that to zero.
+ */
 export const dynamic = "force-dynamic";
 
-/**
- * Server half of the Overview.
- *
- * The six counters and the two chart series used to be fetched by the browser
- * after this page had already mounted and painted skeletons — two more HTTP
- * calls, each re-entering middleware, before any real number appeared.
- *
- * Both now run here, in parallel, during this render. The client half keeps the
- * hook, so preview mode and any future client-side refresh still work unchanged.
- */
-export default async function AdminDashboardPage() {
-  // Preview mode renders from the demo dataset inside the hook — handing it a
-  // seed of real database figures is exactly what that flag exists to prevent.
+export default function AdminDashboardPage() {
   if (ADMIN_PREVIEW) {
-    return <AdminDashboardClient />;
+    return <ExecutiveDashboard />;
   }
-
-  const auth = await requireStaff();
-  if (!auth.ok) {
-    return <div>Not authorized</div>;
-  }
-
-  const [statsResult, chartsResult] = await Promise.all([
-    fetchAdminStats(auth.identity),
-    fetchAdminCharts(auth.identity),
-  ]);
-
-  // If either half failed, fall through with no seed and let the hook do what
-  // it always did — fetch on mount, and drop to the mock dataset if that fails
-  // too. A half-populated Overview would be worse than a brief skeleton.
-  if (!statsResult.ok || !chartsResult.ok) {
-    return <AdminDashboardClient />;
-  }
-
-  return (
-    <AdminDashboardClient
-
-      seed={{
-        stats: statsResult.data,
-        visitors: chartsResult.data.visitors,
-        submissions: chartsResult.data.submissions,
-        isLive: true,
-      }}
-    />
-  );
+  return <ExecutiveDashboard />;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, Loader2, ShieldCheck } from "lucide-react";
+import { AlertCircle, Loader2, MailCheck, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -40,6 +40,12 @@ type SaveState =
   | { kind: "saved" }
   | { kind: "error"; message: string };
 
+type NotificationTestState =
+  | { kind: "idle" }
+  | { kind: "sending" }
+  | { kind: "sent" }
+  | { kind: "error"; message: string };
+
 export default function SettingsClient({ initialSettings, initialError, canEdit }: Props) {
   useFreshServerData();
 
@@ -50,6 +56,7 @@ export default function SettingsClient({ initialSettings, initialError, canEdit 
   const [draft, setDraft] = useState<SettingsInput | null>(() => toInput(initialSettings));
 
   const [save, setSave] = useState<SaveState>({ kind: "idle" });
+  const [notificationTest, setNotificationTest] = useState<NotificationTestState>({ kind: "idle" });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Guards against a double-submit racing itself. A ref rather than state
@@ -156,6 +163,26 @@ export default function SettingsClient({ initialSettings, initialError, canEdit 
     }
   }
 
+  async function handleNotificationTest() {
+    if (!canEdit || dirty || notificationTest.kind === "sending") return;
+    setNotificationTest({ kind: "sending" });
+
+    try {
+      const res = await fetch("/api/admin/settings/test-notification", { method: "POST" });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.ok) {
+        setNotificationTest({
+          kind: "error",
+          message: json?.error?.message ?? "Couldn't send the test email. Please try again.",
+        });
+        return;
+      }
+      setNotificationTest({ kind: "sent" });
+    } catch {
+      setNotificationTest({ kind: "error", message: "Network error. The test email was not confirmed." });
+    }
+  }
+
   if (initialError || !draft) {
     return (
       <div className="flex flex-col gap-6">
@@ -222,6 +249,9 @@ export default function SettingsClient({ initialSettings, initialError, canEdit 
             onChange={(e) => update("notifyEmail", e.target.value)}
           />
           <p className="text-fluid--1 text-text-faint">Leave empty to switch lead notifications off.</p>
+          <p className="text-fluid--1 text-text-faint">
+            Every new lead is sent to this saved address. Save a change first, then send a test to confirm it.
+          </p>
         </Card>
 
 
@@ -246,6 +276,27 @@ export default function SettingsClient({ initialSettings, initialError, canEdit 
             reload. */}
         {dirty && save.kind !== "error" && !saving && (
           <span className="text-fluid--1 text-text-faint">Unsaved changes.</span>
+        )}
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => void handleNotificationTest()}
+          disabled={!canEdit || saving || dirty || notificationTest.kind === "sending" || !persisted?.notifyEmail}
+        >
+          {notificationTest.kind === "sending" ? <Loader2 className="h-4 w-4 animate-spin" /> : <MailCheck className="h-4 w-4" />}
+          {notificationTest.kind === "sending" ? "Sending testâ€¦" : "Send test email"}
+        </Button>
+
+        {notificationTest.kind === "sent" && (
+          <span className="text-fluid--1 text-success">Test email sent to the saved Notify email.</span>
+        )}
+
+        {notificationTest.kind === "error" && (
+          <span className="flex items-center gap-1.5 text-fluid--1 text-danger" role="alert">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            {notificationTest.message}
+          </span>
         )}
       </div>
     </div>
