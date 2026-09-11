@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/server/require-admin";
 import { MAKES } from "@/config/vehicles";
 import { AREAS_BY_EMIRATE } from "@/config/emirates-areas";
 
@@ -76,6 +77,11 @@ export async function GET() {
 }
 
 export async function POST() {
+  const auth = await requireAdmin();
+  if (!auth.ok) {
+    return NextResponse.json({ ok: false, error: { message: auth.message } }, { status: auth.status });
+  }
+
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ ok: false, error: { message: "Database is not configured." } }, { status: 503 });
   }
@@ -113,6 +119,11 @@ export async function POST() {
 }
 
 export async function DELETE() {
+  const auth = await requireAdmin();
+  if (!auth.ok) {
+    return NextResponse.json({ ok: false, error: { message: auth.message } }, { status: auth.status });
+  }
+
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ ok: false, error: { message: "Database is not configured." } }, { status: 503 });
   }

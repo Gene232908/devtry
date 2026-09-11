@@ -1,19 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchInventory } from "@/lib/admin/queries";
+import { requireStaff } from "@/lib/server/require-staff";
+import { hasCapability } from "@/lib/auth/permissions";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { canSeeLead } from "@/lib/auth/lead-visibility";
 
 export const dynamic = "force-dynamic";
 
-// Cars the business has bought and owns. Read-only: stock is created by
-// recording a deal on a lead (PATCH /api/leads/[id]), never directly here, so
-// a car can only exist if there is a lead and a purchase price behind it.
-//
-// The query itself lives in lib/admin/queries.ts so the Inventory page can run
-// it during its own server render instead of loading empty and then calling
-// this route over HTTP. This route is unchanged from the caller's point of
-// view and is still what the Refresh button and every client-side reload use.
-
 export async function GET(req: NextRequest) {
-  const result = await fetchInventory(req.nextUrl.searchParams.get("leadId"));
+  const auth = await requireStaff();
+  if (!auth.ok) {
+    return NextResponse.json({ ok: false, error: { message: auth.message } }, { status: auth.status });
+  }
+
+  const leadId = req.nextUrl.searchParams.get("leadId");
+
+  // If requesting the full inventory list, must hold the viewInventory capability.
+  if (!leadId) {
+    if (!hasCapability(auth.identity, "viewInventory")) {
+      return NextResponse.json({ ok: false, error: { message: "Not authorized to view inventory." } }, { status: 403 });
+    }
+  } else {
+    // If requesting inventory for a specific lead, caller must either have viewInventory OR be assigned to that lead
+    if (!hasCapability(auth.identity, "viewInventory")) {
+      const supabase = getSupabaseAdmin();
+      const { data: lead } = await supabase
+        .from("leads")
+        .select("status, call_center_id, purchaser_id")
+        .eq("id", leadId)
+        .maybeSingle();
+
+      if (!lead || !canSeeLead({ status: lead.status, callCenterId: lead.call_center_id, purchaserId: lead.purchaser_id }, auth.identity.role, auth.identity.userId)) {
+        return NextResponse.json({ ok: false, error: { message: "Not authorized." } }, { status: 403 });
+      }
+    }
+  }
+
+  const result = await fetchInventory(leadId);
 
   if (!result.ok) {
     return NextResponse.json({ ok: false, error: { message: result.message } }, { status: result.status });

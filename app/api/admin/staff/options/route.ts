@@ -11,19 +11,20 @@ export async function GET() {
 
   if (!isSupabaseConfigured()) return NextResponse.json({ ok: false, error: { message: "Database is not configured." } }, { status: 503 });
 
-  // Any authenticated staff can see options (for reading names of assignees)
+  // Any authenticated staff can see assignee names. Include inactive accounts
+  // too: a historical assignment must never be displayed as "Unassigned".
   const { data, error } = await getSupabaseAdmin()
     .from("profiles")
-    .select("id, display_name, role")
-    .eq("is_active", true)
+    .select("id, display_name, role, is_active")
     .order("created_at", { ascending: true });
 
   if (error) return NextResponse.json({ ok: false, error: { message: error.message } }, { status: 500 });
 
-  const staffOptions = (data ?? []).map((p: { id: string; display_name: string | null; role: string }) => ({
+  const staffOptions = (data ?? []).map((p: { id: string; display_name: string | null; role: string; is_active: boolean }) => ({
     id: p.id,
     name: p.display_name ?? p.id,
     role: p.role as StaffRole,
+    isActive: p.is_active,
   }));
 
   const canAssign = hasCapability(auth.identity, "assignLeads");

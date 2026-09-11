@@ -15,14 +15,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ ok: false, error: { message: "Database is not configured." } }, { status: 503 });
   }
 
-  let body: { callCenterId?: unknown; purchaserId?: unknown };
+  let body: { callCenterId?: unknown; purchaserId?: unknown; reason?: unknown };
   try {
-    body = (await req.json()) as { callCenterId?: unknown; purchaserId?: unknown };
+    body = (await req.json()) as { callCenterId?: unknown; purchaserId?: unknown; reason?: unknown };
   } catch {
     return NextResponse.json({ ok: false, error: { message: "Invalid JSON." } }, { status: 400 });
   }
 
-  const { callCenterId, purchaserId } = body as { callCenterId?: string | null; purchaserId?: string | null };
+  const { callCenterId, purchaserId } = body as { callCenterId?: string | null; purchaserId?: string | null; reason?: string };
+  const reason = typeof body.reason === "string" ? body.reason.trim() : "";
+
+  if (!reason) {
+    return NextResponse.json({ ok: false, error: { message: "Add a reason for this reassignment." } }, { status: 400 });
+  }
 
   const supabase = getSupabaseAdmin();
 
@@ -71,7 +76,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     lead_id: params.id,
     type: "assigned",
     actor: auth.identity.userId,
-    meta: { call_center_id: callCenterId || null, purchaser_id: purchaserId || null },
+    meta: { call_center_id: callCenterId || null, purchaser_id: purchaserId || null, reason },
   });
 
   return NextResponse.json({ ok: true });
