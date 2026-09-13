@@ -95,21 +95,20 @@ describe("visibleLeadsFor", () => {
 });
 
 describe("status choices", () => {
-  it("offers an agent exactly New, Pending, Contacted, Inspection Scheduled", () => {
+  it("offers an agent exactly New, Contacted, Inspection Scheduled", () => {
     expect(statusChoicesForRole("call_center")).toEqual([
       "new",
-      "pending",
       "contacted",
       "inspection_scheduled",
     ]);
   });
 
-  it("offers a purchaser Deal, Under Negotiation, Inspected — in that order", () => {
-    expect(statusChoicesForRole("purchaser")).toEqual(["deal", "negotiating", "inspected"]);
+  it("offers a purchaser Deal and Under Negotiation; inspection completion sets Inspected", () => {
+    expect(statusChoicesForRole("purchaser")).toEqual(["negotiating", "deal", "closed"]);
   });
 
-  it("never offers a purchaser Not Purchased", () => {
-    expect(PURCHASER_STATUS_CHOICES).not.toContain("closed");
+  it("offers a purchaser Not Purchased after inspection", () => {
+    expect(PURCHASER_STATUS_CHOICES).toContain("closed");
   });
 
   it("does not restrict owner roles", () => {
@@ -125,7 +124,7 @@ describe("status choices", () => {
     expect(canRoleSetStatus("call_center", "deal")).toBe(false);
     expect(canRoleSetStatus("call_center", "closed")).toBe(false);
     expect(canRoleSetStatus("purchaser", "contacted")).toBe(false);
-    expect(canRoleSetStatus("purchaser", "closed")).toBe(false);
+    expect(canRoleSetStatus("purchaser", "closed")).toBe(true);
 
     // Owners are unrestricted.
     expect(canRoleSetStatus("admin", "closed")).toBe(true);

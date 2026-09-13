@@ -2,7 +2,7 @@
 
 import { Select } from "@/components/ui/Select";
 import { YEARS, MILEAGE_BRACKETS } from "@/config/vehicles";
-import { type CatalogMake, modelsFor } from "@/lib/use-vehicle-catalog";
+import { type CatalogMake, type CatalogSpecification, modelsFor } from "@/lib/use-vehicle-catalog";
 import { ValuationFormValues, FormErrors } from "./form.types";
 
 type Props = {
@@ -10,10 +10,11 @@ type Props = {
   errors: FormErrors;
   /** Live catalog from the admin's Catalog page, falling back to the bundled list. */
   makes: CatalogMake[];
+  specifications: CatalogSpecification[];
   setField: <K extends keyof ValuationFormValues>(key: K, value: ValuationFormValues[K]) => void;
 };
 
-export function StepCarDetails({ values, errors, makes, setField }: Props) {
+export function StepCarDetails({ values, errors, makes, specifications, setField }: Props) {
   const modelOptions = modelsFor(makes, values.make).map((model) => ({
     label: model.name,
     value: model.name,
@@ -48,14 +49,24 @@ export function StepCarDetails({ values, errors, makes, setField }: Props) {
           error={errors.model}
         />
       </div>
-      <Select
-        label="Mileage"
-        placeholder="Select mileage range"
-        options={MILEAGE_BRACKETS.map((b) => ({ label: b.label, value: String(b.value) }))}
-        value={values.mileageKm}
-        onChange={(v) => setField("mileageKm", v)}
-        error={errors.mileageKm}
-      />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Select
+          label="Mileage"
+          placeholder="Select mileage range"
+          options={MILEAGE_BRACKETS.map((b) => ({ label: b.label, value: String(b.value) }))}
+          value={values.mileageKm}
+          onChange={(v) => setField("mileageKm", v)}
+          error={errors.mileageKm}
+        />
+        <Select
+          label="Specification"
+          placeholder="Select specification"
+          options={specifications.map((specification) => ({ label: specification.name, value: specification.name }))}
+          value={values.specification}
+          onChange={(v) => setField("specification", v)}
+          error={errors.specification}
+        />
+      </div>
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="car-description"

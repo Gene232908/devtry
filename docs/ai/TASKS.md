@@ -2,6 +2,20 @@
 
 ## Current objective
 
+- [x] 2026-09-13 Customer Service Arrival Confirmation & Multi-View Visibility:
+  - Enabled Call Centre staff, Super Admin, and Manager accounts to record customer arrival across stages `["inspection_scheduled", "inspected", "negotiating", "deal"]` in `LeadDetail.tsx` and `route.ts`.
+  - Added visible arrival indicators across the platform: header badge (`✓ Customer Arrived`), Scheduled Inspection card badge and updated message, dedicated Purchaser arrival card, inspection workspace header badge, and Leads Directory table column.
+  - Modularized `LeadArrivalCard.tsx`, `LeadScheduledInspectionCard.tsx`, and `LeadPurchaseFields.tsx` ensuring `LeadDetail.tsx` remains strictly under 500 lines (497 lines).
+  - Marked lead GENEEEE (`eaf3892f-b874-44d1-bd83-7e5c1fe6b6a4`) as Arrived in database with `arrival_confirmed` event by Agent1.
+- [x] 2026-09-13 Incomplete Forms Specification Editing & Pipeline Status Clean-up:
+  - Added manual vehicle specification selection to Incomplete Forms workspace (`PartialLeadDetail.tsx`) for Customer Service and added display to `PartialLeadCapturedCard.tsx`.
+  - Added persistence for `specification` in `PATCH /api/admin/partial-leads/[id]` with graceful fallback.
+  - Aligned active pipeline statuses by removing obsolete `pending` and `closed` ("Not Purchased") from active filters and menus across `LEAD_PIPELINE`, `DETAIL_STATUS_OPTIONS`, `FILTER_STATUS_OPTIONS`, `AGENT_STATUS_CHOICES`, and `PARTIAL_STATUSES`.
+  - Hardened specification validation in `app/api/leads/route.ts` and `app/api/admin/partial-leads/[id]/route.ts` with standard fallback names, and retained fallback options in `lib/use-vehicle-catalog.ts` so forms do not break when catalog is empty.
+  - Enabled Super Admin and Manager accounts to confirm customer arrival.
+  - Preserved Philippine testing number support (`PH_MOBILE_PATTERNS`) per client instruction.
+  - Verified: `npx tsc --noEmit` (0 errors), `vitest` (206 tests passing), `eslint` (clean), `npm run build:check` (clean).
+
 - [x] 2026-09-09 Dashboard UI/UX & Chart Visibility Overhaul:
   - Fixed single-color gold ambiguity with intuitive multi-color systems: progressive chromatic 8-stage funnel with conversion percentages, operational urgency inventory aging colors (Emerald -> Sky -> Amber -> Red), and tri-color staff performance.
   - Implemented Dual Y-Axis and prominent Gross Profit visualization so profit values (e.g. AED 1,500) are never dwarfed by high revenue (AED 20,000), plus added a Gross Margin % badge.
@@ -106,6 +120,18 @@
 - [x] 2026-06-30 How It Works and Contact changed to unique non-photo layouts instead of reusing the hero image.
 
 ## Update rule
+
+### Next action — arrival and inspection report
+
+- [ ] Apply `supabase/migrations/0027_inspection_arrival_reports.sql` to the
+  intended Supabase project.
+- [ ] In Super Admin → Vehicle Catalog, add the live Specification options.
+- [ ] Test one scheduled lead end to end: CSR marks Arrived; assigned Purchaser
+  completes every required inspection field and all 24 photos with notes; download the PDF
+  and confirm the lead becomes Inspected exactly once.
+- [ ] Apply migration `0028_inspection_audit_retention_vin.sql`, set a strong
+  production-only `CRON_SECRET`, then verify editable completed reports, VIN
+  search, activity history, and one authorized retention-job test.
 
 ### Next action — Incomplete-form handoff
 

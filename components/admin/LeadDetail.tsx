@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Calendar, Lock, Save } from "lucide-react";
+import { ArrowLeft, Check, ClipboardCheck, Clock, Lock, Save } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -19,7 +19,6 @@ import {
   DETAIL_STATUS_OPTIONS,
   formatAed,
   formatDate,
-  formatScheduledInspection,
   requiresPurchasePrice,
   STATUS_HINT,
   STATUS_LABEL,
@@ -31,6 +30,10 @@ import { LeadAssignment } from "@/components/admin/LeadAssignment";
 import { LeadActivityCard } from "@/components/admin/LeadActivityCard";
 import { LeadVehicleCard } from "@/components/admin/LeadVehicleCard";
 import { LeadContactCard } from "@/components/admin/LeadContactCard";
+import { LeadArrivalCard } from "@/components/admin/LeadArrivalCard";
+import { LeadScheduledInspectionCard } from "@/components/admin/LeadScheduledInspectionCard";
+import { LeadPurchaseFields } from "@/components/admin/LeadPurchaseFields";
+import { LeadStartInspectionButton } from "@/components/admin/LeadStartInspectionButton";
 import { useStaffIdentity } from "@/lib/admin/staff-identity-context";
 import { hasCapability } from "@/lib/auth/permissions";
 import { statusChoicesForRole } from "@/lib/auth/lead-visibility";
@@ -38,6 +41,7 @@ import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 import { demoInventory } from "@/config/demo-admin-data";
 
 const SELECTABLE = new Set<string>(DETAIL_STATUS_OPTIONS);
+const COMPLETED_INSPECTION_STATUSES = new Set<LeadStatus>(["inspected", "negotiating", "deal", "closed"]);
 
 const FALLBACK_EVENTS = (createdAt: string): LeadEvent[] => [
   { id: "auto", type: "lead_created", message: "Lead submitted via website valuation form.", createdAt },
@@ -50,6 +54,12 @@ export function LeadDetail({ lead }: { lead: Lead }) {
   const canViewContact = !identity || hasCapability(identity, "viewLeadContact");
   const router = useRouter();
   const isPurchaser = identity?.role === "purchaser";
+  const canViewInspection =
+    (isPurchaser || Boolean(identity && hasCapability(identity, "viewAllLeads"))) &&
+    COMPLETED_INSPECTION_STATUSES.has(lead.status);
+  const canStartInspection = Boolean(identity && hasCapability(identity, "viewAllLeads")) || isPurchaser
+    ? lead.status === "inspection_scheduled" && lead.arrivalStatus === "arrived"
+    : false;
 
   const roleStatusOptions = useMemo(() => {
     const allowed = statusChoicesForRole(identity?.role) ?? DETAIL_STATUS_OPTIONS;
@@ -66,6 +76,7 @@ export function LeadDetail({ lead }: { lead: Lead }) {
   const [car, setCar] = useState<InventoryItem | null>(null);
   const [justSaved, setJustSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [markingArrival, setMarkingArrival] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [events, setEvents] = useState<LeadEvent[]>(() => FALLBACK_EVENTS(lead.createdAt));
   const [views, setViews] = useState<LeadViewSummary>({ count: 0, lastAt: null });
@@ -156,6 +167,12 @@ export function LeadDetail({ lead }: { lead: Lead }) {
   }, [car]);
 
   const scheduledInspectionAt = draft.inspectionScheduledAt || lead.inspectionScheduledAt || null;
+  const canConfirmArrival =
+    (identity?.role === "call_center" || identity?.role === "admin" || identity?.role === "manager");
+  const arrivalEligible =
+    canConfirmArrival &&
+    ["inspection_scheduled", "inspected", "negotiating", "deal"].includes(lead.status) &&
+    Boolean(lead.purchaserId);
   const priceRequired = requiresPurchasePrice(draft.status);
   const priceLocked = car?.status === "sold";
   const dealLocked = lead.status === "deal" && Boolean(car);
@@ -231,6 +248,20 @@ export function LeadDetail({ lead }: { lead: Lead }) {
     savedTimerRef.current = setTimeout(() => setJustSaved(false), 2200);
   }
 
+  async function confirmArrival() {
+    if (!arrivalEligible || lead.arrivalStatus === "arrived") return;
+    setMarkingArrival(true);
+    setSaveError(null);
+    const ok = await updateLead(lead.id, { arrivalStatus: "arrived" });
+    setMarkingArrival(false);
+    if (!ok) {
+      setSaveError("Couldn't confirm customer arrival. Please try again.");
+      return;
+    }
+    router.refresh();
+    void fetchTimeline();
+  }
+
   return (
     <div className="flex flex-col gap-6 font-sans">
       {/* Breadcrumb */}
@@ -253,8 +284,29 @@ export function LeadDetail({ lead }: { lead: Lead }) {
             {" · Web Lead"}
           </p>
         </div>
-        <div>
-          <StatusPill status={lead.status} />
+        <div className="flex flex-wrap items-center gap-3">
+          {canViewInspection && (
+            <Link
+              href={`/admin/leads/${encodeURIComponent(lead.id)}/inspection`}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-btn border border-border-gold/70 bg-bg/30 px-4 text-sm font-medium text-text transition-colors hover:border-gold hover:bg-surface-2"
+            >
+              <ClipboardCheck className="h-4 w-4" />
+              View inspection form
+            </Link>
+          )}
+          {lead.arrivalStatus === "arrived" && (
+            <span className="inline-flex min-h-11 items-center gap-1.5 rounded-btn border border-emerald-500/40 bg-emerald-500/15 px-3.5 text-xs font-semibold text-emerald-400 shadow-sm">
+              <Check className="h-4 w-4 text-emerald-400" />
+              Customer Arrived
+            </span>
+          )}
+          {lead.status === "inspection_scheduled" && lead.arrivalStatus !== "arrived" && (
+            <span className="inline-flex min-h-11 items-center gap-1.5 rounded-btn border border-amber-500/30 bg-amber-500/10 px-3.5 text-xs font-medium text-amber-300">
+              <Clock className="h-4 w-4 text-amber-300" />
+              Awaiting Arrival
+            </span>
+          )}
+          {!canStartInspection && <StatusPill status={lead.status} />}
         </div>
       </div>
 
@@ -308,14 +360,22 @@ export function LeadDetail({ lead }: { lead: Lead }) {
                 </span>
               </div>
             ) : (
-              <Select
-                label="Status *"
-                placeholder={STATUS_LABEL[draft.status] ?? "Select"}
-                options={roleStatusOptions}
-                value={SELECTABLE.has(draft.status) ? draft.status : ""}
-                error={errors.status}
-                onChange={(v) => setDraft((d) => ({ ...d, status: v as LeadStatus }))}
-              />
+              canStartInspection ? (
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs font-medium uppercase tracking-wider text-text-faint">Status *</span>
+                  <LeadStartInspectionButton leadId={lead.id} visible />
+                  <span className="text-xs text-text-muted">Save the inspection first. The status will then become Inspected and the next workflow statuses will be available.</span>
+                </div>
+              ) : (
+                <Select
+                  label="Status *"
+                  placeholder={STATUS_LABEL[draft.status] ?? "Select"}
+                  options={roleStatusOptions}
+                  value={SELECTABLE.has(draft.status) ? draft.status : ""}
+                  error={errors.status}
+                  onChange={(v) => setDraft((d) => ({ ...d, status: v as LeadStatus }))}
+                />
+              )
             )}
 
             {/* Scheduled Inspection Picker (Agents & Admin only when scheduling) */}
@@ -329,45 +389,29 @@ export function LeadDetail({ lead }: { lead: Lead }) {
               />
             )}
 
-            {scheduledInspectionAt && (
-              <div className="flex flex-col gap-1 rounded-card border border-gold/40 bg-gold/5 p-4">
-                <div className="flex items-center gap-2 font-medium text-gold text-sm">
-                  <Calendar className="h-4 w-4 shrink-0" />
-                  <span>Scheduled Inspection</span>
-                </div>
-                <p className="text-sm font-semibold text-text">
-                  {formatScheduledInspection(scheduledInspectionAt)}
-                </p>
-                <p className="text-xs text-text-muted">
-                  Customer scheduled to visit facility for car inspection and negotiation.
-                </p>
-              </div>
-            )}
+            <LeadScheduledInspectionCard
+              scheduledInspectionAt={scheduledInspectionAt}
+              arrivalStatus={lead.arrivalStatus}
+            />
+
+            <LeadArrivalCard
+              arrivalStatus={lead.arrivalStatus}
+              canConfirmArrival={canConfirmArrival}
+              arrivalEligible={arrivalEligible}
+              markingArrival={markingArrival}
+              onConfirmArrival={() => void confirmArrival()}
+              showCard={canConfirmArrival || isPurchaser || lead.arrivalStatus === "arrived" || Boolean(scheduledInspectionAt)}
+            />
 
             {priceRequired && (
-              <>
-                <Input
-                  label="Purchase Price (AED) *"
-                  inputMode="numeric"
-                  value={draft.purchasePrice}
-                  error={errors.purchasePrice}
-                  disabled={priceLocked}
-                  onChange={(e) => setDraft((d) => ({ ...d, purchasePrice: e.target.value }))}
-                  placeholder="e.g. 185000"
-                />
-                <Input
-                  label="Purchase date"
-                  type="date"
-                  value={draft.purchasedAt}
-                  disabled={priceLocked}
-                  onChange={(e) => setDraft((d) => ({ ...d, purchasedAt: e.target.value }))}
-                />
-                <p className="-mt-1 text-xs text-text-faint">
-                  {priceLocked
-                    ? "This car has been sold, so the price it was bought for can no longer be changed."
-                    : "Exactly what you paid the customer. Saving adds this car to your Inventory."}
-                </p>
-              </>
+              <LeadPurchaseFields
+                purchasePrice={draft.purchasePrice}
+                purchasedAt={draft.purchasedAt}
+                error={errors.purchasePrice}
+                disabled={priceLocked}
+                onPriceChange={(val) => setDraft((d) => ({ ...d, purchasePrice: val }))}
+                onDateChange={(val) => setDraft((d) => ({ ...d, purchasedAt: val }))}
+              />
             )}
 
             {car && (

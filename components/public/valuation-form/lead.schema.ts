@@ -29,6 +29,7 @@ export const leadSchema = z.object({
     .string()
     .min(1, "Enter valid mileage")
     .refine((v) => Number(v) >= 0 && Number(v) <= 1_000_000, "Enter valid mileage"),
+  specification: z.string().min(1, "Select a specification"),
   description: z.string().max(400, "Keep it under 400 characters").optional().or(z.literal("")),
   trim: z.string().min(1, "Select a trim"),
   optionLevel: z.enum(["Basic Mode", "Mid Mode", "Full Option"], { message: "Choose an option level" }),

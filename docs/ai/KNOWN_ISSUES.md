@@ -271,6 +271,11 @@ with no retention period or deletion process defined yet. `SECURITY_COMPLIANCE.m
 requires this documented before production; still needs client/legal input
 on how long lead data should be kept and how deletion requests are handled.
 
+Inspection-photo retention is resolved separately by migration 0028: private
+inspection photos are deleted 60 days after sale while report information and
+audit events remain. Lead names, phone numbers, email, and other personal data
+are still covered by this open issue.
+
 ## ISSUE-002 - WhatsApp number format too strict
 
 **Severity:** Low  
@@ -304,6 +309,22 @@ Allow local UAE mobile and country-code UAE mobile input formats while still rej
 **Workaround:** The admin API now falls back to a validated update plus activity inserts when the RPC is missing.
 
 **Planned fix:** Apply migration `0021_partial_lead_activity.sql` so future updates use the transactional RPC path.
+
+### ISSUE-007 - Inspection/arrival migration not yet applied remotely
+
+**Severity:** High
+**Status:** Open
+
+**Description:** Source code expects migration `0027_inspection_arrival_reports.sql`.
+Until it runs on the intended Supabase project, the new specification, arrival,
+inspection report, photo storage, and atomic-completion workflow cannot operate.
+
+**Workaround:** Do not use the new workflow on that environment yet; existing
+lead reads degrade to their prior fields.
+
+**Planned fix:** Apply the tracked migration through the approved Supabase SQL
+process, add Super Admin Specification options, then perform a non-production
+end-to-end test.
 
 ## Issue template
 

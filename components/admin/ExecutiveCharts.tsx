@@ -42,7 +42,7 @@ function Shell({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="flex flex-col p-5 border-white/10 bg-[#141417]/80 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200 hover:border-white/20">
+    <Card className="flex flex-col p-5 border-white/10 bg-[#141417] shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200 hover:border-white/20">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
           <h3 className="font-semibold text-fluid-0 text-text tracking-tight">{title}</h3>
@@ -121,7 +121,7 @@ export function PipelineFunnelChart({
         ) : isEmptySeries(data.map((point) => point.value)) ? (
           <EmptyChart message="No activity in this period" />
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" debounce={50} minWidth={0}>
             <BarChart
               data={data.map((point) => ({
                 ...point,
@@ -220,7 +220,7 @@ export function InventoryAgingChart({
         ) : isEmptySeries(data.map((point) => point.count)) ? (
           <EmptyChart message="No cars currently in stock" />
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" debounce={50} minWidth={0}>
             <PieChart>
               <Pie
                 data={data}

@@ -70,7 +70,7 @@ export function ExecutiveKpiCard({
   return (
     <Card
       className={cn(
-        "group relative flex min-h-[154px] flex-col justify-between p-5 border-white/10 bg-[#141417]/80 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200",
+        "group relative flex min-h-[154px] flex-col justify-between p-5 border-white/10 bg-[#141417] shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200",
         theme.borderHover,
       )}
     >

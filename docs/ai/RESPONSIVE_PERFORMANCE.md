@@ -19,17 +19,20 @@ Check approximately:
 - Start with one-column mobile layouts.
 - Add columns only when readable.
 
-## 2026-09-09 Executive Overview
+## 2026-09-12 Admin document scrolling
 
-- Admin sidebar performance: do not call `router.refresh()` immediately after a
-  server-rendered page mounts. It forces a second server render shortly after a
-  prefetched navigation paints and appears as a duplicate loading delay. Keep
-  freshness through explicit user actions, focus/visibility refresh, and the
-  bounded visible-tab polling interval instead.
-- Executive Dashboard chart performance: load Recharts visualizations on demand
-  rather than in the initial Dashboard JavaScript. KPI cards, date controls,
-  and action panels remain interactive while the chart bundle downloads; each
-  chart reserves its final layout space to prevent content shifting.
+- The admin shell uses the browser document as its one vertical scroll owner.
+  Do not put routine admin pages inside a fixed-height `overflow-y-auto` main
+  region: it creates competing browser and dashboard scrollbars. The top bar
+  remains sticky, while dashboard cards, tables, and their deliberate mobile
+  horizontal-overflow strategies remain unchanged.
+
+## 2026-09-11 Executive Dashboard Rendering & Navigation Performance
+
+- **Eliminate GPU Backdrop-Blur Shaders on Bento Cards**: Never place `backdrop-blur-md` or `backdrop-blur-sm` on dozens of repeating dashboard cards or chart shells. Overlapping CSS backdrop filters force continuous GPU framebuffer readbacks and Gaussian blur shader passes on every scroll frame and mouse move, collapsing frame rates on High-DPI screens and Windows laptops. Use solid dark surfaces (`bg-[#141417] border-white/10`) instead.
+- **1-Frame Deferred Chart Mounting**: Do not mount complex SVG chart trees synchronously with the page shell. Render the headers, filters, KPI cards, and operational panels immediately (<10ms), and defer Recharts mounting by 1 animation frame (`requestAnimationFrame`). Reserve exact container dimensions with lightweight placeholders to ensure Cumulative Layout Shift (CLS) is 0 while keeping the main JavaScript thread completely free for instant sidebar clicks.
+- **Debounce ResizeObservers on Recharts**: Add `debounce={50}` and `minWidth={0}` to all `<ResponsiveContainer>` instances to prevent synchronous layout reflow loops when containers measure parent DOM dimensions.
+- **Avoid Aggressive Prefetch on All Nav Links**: Do not force `prefetch={true}` across all sidebar links simultaneously in dev or production. Use standard viewport prefetching to avoid concurrent route compilation spikes.
 
 - Bento grids collapse from four KPI cards to one column. Wide staff details
   remain in a scrollable table instead of shrinking financial values below a
@@ -214,6 +217,59 @@ Report:
 ## 2026-09-10 Overview comparison readability
 
 - Comparison charts retain their compact responsive layout but use an explicit
-  hover card that names both matched dates and groups selected versus earlier
-  values. This avoids asking the user to infer date alignment from slate chart
-  marks alone.
+hover card that names both matched dates and groups selected versus earlier
+values. This avoids asking the user to infer date alignment from slate chart
+marks alone.
+
+## 2026-09-13 Purchaser inspection workspace
+
+- The workspace becomes one column on phones and adds columns only where space
+  permits. Native `capture="environment"` inputs open the phone rear camera.
+- Each of the 22 image uploads is bounded to 8 MB; read access signs all stored
+  paths in one batch rather than making 22 serial URL requests.
+- Every photo requirement uses plain-language angle text and an inline capture
+  guide. Its Add photo dialog offers a deliberate choice between the device
+  camera and an existing file, avoiding ambiguous browser-picker behavior.
+- A contained, scrollable Photo folder gallery lets the inspector review all
+  saved photos in one place. It reuses the already-authorized signed URLs and
+  does not issue a new request per thumbnail.
+- The eye icon opens the selected photo in an in-page, contain-sized preview
+  modal. It does not navigate away or open another browser tab; the folder
+  remains the option for reviewing the complete set.
+- Private photos use direct `<img>` rendering through an authorized same-origin
+  endpoint, so the public Next image optimizer never proxies private Supabase
+  storage and previews do not expire while a report is open. The preview is
+  contain-sized to avoid layout growth and failed loads show a clear recovery
+  message.
+- The photo viewer keeps a compact `current of captured` title and Previous /
+  Next controls. It navigates only among saved photos, so staff never land on
+  an empty required slot while reviewing the folder.
+- While the viewer is open, desktop keyboard Left / Right keys and a deliberate
+  50px horizontal swipe on touch devices use the same saved-photo navigation.
+  Vertical scrolling remains available on touch screens.
+
+## 2026-09-13 LAN development protocol
+
+- The CSP `upgrade-insecure-requests` directive is enabled only for production.
+  A network development server at `http://<local-ip>:3000` has no TLS
+  certificate, so upgrading its CSS, JavaScript, and image requests to HTTPS
+  causes `ERR_SSL_PROTOCOL_ERROR` and an unstyled page.
+
+## 2026-09-13 Inspection PDF feedback
+
+- Completed inspection PDFs use an authenticated internal binary response with
+  no PDF attachment header. The page waits with an indeterminate preparation
+  bar, validates the complete `%PDF-` payload, then saves a local Blob. This
+  prevents expired third-party download managers from hijacking the API request
+  while retaining a normal direct-download response for other consumers.
+- Private photo retrieval is batched four at a time, avoiding 24
+  serial storage waits while keeping memory and storage concurrency bounded.
+- The PDF is generated only after completion and is not bundled into the public
+  valuation form.
+- The report uses a white A4, low-ink layout based on the approved reference:
+  a compact CarVibeDubai identity sits at upper-left, pages avoid heavy background decoration,
+  and all 24 photos are contained without cropping or stretching. Normal reports
+  use three data pages plus five photo pages; failure notes add pages only when
+  there is real content to preserve.
+- Required-photo cards are one column on small screens and two columns from
+  tablet widths, with touch-sized actions and one responsive camera/upload dialog.

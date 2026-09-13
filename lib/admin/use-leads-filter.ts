@@ -125,6 +125,7 @@ export function useLeadsFilter(
   );
   const [makes, setMakes] = useState<string[]>([]);
   const [emirates, setEmirates] = useState<string[]>([]);
+  const [arrivalStatuses, setArrivalStatuses] = useState<string[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
@@ -206,6 +207,7 @@ export function useLeadsFilter(
     // `location` is optional on a lead, and a lead with no emirate recorded
     // matches no emirate box — it is unknown, not universal.
     if (emirates.length) result = result.filter((l) => l.location != null && emirates.includes(l.location));
+    if (arrivalStatuses.length) result = result.filter((l) => arrivalStatuses.includes(l.arrivalStatus ?? "not_arrived"));
 
     const sorted = [...result].sort((a, b) => {
       const rankDiff = queuePriority(a.status, role) - queuePriority(b.status, role);
@@ -217,7 +219,7 @@ export function useLeadsFilter(
       return sortDir === "asc" ? cmp : -cmp;
     });
     return sorted;
-  }, [leads, search, statuses, makes, emirates, sortKey, sortDir, role, attentionFilter, createdRange]);
+  }, [leads, search, statuses, makes, emirates, arrivalStatuses, sortKey, sortDir, role, attentionFilter, createdRange]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -257,12 +259,18 @@ export function useLeadsFilter(
       setEmirates(v);
       setPage(1);
     },
+    arrivalStatuses,
+    setArrivalStatuses: (v: string[]) => {
+      setArrivalStatuses(v);
+      setPage(1);
+    },
     /** True when any of the three multi-selects is narrowing the list. */
-    hasFilters: statuses.length > 0 || makes.length > 0 || emirates.length > 0,
+    hasFilters: statuses.length > 0 || makes.length > 0 || emirates.length > 0 || arrivalStatuses.length > 0,
     clearFilters: () => {
       setStatuses([]);
       setMakes([]);
       setEmirates([]);
+      setArrivalStatuses([]);
       setPage(1);
     },
     sortKey,

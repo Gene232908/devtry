@@ -22,7 +22,7 @@ export function OperationalAlerts({
   isLoading?: boolean;
 }) {
   return (
-    <Card className="flex flex-col p-5 border-white/10 bg-[#141417]/80 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all hover:border-amber-500/20">
+    <Card className="flex flex-col p-5 border-white/10 bg-[#141417] shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all hover:border-amber-500/20">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h3 className="font-semibold text-fluid-0 text-text tracking-tight">Needs attention</h3>
@@ -121,7 +121,7 @@ export function FollowUpPanel({
   ];
 
   return (
-    <Card className="flex flex-col p-5 border-white/10 bg-[#141417]/80 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all hover:border-emerald-500/20">
+    <Card className="flex flex-col p-5 border-white/10 bg-[#141417] shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all hover:border-emerald-500/20">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h3 className="font-semibold text-fluid-0 text-text tracking-tight">Lead Pipeline</h3>
@@ -165,7 +165,7 @@ export function DataQualityPanel({
   isLoading?: boolean;
 }) {
   return (
-    <Card className="flex flex-col p-5 border-white/10 bg-[#141417]/80 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all hover:border-amber-500/20">
+    <Card className="flex flex-col p-5 border-white/10 bg-[#141417] shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all hover:border-amber-500/20">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h3 className="font-semibold text-fluid-0 text-text tracking-tight">Record Check</h3>
@@ -213,7 +213,7 @@ export function StaffSummaryTable({
   isLoading?: boolean;
 }) {
   return (
-    <Card className="overflow-hidden p-0 border-white/10 bg-[#141417]/80 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.35)]">
+    <Card className="overflow-hidden p-0 border-white/10 bg-[#141417] shadow-[0_8px_30px_rgba(0,0,0,0.35)]">
       <div className="flex flex-wrap items-center justify-between gap-2 p-5 pb-3">
         <div>
           <h3 className="font-semibold text-fluid-0 text-text tracking-tight">Staff Results</h3>

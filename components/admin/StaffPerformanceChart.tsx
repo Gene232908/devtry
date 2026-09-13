@@ -104,7 +104,7 @@ export function StaffPerformanceChart({
           ) ? (
           <EmptyChart message="No assigned-lead activity in this period" />
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" debounce={50} minWidth={0}>
             <BarChart data={chartData} margin={CHART_MARGIN}>
               <CartesianGrid {...CHART_GRID_STYLE} />
               <XAxis dataKey="name" {...RECESSIVE_AXIS} tick={{ fill: "#E5E7EB", fontSize: 11 }} />

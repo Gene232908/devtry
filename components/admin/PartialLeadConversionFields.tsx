@@ -10,6 +10,7 @@ export type PartialDealState = {
   year: string;
   trim: string;
   mileageKm: string;
+  specification: string;
   emirate: string;
   inspectionScheduledAt: string;
   markVerified: boolean;
@@ -22,6 +23,7 @@ export type PartialDealErrors = {
   make?: string;
   model?: string;
   trim?: string;
+  specification?: string;
   year?: string;
   emirate?: string;
   inspectionScheduledAt?: string;
@@ -35,6 +37,7 @@ type Props = {
   makeOptions: { label: string; value: string }[];
   modelOptions: { label: string; value: string }[];
   trimOptions: { label: string; value: string }[];
+  specificationOptions: { label: string; value: string }[];
   emirateOptions: { label: string; value: string }[];
   setDeal: React.Dispatch<React.SetStateAction<PartialDealState>>;
 };
@@ -47,6 +50,7 @@ export function PartialLeadConversionFields({
   makeOptions,
   modelOptions,
   trimOptions,
+  specificationOptions,
   emirateOptions,
   setDeal,
 }: Props) {
@@ -142,6 +146,14 @@ export function PartialLeadConversionFields({
           inputMode="numeric"
           value={deal.mileageKm}
           onChange={(e) => setDeal((d) => ({ ...d, mileageKm: e.target.value }))}
+        />
+        <Select
+          label="Specification *"
+          placeholder="Select specification"
+          options={specificationOptions}
+          value={deal.specification}
+          error={errors.specification}
+          onChange={(specification) => setDeal((d) => ({ ...d, specification }))}
         />
       </div>
 

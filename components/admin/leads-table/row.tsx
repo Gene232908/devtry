@@ -15,9 +15,9 @@ import { formatAed, formatDate } from "@/lib/format";
 // contact details are read on the detail page where opening the lead also marks
 // it as picked up.
 
-type Props = { lead: Lead; duplicateReview?: boolean };
+type Props = { lead: Lead; duplicateReview?: boolean; showArrivalStatus?: boolean };
 
-export const LeadRow = memo(function LeadRow({ lead, duplicateReview = false }: Props) {
+export const LeadRow = memo(function LeadRow({ lead, duplicateReview = false, showArrivalStatus = false }: Props) {
   return (
     <tr className="border-b border-border last:border-0 hover:bg-surface-2/50">
       <td className="py-3 pr-4">
@@ -42,6 +42,19 @@ export const LeadRow = memo(function LeadRow({ lead, duplicateReview = false }: 
       <td className="py-3 pr-4">
         <StatusPill status={lead.status} />
       </td>
+      {showArrivalStatus && (
+        <td className="py-3 pr-4">
+          {lead.arrivalStatus === "arrived" ? (
+            <span className="inline-flex items-center rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-400">
+              Arrived
+            </span>
+          ) : (
+            <span className="text-xs text-text-faint">
+              Not yet arrived
+            </span>
+          )}
+        </td>
+      )}
     </tr>
   );
 });

@@ -1,7 +1,6 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   CalendarDays,
@@ -14,7 +13,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Skeleton } from "@/components/ui/Skeleton";
 import { OverviewDateFilter, type DateFilterValue } from "@/components/admin/OverviewDateFilter";
 import { OverviewComparisonFilter } from "@/components/admin/OverviewComparisonFilter";
 import { ExecutiveKpiCard } from "@/components/admin/ExecutiveKpiCard";
@@ -29,33 +27,11 @@ import { financialChange, type OverviewRange } from "@/lib/admin/executive-overv
 import { useExecutiveOverview, type ExecutiveOverviewSeed } from "@/lib/admin/use-executive-overview";
 import { cn } from "@/lib/utils";
 
-// Recharts is the heaviest dashboard dependency. Keep it out of the initial
-// dashboard bundle so headings, filters, KPI cards, and action panels become
-// interactive before chart code is downloaded and measured.
-const FinancialTrendChart = dynamic(
-  () => import("@/components/admin/FinancialTrendChart").then((module) => module.FinancialTrendChart),
-  { ssr: false, loading: () => <ChartPlaceholder title="Sales and Profit" className="h-[22rem]" /> },
-);
-const PipelineFunnelChart = dynamic(
-  () => import("@/components/admin/ExecutiveCharts").then((module) => module.PipelineFunnelChart),
-  { ssr: false, loading: () => <ChartPlaceholder title="Lead Journey" className="h-[22rem]" /> },
-);
-const VisitorsChart = dynamic(
-  () => import("@/components/admin/VisitorsChart").then((module) => module.VisitorsChart),
-  { ssr: false, loading: () => <ChartPlaceholder title="Website Visitors" className="h-64" /> },
-);
-const SubmissionsChart = dynamic(
-  () => import("@/components/admin/SubmissionsChart").then((module) => module.SubmissionsChart),
-  { ssr: false, loading: () => <ChartPlaceholder title="Car Submissions" className="h-64" /> },
-);
-const InventoryAgingChart = dynamic(
-  () => import("@/components/admin/ExecutiveCharts").then((module) => module.InventoryAgingChart),
-  { ssr: false, loading: () => <ChartPlaceholder title="Time Cars Have Been in Stock" className="h-56" /> },
-);
-const StaffPerformanceChart = dynamic(
-  () => import("@/components/admin/StaffPerformanceChart").then((module) => module.StaffPerformanceChart),
-  { ssr: false, loading: () => <ChartPlaceholder title="Staff Performance" className="h-64" /> },
-);
+import { FinancialTrendChart } from "@/components/admin/FinancialTrendChart";
+import { PipelineFunnelChart, InventoryAgingChart } from "@/components/admin/ExecutiveCharts";
+import { VisitorsChart } from "@/components/admin/VisitorsChart";
+import { SubmissionsChart } from "@/components/admin/SubmissionsChart";
+import { StaffPerformanceChart } from "@/components/admin/StaffPerformanceChart";
 
 function formatAed(value: number) {
   return `AED ${Math.round(value).toLocaleString("en-AE")}`;
@@ -130,7 +106,7 @@ export function ExecutiveDashboard({ seed }: { seed?: ExecutiveOverviewSeed }) {
       <OverviewDateFilter value={dateFilter} onChange={updateFilter} isLoading={isLoading} />
 
       {comparison && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-400/25 bg-amber-400/10 p-3 text-xs sm:text-sm text-amber-200/90 backdrop-blur-md shadow-lg">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-400/25 bg-amber-400/10 p-3 text-xs sm:text-sm text-amber-200/90 shadow-lg">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="flex items-center gap-1.5 font-semibold text-amber-300">
               <CalendarRange className="h-4 w-4" />
@@ -205,6 +181,14 @@ function DashboardData({
       : null;
   const watchCount = data.inventoryAging[3]?.count ?? 0;
 
+  const [chartsReady, setChartsReady] = useState(false);
+  useEffect(() => {
+    const handle = requestAnimationFrame(() => {
+      setChartsReady(true);
+    });
+    return () => cancelAnimationFrame(handle);
+  }, []);
+
   return (
     <>
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -252,18 +236,34 @@ function DashboardData({
       </section>
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-[1.25fr_1fr]">
-        <FinancialTrendChart data={data.trend} comparisonData={data.comparisonOverview?.trend} periodLabel={label} comparisonPeriodLabel={comparisonPeriodLabel} isLoading={isLoading} />
-        <PipelineFunnelChart data={data.pipeline} comparisonData={data.comparisonOverview?.pipeline} periodLabel={label} comparisonPeriodLabel={comparisonPeriodLabel} isLoading={isLoading} />
+        {chartsReady ? (
+          <FinancialTrendChart data={data.trend} comparisonData={data.comparisonOverview?.trend} periodLabel={label} comparisonPeriodLabel={comparisonPeriodLabel} isLoading={isLoading} />
+        ) : (
+          <ChartPlaceholder title="Sales and Profit" className="h-[22rem]" />
+        )}
+        {chartsReady ? (
+          <PipelineFunnelChart data={data.pipeline} comparisonData={data.comparisonOverview?.pipeline} periodLabel={label} comparisonPeriodLabel={comparisonPeriodLabel} isLoading={isLoading} />
+        ) : (
+          <ChartPlaceholder title="Lead Journey" className="h-[22rem]" />
+        )}
       </section>
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <VisitorsChart data={data.trend} comparisonData={data.comparisonOverview?.trend} periodLabel={label} comparisonPeriodLabel={comparisonPeriodLabel} isLoading={isLoading} />
-        <SubmissionsChart data={data.trend} comparisonData={data.comparisonOverview?.trend} periodLabel={label} comparisonPeriodLabel={comparisonPeriodLabel} isLoading={isLoading} />
+        {chartsReady ? (
+          <VisitorsChart data={data.trend} comparisonData={data.comparisonOverview?.trend} periodLabel={label} comparisonPeriodLabel={comparisonPeriodLabel} isLoading={isLoading} />
+        ) : (
+          <ChartPlaceholder title="Website Visitors" className="h-48" />
+        )}
+        {chartsReady ? (
+          <SubmissionsChart data={data.trend} comparisonData={data.comparisonOverview?.trend} periodLabel={label} comparisonPeriodLabel={comparisonPeriodLabel} isLoading={isLoading} />
+        ) : (
+          <ChartPlaceholder title="Car Submissions" className="h-48" />
+        )}
       </section>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {/* Current stock value */}
-        <Card className="flex flex-col justify-between p-5 border-white/10 bg-[#141417]/80 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200 hover:border-emerald-500/30">
+        <Card className="flex flex-col justify-between p-5 border-white/10 bg-[#141417] shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200 hover:border-emerald-500/30">
           <div className="flex items-start justify-between gap-3">
             <div>
               <span className="text-xs font-medium uppercase tracking-[0.06em] text-[#a39c90]">
@@ -288,7 +288,7 @@ function DashboardData({
         </Card>
 
         {/* Average time in stock */}
-        <Card className="flex flex-col justify-between p-5 border-white/10 bg-[#141417]/80 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200 hover:border-sky-500/30">
+        <Card className="flex flex-col justify-between p-5 border-white/10 bg-[#141417] shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200 hover:border-sky-500/30">
           <div className="flex items-start justify-between gap-3">
             <div>
               <span className="text-xs font-medium uppercase tracking-[0.06em] text-[#a39c90]">
@@ -314,7 +314,7 @@ function DashboardData({
         {/* Cars waiting too long */}
         <Card
           className={cn(
-            "flex flex-col justify-between p-5 border-white/10 bg-[#141417]/80 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200",
+            "flex flex-col justify-between p-5 border-white/10 bg-[#141417] shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200",
             watchCount > 0
               ? "hover:border-red-500/40"
               : "hover:border-white/20",
@@ -358,8 +358,16 @@ function DashboardData({
       </section>
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-[.9fr_1.1fr]">
-        <InventoryAgingChart data={data.inventoryAging} comparisonData={data.comparisonOverview?.inventoryAging} isLoading={isLoading} />
-        <StaffPerformanceChart data={data.staff} comparisonData={data.comparisonOverview?.staff} periodLabel={label} isLoading={isLoading} />
+        {chartsReady ? (
+          <InventoryAgingChart data={data.inventoryAging} comparisonData={data.comparisonOverview?.inventoryAging} isLoading={isLoading} />
+        ) : (
+          <ChartPlaceholder title="Time Cars Have Been in Stock" className="h-56" />
+        )}
+        {chartsReady ? (
+          <StaffPerformanceChart data={data.staff} comparisonData={data.comparisonOverview?.staff} periodLabel={label} isLoading={isLoading} />
+        ) : (
+          <ChartPlaceholder title="Staff Performance" className="h-64" />
+        )}
       </section>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -384,12 +392,14 @@ function DashboardLoading() {
 
 function ChartPlaceholder({ title, className }: { title: string; className: string }) {
   return (
-    <Card className="p-5 border-white/10 bg-[#141417]/80">
+    <Card className="flex flex-col p-5 border-white/10 bg-[#141417] shadow-[0_8px_30px_rgba(0,0,0,0.35)]">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h3 className="font-semibold text-fluid-0 text-text tracking-tight">{title}</h3>
         <span className="h-5 w-20 rounded-full bg-white/5" aria-hidden="true" />
       </div>
-      <Skeleton className={cn("w-full", className)} />
+      <div className={cn("w-full animate-pulse rounded-lg bg-white/[0.03]", className)} />
     </Card>
   );
 }
+
+

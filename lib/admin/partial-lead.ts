@@ -19,6 +19,7 @@ export type PartialLead = {
   model: string | null;
   year: number | null;
   mileage_km: number | null;
+  specification?: string | null;
   description: string | null;
   call_center_id: string | null;
   purchaser_id: string | null;
@@ -35,7 +36,7 @@ export type PartialLeadActivity = {
 /** Columns selected everywhere a partial lead is read, kept in one place so the
  *  list and detail endpoints can never drift apart. */
 export const PARTIAL_LEAD_COLUMNS =
-  "id, created_at, updated_at, phone_e164, full_name, consent, status, notes, furthest_step, last_trigger, make, model, year, mileage_km, description, call_center_id, purchaser_id";
+  "id, created_at, updated_at, phone_e164, full_name, consent, status, notes, furthest_step, last_trigger, make, model, year, mileage_km, specification, description, call_center_id, purchaser_id";
 
 /**
  * Deliberately the same vocabulary as the lead pipeline. An abandoned form can
@@ -55,7 +56,7 @@ export const PARTIAL_LEAD_COLUMNS =
  * human judgement about where the conversation stands. A judgement made by
  * mistake has to be reversible, which means 'new' has to be offered.
  */
-export const PARTIAL_STATUSES = ["new", "pending", "contacted", "inspection_scheduled"] as const;
+export const PARTIAL_STATUSES = ["new", "contacted", "inspection_scheduled"] as const;
 
 /** Everything the database will accept. Identical to the selectable list. */
 export const PARTIAL_STATUSES_ALLOWED = PARTIAL_STATUSES;

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useRefreshOnFocus } from "@/lib/admin/use-fresh-server-data";
 import { cn } from "@/lib/utils";
+import { CatalogSpecificationsCard } from "@/components/admin/CatalogSpecificationsCard";
 
 // The Make / Model / Trim lists the public valuation form is built from.
 // Everything here is live: what is added on this page is what the next visitor
@@ -232,6 +233,8 @@ export default function AdminCatalogPage() {
           {error}
         </p>
       )}
+
+      <CatalogSpecificationsCard />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[19rem_1fr]">
         {/* ── Makes ─────────────────────────────────────────────── */}

@@ -27,7 +27,11 @@ const csp = [
   "base-uri 'self'",
   "form-action 'self'",
   "object-src 'none'",
-  "upgrade-insecure-requests",
+  // A LAN dev server runs on HTTP and has no TLS certificate. Enabling this
+  // directive in development upgrades every asset/navigation to HTTPS and
+  // causes ERR_SSL_PROTOCOL_ERROR on http://<local-ip>:3000. Production on
+  // Vercel remains HTTPS-enforced.
+  ...(isDev ? [] : ["upgrade-insecure-requests"]),
 ].join("; ");
 
 const securityHeaders = [

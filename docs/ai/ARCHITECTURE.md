@@ -57,6 +57,28 @@ record, links the partial record, and server-selects an active Purchaser. From
 that point, the normal Leads workflow owns the record. The partial activity
 table records follow-up notes, status changes, and assignment history.
 
+### Arrival and inspection report data flow
+
+`vehicle_specifications` is read by the public valuation form, the CSR recovery
+form, and the Purchaser inspection workspace. Super Admin manages it through
+server-authorized Catalog routes; public submission and recovery conversion
+validate the chosen value against that table.
+
+Arrival is `leads.arrival_status`, never a lead pipeline status. Only the
+assigned Call Centre user can set it to `arrived`, and the server requires an
+inspection-scheduled lead with an assigned Purchaser. Purchasers see the result
+on their assigned list. Inspection drafts and private JPG/PNG photos use
+server routes; completion calls a service-role RPC that completes the report,
+marks the lead Inspected, and adds the audit event atomically.
+Migration 0028 extends this to 24 note-required photos, editable completed
+reports, per-card/photo audit events, Inventory VIN synchronization, and a
+CRON_SECRET-protected daily 60-day post-sale photo cleanup. Cleanup removes
+private photo objects and photo rows but keeps report JSON and lead events.
+Completed report export keeps authorization/storage retrieval in the API route
+and delegates print layout to `lib/inspection/pdf-report.ts`. File naming is a
+small shared helper so the server attachment and Purchaser browser download use
+the same make/model/year title without bundling `pdf-lib` into the client.
+
 ### UI
 
 - Renders data.

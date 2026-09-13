@@ -53,6 +53,15 @@ function messageFor(event: DbLeadEvent, actor?: ActorSnapshot): string {
     case "car_purchased": return meta.purchase_price_aed != null ? `Car bought${actionBy(meta, actor)} for AED ${Number(meta.purchase_price_aed).toLocaleString()} and added to Inventory.` : `Car added to Inventory${actionBy(meta, actor)}.`;
     case "marked_spam": return meta.is_spam === false ? `Unmarked as spam${actionBy(meta, actor)}.` : `Marked as spam${actionBy(meta, actor)}.`;
     case "assigned": return `Lead assignment updated${actionBy(meta, actor)}.`;
+    case "arrival_confirmed": return `Customer arrival confirmed${actionBy(meta, actor)}.`;
+    case "inspection_completed": return `Inspection report completed${actionBy(meta, actor)}.`;
+    case "inspection_card_updated": {
+      const card = typeof meta.card === "string" ? meta.card : "Inspection section";
+      return `${card} updated${actionBy(meta, actor)}.`;
+    }
+    case "inspection_photo_added": return `Inspection photo added${actionBy(meta, actor)}: ${String(meta.angle ?? "Photo")}.`;
+    case "inspection_photo_replaced": return `Inspection photo replaced${actionBy(meta, actor)}: ${String(meta.angle ?? "Photo")}.`;
+    case "inspection_photos_expired": return `Inspection photos removed after the 60-day post-sale retention period.`;
     case "recovered": return "Lead recovered from an abandoned valuation form.";
     default: return event.type;
   }

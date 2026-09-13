@@ -57,7 +57,7 @@ export function VisitorsChart({
   const compSubmissions = comparisonData?.[0]?.submissions;
 
   return (
-    <Card className="flex flex-col p-5 border-white/10 bg-[#141417]/80 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200 hover:border-cyan-500/30">
+    <Card className="flex flex-col p-5 border-white/10 bg-[#141417] shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200 hover:border-cyan-500/30">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-400">
@@ -93,7 +93,7 @@ export function VisitorsChart({
           <div className="flex h-full flex-col justify-center">
             <div className="grid grid-cols-2 gap-3 h-full">
               {/* Card 1: Traffic Sessions */}
-              <div className="flex flex-col justify-between rounded-xl border border-cyan-500/25 bg-cyan-500/5 p-3.5 relative overflow-hidden backdrop-blur-sm">
+              <div className="flex flex-col justify-between rounded-xl border border-cyan-500/25 bg-cyan-500/5 p-3.5 relative overflow-hidden">
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-cyan-400">
                     <Globe className="h-3.5 w-3.5 text-cyan-400" />
@@ -127,7 +127,7 @@ export function VisitorsChart({
               </div>
 
               {/* Card 2: Conversion to Submissions */}
-              <div className="flex flex-col justify-between rounded-xl border border-blue-500/25 bg-blue-500/5 p-3.5 relative overflow-hidden backdrop-blur-sm">
+              <div className="flex flex-col justify-between rounded-xl border border-blue-500/25 bg-blue-500/5 p-3.5 relative overflow-hidden">
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-blue-400">
                     <Target className="h-3.5 w-3.5 text-blue-400" />
@@ -169,7 +169,7 @@ export function VisitorsChart({
           </div>
         ) : (
           // MULTI-DAY AREA CHART
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" debounce={50} minWidth={0}>
             <AreaChart data={chartData} margin={CHART_MARGIN}>
               <defs>
                 <linearGradient id="visitorsFill" x1="0" y1="0" x2="0" y2="1">

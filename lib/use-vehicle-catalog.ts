@@ -17,6 +17,16 @@ import { MAKES, TRIM_FALLBACK, getTrims } from "@/config/vehicles";
 
 export type CatalogModel = { name: string; trims: string[] };
 export type CatalogMake = { name: string; models: CatalogModel[] };
+export type CatalogSpecification = { id: string; name: string };
+
+// Kept only as a graceful fallback while a local/development database awaits
+// migration 0027. In a migrated environment, Super Admin controls the options.
+const FALLBACK_SPECIFICATIONS: CatalogSpecification[] = [
+  { id: "gcc", name: "GCC Specs" },
+  { id: "american", name: "American Specs" },
+  { id: "japanese", name: "Japanese Specs" },
+  { id: "european", name: "European Specs" },
+];
 
 /** The hardcoded config, reshaped to match the live payload. */
 const FALLBACK: CatalogMake[] = MAKES.map((make) => ({
@@ -27,9 +37,11 @@ const FALLBACK: CatalogMake[] = MAKES.map((make) => ({
 type ApiTrim = { id: string; name: string };
 type ApiModel = { id: string; name: string; trims?: ApiTrim[] };
 type ApiMake = { id: string; name: string; models: ApiModel[] };
+type ApiSpecification = { id: string; name: string };
 
 export function useVehicleCatalog() {
   const [makes, setMakes] = useState<CatalogMake[]>(FALLBACK);
+  const [specifications, setSpecifications] = useState<CatalogSpecification[]>(FALLBACK_SPECIFICATIONS);
   const [isLive, setIsLive] = useState(false);
 
   useEffect(() => {
@@ -59,6 +71,14 @@ export function useVehicleCatalog() {
         // An empty catalog is treated as "not ready" rather than "no cars".
         if (!cancelled && live.length > 0) {
           setMakes(live);
+          const liveSpecifications = Array.isArray(body.data?.specifications)
+            ? (body.data.specifications as ApiSpecification[])
+                .filter((specification) => typeof specification.id === "string" && typeof specification.name === "string")
+                .map((specification) => ({ id: specification.id, name: specification.name }))
+            : [];
+          if (liveSpecifications.length > 0) {
+            setSpecifications(liveSpecifications);
+          }
           setIsLive(true);
         }
       } catch {
@@ -72,7 +92,7 @@ export function useVehicleCatalog() {
     };
   }, []);
 
-  return { makes, isLive };
+  return { makes, specifications, isLive };
 }
 
 /** Models for the selected make. Empty when nothing is selected yet. */

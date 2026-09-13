@@ -12,6 +12,7 @@ export type DbLead = {
   trim: string | null;
   year: number;
   mileage_km: number | null;
+  specification?: string | null;
   /** @deprecated Legacy field from before the Basic/Mid/Full Option rework. */
   condition: "excellent" | "good" | "fair" | null;
   option_level: "Basic Mode" | "Mid Mode" | "Full Option" | null;
@@ -27,6 +28,7 @@ export type DbLead = {
   /** Optional: absent on databases that have not run migration 0024 yet, which
    *  both readers fall back to querying without (see GET /api/admin/leads). */
   inspection_scheduled_at?: string | null;
+  arrival_status?: "not_arrived" | "arrived" | null;
 };
 
 // Maps a Supabase row to the camelCase `Lead` shape the admin UI already expects,
@@ -42,6 +44,7 @@ export function mapDbLead(r: DbLead): Lead {
     trim: r.trim ?? "",
     year: r.year,
     mileageKm: r.mileage_km ?? 0,
+    specification: r.specification ?? "",
     condition: r.condition ?? "good",
     optionLevel: r.option_level ?? undefined,
     description: r.description ?? "",
@@ -55,5 +58,6 @@ export function mapDbLead(r: DbLead): Lead {
     callCenterId: r.call_center_id ?? null,
     purchaserId: r.purchaser_id ?? null,
     inspectionScheduledAt: r.inspection_scheduled_at ?? undefined,
+    arrivalStatus: r.arrival_status ?? "not_arrived",
   };
 }

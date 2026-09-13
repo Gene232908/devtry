@@ -60,6 +60,16 @@ Review the pushed Milestone 1 public landing package, live site, and meeting pac
 - Official brand/logo asset preferences if Sir Nyash wants exact brand files instead of the current badge-style marks.
 - Final dashboard users, CRM pipeline wording, and remaining business contact details.
 
+## 2026-09-13 handoff — adjustment branch
+
+The active local branch is `adjustment`. The new Arrival / Specification /
+Purchaser inspection workflow is source-complete and verified locally, but it
+requires `supabase/migrations/0027_inspection_arrival_reports.sql` before use
+against Supabase. Apply it once through the approved SQL process, add live
+Specification entries in Super Admin → Vehicle Catalog, then use non-production
+data for one complete CSR-arrival → Purchaser-report → PDF test. No deployment
+or remote database write was performed in this change.
+
 ## Exact next action
 
 Apply `supabase/migrations/0026_partial_lead_csr_handoff.sql` in the intended
@@ -67,3 +77,20 @@ Supabase SQL Editor, then use a safe test record: capture an incomplete form,
 confirm it appears only for its assigned CSR, complete its details, select
 **Inspection Scheduled**, and confirm it becomes one Lead with an assigned
 Purchaser. Do not deploy or push this task until the user explicitly asks.
+
+## 2026-09-13 handoff - inspection audit and retention
+
+The active branch remains `adjustment`. Source now includes the green Purchaser
+Start inspection handoff, editable completed reports for Purchaser/Super Admin,
+per-card and per-photo audit events, mandatory notes for all 24 required photos
+(including front and rear bumpers), VIN inventory lookup, and the protected
+60-day post-sale photo cleanup. PDF output is eight pages, branded, low-ink,
+and preserves image aspect ratios.
+
+Before live testing, apply migrations `0027_inspection_arrival_reports.sql` and
+`0028_inspection_audit_retention_vin.sql` in order and configure `CRON_SECRET`
+in the target Vercel environment. Then run one non-production end-to-end test:
+Call Centre schedules and marks arrival, Purchaser starts/saves/completes/edits
+the inspection, Super Admin views/edits history, PDF downloads, Inventory finds
+the VIN, and the retention endpoint is invoked with its protected credential.
+No remote migration, deployment, or production data mutation was performed.

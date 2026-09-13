@@ -103,6 +103,7 @@ export async function POST(req: NextRequest) {
       p_model: str(body.model),
       p_year: int(body.year),
       p_mileage_km: int(body.mileageKm),
+      p_specification: str(body.specification),
       p_description: str(body.description),
       p_call_center_id: callCenterId,
     });

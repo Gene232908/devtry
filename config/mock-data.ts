@@ -25,6 +25,7 @@ export type Lead = {
   trim: string;
   year: number;
   mileageKm: number;
+  specification?: string;
   /** @deprecated Replaced by `optionLevel` on the current valuation form; kept for historical rows only. */
   condition: "excellent" | "good" | "fair";
   optionLevel?: "Basic Mode" | "Mid Mode" | "Full Option";
@@ -39,6 +40,8 @@ export type Lead = {
   callCenterId?: string | null;
   purchaserId?: string | null;
   inspectionScheduledAt?: string | null;
+  /** A scheduled customer's on-site arrival; deliberately separate from lead status. */
+  arrivalStatus?: "not_arrived" | "arrived";
 };
 
 export type LeadEvent = {

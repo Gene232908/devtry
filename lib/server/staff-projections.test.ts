@@ -90,8 +90,8 @@ describe("projectLeadForCallCenter", () => {
 describe("projectLeadForPurchaser", () => {
   const result = projectLeadForPurchaser(SAMPLE);
 
-  it("does NOT expose contact info", () => {
-    expect(result.fullName).toBeUndefined();
+  it("exposes only the customer name needed to identify the inspection", () => {
+    expect(result.fullName).toBe("Ali Hassan");
     expect(result.phoneE164).toBeUndefined();
     expect(result.email).toBeUndefined();
   });
@@ -141,7 +141,7 @@ describe("selectProjection", () => {
     const identity = buildIdentity("u4", "purchaser", "Michael");
     const project = selectProjection(identity);
     const result = project(SAMPLE);
-    expect(result.fullName).toBeUndefined();
+    expect(result.fullName).toBe("Ali Hassan");
     expect(result.estimatedValueAed).toBe(85000);
   });
 });

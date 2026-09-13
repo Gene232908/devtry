@@ -93,6 +93,10 @@ const config: Config = {
           "0%": { transform: "translateX(-130%) skewX(-12deg)" },
           "55%, 100%": { transform: "translateX(240%) skewX(-12deg)" },
         },
+        "inspection-shine": {
+          "0%": { transform: "translateX(-160%) skewX(-12deg)" },
+          "100%": { transform: "translateX(420%) skewX(-12deg)" },
+        },
         "cta-pulse": {
           "0%, 100%": { boxShadow: "0 20px 44px -22px rgba(244,227,168,.9), 0 0 0 0 rgba(244,227,168,.45)" },
           "50%": { boxShadow: "0 22px 48px -20px rgba(244,227,168,1), 0 0 0 12px rgba(244,227,168,0)" },
@@ -167,6 +171,7 @@ const config: Config = {
         "marquee-slow": "marquee 90s linear infinite",
         "marquee-reverse": "marquee-reverse 34s linear infinite",
         shine: "shine 3.4s ease-in-out infinite",
+        "inspection-shine": "inspection-shine 1.15s linear infinite",
         "cta-pulse": "cta-pulse 2.6s ease-in-out infinite",
         "ad-float": "ad-float 4.5s ease-in-out infinite",
         "ping-ring": "ping-ring 2.4s ease-out infinite",

@@ -6,6 +6,13 @@ Use reverse chronological order.
 
 ### Fixed
 
+- **Admin overview nested scrolling.** Removed the fixed-height nested vertical
+  scroll container from the shared admin shell. Admin pages now use the single
+  browser-level scrollbar, while the top bar stays sticky and dashboard
+  component behavior is unchanged.
+
+- **Business Overview navigation and rendering performance.** Removed `force-dynamic` from `/admin` page shell so the client router transitions instantly without blocking on a server roundtrip. Optimized layout cookie checks to bypass redundant JWT decoding on sidebar clicks. Replaced 6 staggered dynamic chart imports with direct bundling in `ExecutiveDashboard` to eliminate waterfall chunk requests and cascaded re-render layout thrashing. Added Stale-While-Revalidate memory caching so navigating back to the Business Overview displays existing metrics instantly (0ms latency) while refreshing in the background.
+
 - **Clean git author and zero-personal-identity verification for deployment.** Configured repository local git author and committer to pure carvibe025 (carvibeduba025@gmail.com). Sanitized database seed and test mock data to remove developer names and personal emails, verifying 0 personal occurrences across 600+ project files prior to online publishing.
 
 - **Lead Notes History & Activity audit UI.** Redesigned the Notes History modal and Activity timeline on the Lead Detail view. Replaced ambiguous numbered circle badges with clear revision status badges (`Latest Note` vs `Revision #...`), elevated author and role visibility, added high-contrast timestamps with dedicated clock icons, and enclosed note contents in structured message bubbles with strict word-break wrapping (`break-all`, `[overflow-wrap:anywhere]`) so unbroken text never blows out horizontal layout on mobile or desktop. Added `min-w-0` to grid columns to prevent CSS grid width distortion.
@@ -17,6 +24,20 @@ Use reverse chronological order.
 - **Local chunk-loading failures.** Rebuilt the generated Next output after removing conflicting local Next.js servers. The app now runs from one fresh production server on port 3000, preventing stale page chunks from being requested from an older server.
 
 ### Added
+
+- **Auditable editable vehicle inspections.** Purchasers can start an arrived
+  customer's inspection, save changes card by card, and continue editing a
+  completed report alongside Super Admin. The inspection records card and
+  photo actions with actor/time details, requires notes for all 24 photo views
+  (including dedicated front- and rear-bumper photos), and shows the history
+  in a right-side drawer.
+- **Inspection VIN search and photo retention.** Inventory can search and show
+  Chassis Number / VIN Number. A protected daily job removes inspection images
+  60 days after a vehicle is sold while retaining report data and audit history.
+- **Updated inspection PDF.** The eight-page, print-friendly report includes
+  the CarVibeDubai logo, all 24 images, and photo notes without stretching.
+
+- **Live Presentation Demo Dataset & Safe Reset Utility.** Seeded a demo dataset in Supabase matching the exact scenarios, vehicle models, and numerical formulas in `carvibe-dashboard-walkthrough-script.pdf` and `carvibe-admin-dashboard-demo-script.pdf`. Covers the 8.1% margin calculator showcase (AED 170k purchase / AED 185k sale), Section 11 role-commission breakdown (Bentley Continental GT with AED 100 Call Centre, AED 500 Purchaser, AED 100 Developer), 3 unsold showroom cars with 95-day slow-stock trigger (AED 370k capital tied up, 1 car >90 days), 5 incomplete forms (including Anna with 2022 BMW), and August 2026 / 2025 comparison benchmarks. Included standalone wipe script `scripts/wipe_demo_data.mjs` that resets demo data without modifying user accounts or settings.
 
 - **Production Super Admin Manual.** Added a plain-white, Arial-based operations manual covering the complete Super Admin workflow without developer, demo, local-environment, or secret-management instructions.
 
@@ -282,6 +303,26 @@ Use reverse chronological order.
   clear Selected and Earlier sections. Chart legends use the actual earlier
   date range, and the duplicate unlabeled profit legend entry was removed.
 
+## 2026-09-13 Arrival, specification, and inspection report workflow
+
+- Added an admin-managed Specification catalog, required public valuation
+  selection, and server validation through incomplete-form conversion.
+- Added separate arrival tracking for scheduled, Purchaser-assigned leads.
+- Added Purchaser inspection drafts, private 22-photo uploads, report PDF
+  download, and atomic lead/report/audit completion through migration 0027.
+- Fixed a lead-route ordering bug that prevented the CSR Arrival toggle from
+  persisting its status and Activity entry.
+- Verified the inspection PDF route embeds all required stored photos in the
+  downloadable attachment instead of returning image links.
+- Redesigned completed inspection PDFs around the supplied eight-page reference:
+  print-safe information/check grids, actual inspector/completion details,
+  aspect-ratio-preserving labeled photo layouts, full failure notes, and the
+  filename `Inspection Report For - Make Model Year.pdf`. Removed the contact,
+  website, CVD box, and divider header so the report title begins at the top.
+- Added a role- and completion-gated **View inspection form** link on customer
+  records for Purchasers and owner-level staff; direct inspection reads apply
+  the same server-side boundary.
+
 ## 2026-09-10 Incomplete-form recovery handoff
 
 - Incomplete forms now go to Call Centre first, not Purchasers. A CSR must
@@ -303,3 +344,8 @@ Use reverse chronological order.
 - **Super Admin lead reassignment.** Added secure owner dropdowns and required reason capture on lead details. Reassignments are recorded in Activity and do not change future round-robin order.
 - **Call Centre Agent Manual.** Added a simple operations manual covering only the current agent workflow, allowed statuses, incomplete-form conversion, inspection handoff, notes, Activity, permissions, and daily checklist.
 - **Purchaser Manual.** Added a plain-language manual based on the existing Purchaser workflow: inspection handoff, assigned leads, allowed statuses, Deal requirements, Inventory, notes/activity, commission, limitations, and daily checklist.
+- **Inventory role commission view.** Added an owner-only checkbox dropdown for Call Centre, Purchaser, and Developer commission columns, with all roles selected by default and amounts calculated from the existing inventory profit and assignment data.
+- **Super Admin lead reassignment.** Added secure owner dropdowns and required reason capture on lead details. Reassignments are recorded in Activity and do not change future round-robin order.
+- **Call Centre Agent Manual.** Added a simple operations manual covering only the current agent workflow, allowed statuses, incomplete-form conversion, inspection handoff, notes, Activity, permissions, and daily checklist.
+- **Purchaser Manual.** Added a plain-language manual based on the existing Purchaser workflow: inspection handoff, assigned leads, allowed statuses, Deal requirements, Inventory, notes/activity, commission, limitations, and daily checklist.
+- **Inventory role commission view.** Added an owner-only checkbox dropdown for Call Centre, Purchaser, and Developer commission columns, with all roles selected by default and amounts calculated from the existing inventory profit and assignment data.

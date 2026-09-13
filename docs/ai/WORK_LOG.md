@@ -4,11 +4,52 @@ This is the factual source for reports.
 
 Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
+## 2026-09-13
+
+### Completed
+
+- Customer Service Arrival Confirmation & Multi-View Visibility:
+  - Unlocked Arrival confirmation across post-inspection stages (`["inspection_scheduled", "inspected", "negotiating", "deal"]`) for Call Centre (`call_center`), Super Admin (`admin`), and Manager (`manager`).
+  - Added high-visibility arrival status badges and indicators across all operational views:
+    - **Lead Header**: Added prominent emerald badge `✓ Customer Arrived` beside the lead status pill.
+    - **Scheduled Inspection Card**: Extracted into modular `LeadScheduledInspectionCard.tsx`, displaying `✓ Arrived` badge and updated status text (*"Customer arrival confirmed. Ready for inspection and negotiation."*).
+    - **Status & Notes Card**: Modularized into `LeadArrivalCard.tsx` (<500 lines Rule 1 compliant), giving Purchasers a dedicated *"Customer Has Arrived — Ready for Inspection"* card while providing CSR/Admin the toggle switch.
+    - **Vehicle Inspection Form**: Added emerald `✓ Customer Arrived` badge in the header of `InspectionWorkspace.tsx` and selected `arrival_status` in `authorizeInspectionLead`.
+    - **Leads Directory Table**: Enabled the Arrival Status column for operational staff in `components/admin/leads-table/index.tsx` and `row.tsx`.
+  - Successfully marked lead GENEEEE (`eaf3892f-b874-44d1-bd83-7e5c1fe6b6a4`) as **Arrived** in Supabase on behalf of Agent1 (`3b33fe56-6467-4b0f-a021-6464ff42ff6f`), updating `arrival_status: 'arrived'` and recording `arrival_confirmed` in `lead_events`.
+  - Verified live in browser with screenshots: `lead_detail_arrival_visibility_1789281413099.png` and `inspection_header_arrival_visibility_1789281503331.png`.
+- Incomplete Forms (Partial Leads) Specification Editing & Status Clean-up:
+  - Enabled manual vehicle specification selection for Customer Service directly on the Incomplete Forms workspace (`PartialLeadDetail.tsx`) during follow-up, and displayed `Specification` in `PartialLeadCapturedCard.tsx`.
+  - Added persistence for `specification` in `PATCH /api/admin/partial-leads/[id]` with graceful fallback to ensure updates save to Supabase.
+  - Aligned lead statuses across the platform by removing obsolete and non-operational statuses `pending` and `closed` ("Not Purchased") from active pipeline and filter choices (`LEAD_PIPELINE`, `DETAIL_STATUS_OPTIONS`, `FILTER_STATUS_OPTIONS`, `AGENT_STATUS_CHOICES`, and `PARTIAL_STATUSES`), leaving the 6 true operational stages: `New`, `Contacted`, `Inspection Scheduled`, `Inspected`, `Under Negotiation`, `Deal`.
+  - Hardened specification fallback validation in `app/api/leads/route.ts`, `app/api/admin/partial-leads/[id]/route.ts`, and `lib/use-vehicle-catalog.ts` so public form submissions and incomplete lead conversions do not fail when the catalog table is empty or awaiting migration 0027.
+  - Enabled Super Admin and Manager accounts to record customer arrival alongside Call Centre staff.
+  - Maintained temporary Philippine number testing patterns (`PH_MOBILE_PATTERNS`) as requested for ongoing WhatsApp OTP testing.
+  - Verified with `npx tsc --noEmit` (0 errors), `npm test` (22/22 suites, 206 tests passed), `npm run lint` (0 errors), and `npm run build:check` (all 24 routes successfully compiled).
+
+## 2026-09-12
+
+### Completed
+
+- Populated high-volume pipeline data (60 submissions total) for September 10 and 11, with UAE timezone guards ensuring September 12 remains completely clean (0):
+  - **September 10, 2026 (UAE)**: 25 lead submissions, 2 completed sales (Toyota Prado VXL AED 125k, Lexus RX 350 AED 145k), Revenue = **AED 270,000**, Gross Profit = **AED 20,000**, Margin = **7.4%**, Cars Sold = **2**, Visitors = **55**.
+  - **September 11, 2026 (UAE)**: 35 high-intent lead submissions, 4 completed sales (Porsche 911 Carrera AED 380k, Mercedes-AMG G 63 AED 475k, Range Rover Autobiography AED 335k, BMW M4 Competition AED 260k), Revenue = **AED 1,450,000**, Gross Profit = **AED 200,000**, Margin = **13.8%** (clearly higher than Sept 10's 7.4%), Cars Sold = **4**, Visitors = **85**.
+  - **Period Comparison Mode**: Selecting September 11 with comparison enabled automatically compares against September 10 (1-day period match), showing massive positive deltas (+437% revenue, +900% gross profit, +100% cars sold, 13.8% vs 7.4% margin).
+  - **September 12, 2026 (UAE)**: Strictly 0 records (0 revenue, 0 profit, 0 cars sold, 0 submissions, 0 website visitors), leaving "Today" completely fresh and clean.
+  - Verified live via browser automation across multiple date states: captured `today_sept_12_clean.png`, `sept_10_clean.png`, and `sept_11_vs_10_comparison.png`. Vitest 18/18 test suites passing (196/196 tests), `npx tsc --noEmit` clean with 0 errors.
+
 ## 2026-09-11
 
 ### Completed
 
-- Pre-deployment verification and clean git author configuration:
+- Resolved Executive Dashboard stuttering, scroll lag, and sidebar navigation delay:
+  - Terminated obsolete zombie background process (`PID 24604`, `next start --port 3000`) that had been holding port 3000 since 1:49 PM with outdated chunk hashes, which caused `ChunkLoadError` and forced full hard browser page reloads on every sidebar click.
+  - Eliminated 25+ nested `backdrop-blur` GPU shader layers across dashboard KPI cards, chart wrappers, and alert panels (`ExecutiveKpiCard`, `ExecutiveCharts`, `FinancialTrendChart`, `VisitorsChart`, `SubmissionsChart`, `ExecutivePanels`), replacing them with high-performance solid dark obsidian surfaces (`bg-[#141417] border-white/10`) to eliminate GPU fill-rate throttling and restore 60 FPS scrolling.
+  - Implemented 1-frame deferred mounting (`requestAnimationFrame`) for heavy Recharts visualizations in `ExecutiveDashboard.tsx`: the shell, date filters, 4 primary KPI cards, and operational panels now mount instantly in under 10ms with zero event loop blocking, keeping sidebar clicks completely responsive with 0ms delay.
+  - Added `debounce={50}` and `minWidth={0}` to all Recharts `<ResponsiveContainer>` components across `FinancialTrendChart`, `ExecutiveCharts`, `VisitorsChart`, `SubmissionsChart`, and `StaffPerformanceChart` to eliminate layout reflow thrashing during container measurement.
+  - Replaced aggressive `prefetch={true}` on all 9 sidebar links with standard Next.js viewport prefetching in `Sidebar.tsx` to prevent simultaneous background compilation stampedes.
+  - Verified live in browser using `dev@carvibedubai.com` credentials: sidebar transitions between Dashboard, Leads, Inventory, and Commission are instantaneous (<100ms), scrolling is butter smooth, and console has 0 runtime errors. `npx tsc --noEmit` clean (0 errors), `npm test` 18/18 test suites passing (196/196 tests).
+
   - Configured local Git repository identity to `carvibe025 <carvibeduba025@gmail.com>`.
   - Scanned all 619 project files for developer personal names or emails. Removed all occurrences from database seed scripts (`supabase/migrations/0002_seed.sql`) and notification test mocks (`lib/server/lead-notifications.test.ts`), establishing pure `carvibe025` and `carvibeduba025@gmail.com` identity across all code, comments, components, and functions.
   - Formatted and created clean atomic commits on local branch `improvement` strictly with author and committer `carvibe025 <carvibeduba025@gmail.com>`. Preserved 100% of working functional code without alterations.
@@ -1269,3 +1310,119 @@ log's history.
 - Audited the implemented Purchaser visibility rules, status choices, inspection handoff, Deal validation, Inventory creation, notes/activity, and commission access.
 - Created `output/pdf/purchaser-manual.pdf` using only behavior present in the source code.
 - Kept the manual plain, natural, and limited to Purchaser responsibilities; Call Centre and Super Admin-only actions are explicitly excluded.
+
+## 2026-09-11 - Inventory role commission view
+
+- Added a Super Admin-only checkbox dropdown for Call Centre, Purchaser, and Developer commission columns on Inventory.
+- All roles are selected by default; changing the selection hides or shows only the matching commission columns.
+- Inventory rows now carry the existing lead Call Centre and Purchaser assignment IDs so role attribution uses source data rather than invented ownership.
+- Verified with the existing positive-profit commission rates and preserved the current inventory/status/month filters.
+
+## 2026-09-13 - Auditable inspection completion
+
+- Expanded required inspection photos from 22 to 24 with dedicated front and
+  rear bumper views, plain-language guidance, and a mandatory note per image.
+- Added editable completed inspections for Purchaser/Super Admin, per-card and
+  per-photo activity history, VIN inventory search, and a protected 60-day
+  post-sale image-retention job that leaves report data intact.
+- Updated the PDF to an eight-page, low-ink report with CarVibeDubai branding,
+  24 aspect-ratio-preserving images, and their notes.
+- Verified with typecheck, lint, 211 tests, production build check, and an
+  eight-page rendered PDF visual review.
+
+## 2026-09-13 - Arrival, catalog specification, and purchaser inspection workflow
+
+- Created local branch `adjustment` and preserved unrelated working-tree edits.
+- Added Super Admin-managed Specifications to Vehicle Catalog and required the
+  value in valuation, incomplete-form recovery, and Purchaser inspection flows.
+- Added a Call Centre-only Arrival toggle. It remains disabled until Inspection
+  Scheduled is saved and an assigned Purchaser exists; Purchaser lists can show
+  and checkbox-filter Arrived versus Not yet arrived.
+- Added a Purchaser inspection workspace based on the supplied Jetour report:
+  catalog vehicle fields, pass/fail condition sections, tyres with year/reasons,
+  seat notes, 22 capture/upload slots, private photo previews, and a minimalist
+  downloadable PDF after completion.
+- Added migration `0027_inspection_arrival_reports.sql`, including private
+  storage and an atomic completion RPC. It is intentionally not applied to a
+  remote database in this task.
+- Verification passed: `npx tsc --noEmit`, `npm run lint`, `npm run test`
+  (196 tests), and `npm run build:check`.
+- Refined the 22-photo UI: plain-language photo names and capture guidance are
+  visible before selection; Add photo opens a clear Use phone camera / Upload
+  file decision dialog.
+- Fixed arrival persistence: the API now adds the arrival fields and audit event
+  before its shared lead write, so Purchaser lists receive the saved result.
+- Added View photo folder to the inspection workspace. It opens a contained
+  gallery of every required angle, with saved previews and clearly marked
+  missing photos.
+- Added a route-level PDF test that feeds all 22 stored inspection photos to
+  the real download route and verifies a valid PDF attachment with its photo
+  section is generated.
+- Changed saved-photo previews to open in a lightweight in-page modal. The eye
+  icon and gallery thumbnail keep the inspector on the inspection form; View
+  photo folder still provides the complete 22-photo overview.
+- Fixed blank inspection photo previews by rendering the authorized signed
+  image directly with a bounded contain layout and an error state. The PDF
+  download action is now always visible and enables after report completion.
+- Replaced expiring browser-side storage URLs with an access-checked same-origin
+  photo route after testing the affected stored JPEG successfully from Supabase.
+- Moved the inspection PDF action beside the page title, with a visible draft
+  state and an enabled Download PDF action after completion, so it is not
+  hidden below the 22-photo checklist.
+- Added Previous and Next navigation to the in-page photo viewer. Its title
+  identifies the selected photo and position among the captured images.
+- Added keyboard Left / Right navigation and touch swipe navigation to the
+  photo viewer, using the same captured-photo order as its arrow buttons.
+- Fixed Save draft rejecting in-progress year, mileage, key-count, seat-count,
+  or tyre-year values. Drafts now preserve partial typing; strict formats are
+  still enforced when completing the inspection.
+- Updated External Body Condition controls to check/X icons with accessible
+  Pass/Fail labels; Mechanical Components retains its text Pass/Fail controls.
+- Improved completion feedback: an incomplete report now identifies the exact
+  missing section, highlights it, and scrolls to the first problem instead of
+  showing only a generic validation message.
+- Narrowed vehicle completion feedback to the individual invalid inputs as
+  well, so Purchasers can immediately find fields such as Production Year,
+  Number of Keys, or Number of Seats inside the larger vehicle card.
+- Improved completed-report PDF downloads: photo retrieval is batched per PDF
+  page and the Purchaser sees an explicit preparation/download progress bar and
+  actionable error state instead of a plain browser link.
+- Added a separate internal binary delivery mode for completed inspection PDFs.
+  It omits PDF/attachment headers that expired Internet Download Manager can
+  intercept, validates the full PDF payload in the page, and only then saves a
+  local Blob. The normal attachment endpoint remains available.
+- Added explicit export errors for invalid stored report data and damaged image
+  files instead of allowing those failures to terminate the response unclearly.
+- Rebuilt the completed inspection PDF to match the supplied Jetour report's
+  hierarchy and eight-page rhythm while remaining low-ink and print-friendly.
+  Added make/model/year title and filename, two-column data and condition grids,
+  actual inspector/completion metadata, full note overflow pages, photo labels,
+  and contain-fit images that preserve original aspect ratios.
+- Removed the first-page contact/logo header and divider, then moved the report
+  title and information sections upward so the page does not retain empty space.
+- Added a **View inspection form** link on completed customer records. It appears
+  for Purchasers and owner-level staff after completion, routes to the existing
+  inspection page, and the inspection read API now rejects Call Centre access.
+- Verification: `npx tsc --noEmit`, `npm run lint`, and the focused inspection
+  PDF route test passed.
+
+## 2026-09-12 - Admin overview single-scroll layout
+
+- Removed the fixed-height, independently scrolling admin main area. The browser
+  document is now the sole vertical scroll owner and the top bar remains sticky.
+- Changed only the shared shell layout; dashboard cards, charts, tables, data
+  requests, and business logic are unchanged.
+- Verification: `git diff --check`, `npm run lint`, and `npm test -- --run`
+  passed (18 files, 196 tests). `npm run build:check` passed with an isolated
+  `.next-build` directory, preserving the running local development server.
+
+- Audited the implemented Purchaser visibility rules, status choices, inspection handoff, Deal validation, Inventory creation, notes/activity, and commission access.
+- Created `output/pdf/purchaser-manual.pdf` using only behavior present in the source code.
+- Kept the manual plain, natural, and limited to Purchaser responsibilities; Call Centre and Super Admin-only actions are explicitly excluded.
+
+## 2026-09-11 - Inventory role commission view
+
+- Added a Super Admin-only checkbox dropdown for Call Centre, Purchaser, and Developer commission columns on Inventory.
+- All roles are selected by default; changing the selection hides or shows only the matching commission columns.
+- Inventory rows now carry the existing lead Call Centre and Purchaser assignment IDs so role attribution uses source data rather than invented ownership.
+- Verified with the existing positive-profit commission rates and preserved the current inventory/status/month filters.

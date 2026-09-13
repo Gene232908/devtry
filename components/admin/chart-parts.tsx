@@ -17,7 +17,7 @@ export function ChartShell({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="flex flex-col p-5 border-white/10 bg-[#141417]/80 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200 hover:border-white/20">
+    <Card className="flex flex-col p-5 border-white/10 bg-[#141417] shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200 hover:border-white/20">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
           <h3 className="font-semibold text-fluid-0 text-text tracking-tight">{title}</h3>
@@ -185,7 +185,7 @@ export function ComparisonDayTooltip({
     : "border-cyan-400/20 bg-cyan-400/10 text-cyan-300";
 
   return (
-    <div className="min-w-[220px] rounded-xl border border-white/15 bg-[#121216]/95 p-3 text-xs text-gray-200 shadow-2xl backdrop-blur-xl">
+    <div className="min-w-[220px] rounded-xl border border-white/15 bg-[#121216] p-3 text-xs text-gray-200 shadow-2xl">
       <p className="font-semibold text-white">{selectedDay}</p>
       {comparisonDay && comparisonLabel && (
         <p className="mt-1 text-[11px] leading-snug text-gray-400">

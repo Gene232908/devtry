@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { BadgeDollarSign, ShieldAlert, X } from "lucide-react";
+import { BadgeDollarSign, Search, ShieldAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { MultiSelect } from "@/components/ui/MultiSelect";
@@ -22,6 +22,7 @@ import {
 } from "@/lib/admin/inventory";
 import { useFreshServerData, useServerState } from "@/lib/admin/use-fresh-server-data";
 import { ADMIN_PREVIEW, PREVIEW_NOTICE } from "@/lib/admin/preview-mode";
+import { useStaffIdentity } from "@/lib/admin/staff-identity-context";
 
 // Cars the business has bought and now owns. Stock arrives here automatically
 // when a lead is marked as a Deal — there is no "add a car" button, because a
@@ -41,6 +42,13 @@ const STATUS_FILTER_OPTIONS = INVENTORY_FILTER_OPTIONS.map((s) => ({
   value: s,
   label: INVENTORY_STATUS_LABEL[s],
 }));
+
+const ROLE_FILTER_OPTIONS: Array<{ value: InventoryRole; label: string }> = [
+  { value: "call_center", label: "Call Centre" },
+  { value: "purchaser", label: "Purchaser" },
+  { value: "developer", label: "Developer" },
+];
+type InventoryRole = "call_center" | "purchaser" | "developer";
 
 function StatusChip({ status }: { status: InventoryStatus }) {
   return (
@@ -75,9 +83,13 @@ export default function InventoryClient({
   // be "during" any more, and no client-side read that could fail on its own —
   // `loading.tsx` covers the gap while the server works.
   const error = initialError;
+  const identity = useStaffIdentity();
+  const isOwner = !identity || identity.role === "admin" || identity.role === "manager";
   // Empty means "all" — same rule as the Leads filters. Unticking the last box
   // returns every car rather than emptying the table with no obvious way back.
   const [statusFilter, setStatusFilter] = useState<InventoryStatus[]>([]);
+  const [vinSearch, setVinSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<InventoryRole[]>(() => ROLE_FILTER_OPTIONS.map((role) => role.value));
   /**
    * Purchase month, as `YYYY-MM`. Defaults to the month happening now.
    *
@@ -147,8 +159,10 @@ export default function InventoryClient({
     if (monthFilter.length > 0 && !isAgingFilter) {
       result = result.filter((i) => monthFilter.includes(uaeMonthKey(new Date(i.purchasedAt))));
     }
+    const vin = vinSearch.trim().toLowerCase();
+    if (vin) result = result.filter((item) => item.chassisNumber.toLowerCase().includes(vin));
     return result;
-  }, [items, statusFilter, monthFilter, isAgingFilter]);
+  }, [items, statusFilter, monthFilter, isAgingFilter, vinSearch]);
 
   /**
    * Headline figures — for whatever the filters are showing, not for everything.
@@ -189,6 +203,11 @@ export default function InventoryClient({
       capital: held.reduce((sum, i) => sum + i.purchasePriceAed, 0),
       profit: visible.reduce((sum, i) => sum + (i.commission?.profitAed ?? 0), 0),
       totalCommission: agentCommission + purchaserCommission + developerCommission,
+      roleProfit: {
+        callCenter: agentCommission,
+        purchaser: purchaserCommission,
+        developer: developerCommission,
+      },
     };
   }, [visible]);
 
@@ -316,6 +335,14 @@ export default function InventoryClient({
         />
       </div>
 
+      {isOwner && (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <Summary label="Call Centre commission (2%)" value={formatAed(summary.roleProfit.callCenter)} />
+          <Summary label="Purchaser commission (10%)" value={formatAed(summary.roleProfit.purchaser)} />
+          <Summary label="Developer commission (2%)" value={formatAed(summary.roleProfit.developer)} />
+        </div>
+      )}
+
       <Card className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
@@ -327,6 +354,16 @@ export default function InventoryClient({
               allLabel="All statuses"
               noun="statuses"
             />
+            {isOwner && (
+              <MultiSelect
+                className="w-full sm:w-60"
+                options={ROLE_FILTER_OPTIONS}
+                selected={roleFilter}
+                onChange={(v) => setRoleFilter(v as InventoryRole[])}
+                allLabel="All roles"
+                noun="roles"
+              />
+            )}
             {/* Shown as soon as there is anything to filter.
                 It was hidden below two months on the reasoning that a
                 single-option filter cannot change anything — true, but wrong
@@ -344,6 +381,11 @@ export default function InventoryClient({
                 noun="months"
               />
             )}
+            <label className="relative w-full sm:w-72">
+              <span className="sr-only">Search Chassis or VIN Number</span>
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-faint" />
+              <input value={vinSearch} onChange={(event) => setVinSearch(event.target.value)} placeholder="Search Chassis / VIN Number" className="min-h-11 w-full rounded-btn border border-border bg-surface-2 pl-10 pr-3 text-sm text-text outline-none placeholder:text-text-faint focus:border-gold" />
+            </label>
           </div>
           {/* The Refresh button is gone deliberately.
               The page now re-reads on arrival and whenever the tab regains
@@ -393,7 +435,15 @@ export default function InventoryClient({
                   <th className="py-2 pr-4 text-right font-normal">Paid</th>
                   <th className="py-2 pr-4 text-right font-normal">Sold for</th>
                   <th className="py-2 pr-4 text-right font-normal">Profit</th>
-                  <th className="py-2 pr-4 text-right font-normal">Your 2%</th>
+                  {(!isOwner || roleFilter.includes("call_center")) && (
+                    <th className="py-2 pr-4 text-right font-normal">Call Centre 2%</th>
+                  )}
+                  {(!isOwner || roleFilter.includes("purchaser")) && (
+                    <th className="py-2 pr-4 text-right font-normal">Purchaser 10%</th>
+                  )}
+                  {(!isOwner || roleFilter.includes("developer")) && (
+                    <th className="py-2 pr-4 text-right font-normal">Developer 2%</th>
+                  )}
                   <th className="py-2 pr-4 font-normal">Status</th>
                   <th className="py-2 pr-1 text-right font-normal">Actions</th>
                 </tr>
@@ -406,6 +456,7 @@ export default function InventoryClient({
                         {item.year} {item.make} {item.model}
                       </Link>
                       {item.trim && <span className="block text-text-faint">{item.trim}</span>}
+                      {item.chassisNumber && <span className="block text-xs text-text-muted">VIN: {item.chassisNumber}</span>}
                       {/* This car came from a form nobody ever finished, so the
                           seller's number was never proved to be theirs — worth
                           knowing before ringing it about the paperwork. */}
@@ -429,9 +480,21 @@ export default function InventoryClient({
                     >
                       {item.commission ? formatAed(item.commission.profitAed) : "—"}
                     </td>
-                    <td className="py-3 pr-4 text-right tabular-nums text-gold">
-                      {item.commission ? formatAed(item.commission.commissionAed) : "—"}
-                    </td>
+                    {(!isOwner || roleFilter.includes("call_center")) && (
+                      <td className="py-3 pr-4 text-right tabular-nums text-gold">
+                        {item.commission ? formatAed(round2(Math.max(item.commission.profitAed, 0) * AGENT_COMMISSION_RATE)) : "—"}
+                      </td>
+                    )}
+                    {(!isOwner || roleFilter.includes("purchaser")) && (
+                      <td className="py-3 pr-4 text-right tabular-nums text-gold">
+                        {item.commission ? formatAed(round2(Math.max(item.commission.profitAed, 0) * PURCHASER_COMMISSION_RATE)) : "—"}
+                      </td>
+                    )}
+                    {(!isOwner || roleFilter.includes("developer")) && (
+                      <td className="py-3 pr-4 text-right tabular-nums text-gold">
+                        {item.commission ? formatAed(item.commission.commissionAed) : "—"}
+                      </td>
+                    )}
                     <td className="py-3 pr-4">
                       <StatusChip status={item.status} />
                     </td>

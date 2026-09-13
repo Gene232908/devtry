@@ -54,7 +54,7 @@ function FinancialComparisonTooltip({
   if (!active || !point) return null;
 
   return (
-    <div className="min-w-[250px] rounded-xl border border-white/15 bg-[#121216]/95 p-3 text-xs text-gray-200 shadow-2xl backdrop-blur-xl">
+    <div className="min-w-[250px] rounded-xl border border-white/15 bg-[#121216] p-3 text-xs text-gray-200 shadow-2xl">
       <p className="font-semibold text-white">{point.day}</p>
       {point.comparisonDay && comparisonPeriodLabel && (
         <p className="mt-1 text-[11px] leading-snug text-gray-400">
@@ -127,7 +127,7 @@ export function FinancialTrendChart({
   ) : null;
 
   return (
-    <Card className="flex flex-col p-5 border-white/10 bg-[#141417]/80 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200 hover:border-white/20">
+    <Card className="flex flex-col p-5 border-white/10 bg-[#141417] shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200 hover:border-white/20">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
           <h3 className="font-semibold text-fluid-0 text-text tracking-tight">Sales and Profit</h3>
@@ -194,7 +194,7 @@ export function FinancialTrendChart({
           <div className="flex h-full flex-col justify-center px-1 py-1">
             <div className="grid grid-cols-2 gap-3 sm:gap-6 h-full">
               {/* Revenue Card/Bar */}
-              <div className="flex flex-col justify-between rounded-xl border border-white/10 bg-amber-500/5 p-4 relative overflow-hidden backdrop-blur-sm">
+              <div className="flex flex-col justify-between rounded-xl border border-white/10 bg-amber-500/5 p-4 relative overflow-hidden">
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-400">
                     <Coins className="h-3.5 w-3.5" />
@@ -231,7 +231,7 @@ export function FinancialTrendChart({
               </div>
 
               {/* Gross Profit Card/Bar - 100% PROMINENT & GLOWING */}
-              <div className="flex flex-col justify-between rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 relative overflow-hidden backdrop-blur-sm">
+              <div className="flex flex-col justify-between rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 relative overflow-hidden">
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-400">
                     <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
@@ -270,7 +270,7 @@ export function FinancialTrendChart({
           </div>
         ) : (
           // MULTI-DAY DUAL-AXIS COMPOSED CHART WITH COMPARISON SERIES
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" debounce={50} minWidth={0}>
             <ComposedChart data={chartData} margin={{ top: 12, right: 12, left: -4, bottom: 0 }}>
               <defs>
                 <linearGradient id="revBarGrad" x1="0" y1="0" x2="0" y2="1">

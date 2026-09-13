@@ -58,6 +58,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     purchased_at?: unknown;
     inspection_scheduled_at?: unknown;
     purchaser_id?: unknown;
+    arrival_status?: unknown;
   };
   try {
     body = await req.json();
@@ -73,12 +74,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const loadCurrent = (fields: string) => supabase.from("leads").select(fields).eq("id", id).single();
 
   let { data: currentRow, error: loadError } = await loadCurrent(
-    "id, status, estimated_value_aed, notes, is_spam, call_center_id, purchaser_id, inspection_scheduled_at",
+    "id, status, estimated_value_aed, notes, is_spam, call_center_id, purchaser_id, inspection_scheduled_at, arrival_status",
   );
 
   // Same fallback as GET /api/admin/leads: a live database that has not run
   // migration 0024 yet must still be able to save a lead.
-  if (loadError?.message?.includes("inspection_scheduled_at")) {
+  if (loadError && /inspection_scheduled_at|arrival_status/.test(loadError.message ?? "")) {
     ({ data: currentRow, error: loadError } = await loadCurrent(
       "id, status, estimated_value_aed, notes, is_spam, call_center_id, purchaser_id",
     ));
@@ -97,6 +98,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     call_center_id: string | null;
     purchaser_id: string | null;
     inspection_scheduled_at?: string | null;
+    arrival_status?: "not_arrived" | "arrived" | null;
   };
 
   // Ownership. A lead belongs to exactly one agent and, once handed over, to
@@ -316,6 +318,30 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
           meta: eventMeta({ purchaser_id: purchaserId, reason: "inspection_scheduled" }),
         });
       }
+    }
+  }
+
+  // Arrival is a Call Centre confirmation, not a pipeline state. It becomes
+  // available only after the inspection has been saved and a Purchaser owns the
+  // handoff; purchasers can see it but cannot mark their own customer arrived.
+  // This must happen before the shared lead write below, otherwise the UI can
+  // briefly show a toggled state while no arrival value is ever persisted.
+  if ("arrival_status" in body) {
+    if (role !== "call_center" && role !== "admin" && role !== "manager") {
+      return NextResponse.json({ ok: false, error: { message: "Only Call Centre or Admin can record customer arrival." } }, { status: 403 });
+    }
+    if (body.arrival_status !== "arrived") {
+      return NextResponse.json({ ok: false, error: { message: "Arrival can only be confirmed once." } }, { status: 400 });
+    }
+    const ALLOWED_ARRIVAL_STAGES = new Set(["inspection_scheduled", "inspected", "negotiating", "deal"]);
+    if (!ALLOWED_ARRIVAL_STAGES.has(current.status) || !current.purchaser_id) {
+      return NextResponse.json({ ok: false, error: { message: "Arrival is available only for a saved inspection with an assigned Purchaser." } }, { status: 409 });
+    }
+    if (current.arrival_status !== "arrived") {
+      update.arrival_status = "arrived";
+      update.arrived_at = new Date().toISOString();
+      update.arrived_by = userId;
+      events.push({ lead_id: id, type: "arrival_confirmed", meta: eventMeta({ arrival_status: "arrived" }) });
     }
   }
 

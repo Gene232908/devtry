@@ -29,10 +29,11 @@ export const PURCHASER_VISIBLE_STATUSES = [
   "inspected",
   "negotiating",
   "deal",
+  "closed",
 ] as const;
 
 /** Statuses a Call Centre agent may move a lead to, in pipeline order. */
-export const AGENT_STATUS_CHOICES = ["new", "pending", "contacted", "inspection_scheduled"] as const;
+export const AGENT_STATUS_CHOICES = ["new", "contacted", "inspection_scheduled"] as const;
 
 /**
  * Statuses a purchaser may move a lead to, in the order they are offered.
@@ -40,7 +41,7 @@ export const AGENT_STATUS_CHOICES = ["new", "pending", "contacted", "inspection_
  * Deliberately best-outcome first, and deliberately without "closed" / Not
  * Purchased — walking away from a car is not the purchaser's call to record.
  */
-export const PURCHASER_STATUS_CHOICES = ["deal", "negotiating", "inspected"] as const;
+export const PURCHASER_STATUS_CHOICES = ["negotiating", "deal", "closed"] as const;
 
 const PURCHASER_VISIBLE = new Set<string>(PURCHASER_VISIBLE_STATUSES);
 const AGENT_ALLOWED = new Set<string>(AGENT_STATUS_CHOICES);

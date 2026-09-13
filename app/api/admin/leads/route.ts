@@ -38,7 +38,7 @@ export async function GET() {
   }
 
   const fieldsWithSchedule =
-    "id, created_at, full_name, phone_e164, email, make, model, trim, year, mileage_km, condition, option_level, description, emirate, status, estimated_value_aed, notes, is_duplicate, is_spam, call_center_id, purchaser_id, inspection_scheduled_at";
+    "id, created_at, full_name, phone_e164, email, make, model, trim, year, mileage_km, specification, condition, option_level, description, emirate, status, estimated_value_aed, notes, is_duplicate, is_spam, call_center_id, purchaser_id, inspection_scheduled_at, arrival_status";
   const fieldsFallback =
     "id, created_at, full_name, phone_e164, email, make, model, trim, year, mileage_km, condition, option_level, description, emirate, status, estimated_value_aed, notes, is_duplicate, is_spam, call_center_id, purchaser_id";
 
@@ -70,8 +70,8 @@ export async function GET() {
 
   let { data, error } = await fetchLeads(fieldsWithSchedule);
 
-  if (error && error.message?.includes("inspection_scheduled_at")) {
-    console.warn("[GET /api/admin/leads] inspection_scheduled_at column missing on live database, retrying with fallback fields...");
+  if (error && /inspection_scheduled_at|specification|arrival_status/.test(error.message ?? "")) {
+    console.warn("[GET /api/admin/leads] newer lead columns missing on live database, retrying with fallback fields...");
     const fallback = await fetchLeads(fieldsFallback);
     data = fallback.data;
     error = fallback.error;

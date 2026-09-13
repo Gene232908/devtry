@@ -58,7 +58,7 @@ function nextDayDateTimeInput(): string {
 export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
   const router = useRouter();
   const { staffOptions, loading: staffLoading } = useStaffOptions();
-  const { makes } = useVehicleCatalog();
+  const { makes, specifications } = useVehicleCatalog();
 
   const initialStatus = partial.status;
   const [draft, setDraft] = useState<Draft>({ status: initialStatus, notes: partial.notes ?? "" });
@@ -78,6 +78,7 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
     year: partial.year ? String(partial.year) : "",
     trim: "",
     mileageKm: partial.mileage_km ? String(partial.mileage_km) : "",
+    specification: partial.specification ?? "",
     emirate: "",
     inspectionScheduledAt: nextDayDateTimeInput(),
     markVerified: false,
@@ -98,6 +99,10 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
     () => trimsFor(makes, deal.make, deal.model).map((trim) => ({ label: trim, value: trim })),
     [makes, deal.make, deal.model],
   );
+  const specificationOptions = useMemo(
+    () => specifications.map((specification) => ({ label: specification.name, value: specification.name })),
+    [specifications],
+  );
   const emirateOptions = useMemo(
     () => Object.keys(AREAS_BY_EMIRATE).map((emirate) => ({ label: emirate, value: emirate })),
     [],
@@ -113,8 +118,11 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
   }
 
   const dirty = useMemo(
-    () => draft.status !== saved.status || draft.notes !== saved.notes,
-    [draft, saved],
+    () =>
+      draft.status !== saved.status ||
+      draft.notes !== saved.notes ||
+      deal.specification !== (partial.specification ?? ""),
+    [draft, saved, deal.specification, partial.specification],
   );
 
   const guard = useUnsavedGuard(dirty);
@@ -146,6 +154,9 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
       if (!makeIsValid) next.make = "Select a make from Vehicle Catalog.";
       if (!modelIsValid) next.model = "Select a model for the chosen make.";
       if (!trimIsValid) next.trim = "Choose a trim for the chosen model, or leave it blank.";
+      if (!specifications.some((specification) => specification.name === deal.specification)) {
+        next.specification = "Select a specification from Vehicle Catalog.";
+      }
       if (!Object.prototype.hasOwnProperty.call(AREAS_BY_EMIRATE, deal.emirate)) next.emirate = "Select an inspection emirate.";
 
       if (isInspectionScheduled) {
@@ -196,6 +207,7 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
                 year: Number(deal.year),
                 trim: deal.trim,
                 mileage_km: deal.mileageKm ? Number(deal.mileageKm) : undefined,
+                specification: deal.specification,
                 emirate: deal.emirate,
                 phone_verified: deal.markVerified,
                 ...(isDeal
@@ -205,7 +217,7 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
                     }
                   : { inspection_scheduled_at: new Date(deal.inspectionScheduledAt).toISOString() }),
               }
-            : { status: draft.status, notes: draft.notes },
+            : { status: draft.status, notes: draft.notes, specification: deal.specification },
         ),
       });
 
@@ -221,6 +233,7 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
         return;
       }
 
+      partial.specification = deal.specification || null;
       setSaved(draft);
       setStatus(draft.status);
       setJustSaved(true);
@@ -351,6 +364,18 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
               onChange={(v) => setDraft((d) => ({ ...d, status: v }))}
             />
 
+            {!isConversion && (
+              <Select
+                label="Vehicle Specification"
+                placeholder={deal.specification ? deal.specification : "Select specification (e.g. GCC Specs)"}
+                options={specificationOptions}
+                value={deal.specification}
+                onChange={(specification) => {
+                  setDeal((d) => ({ ...d, specification }));
+                }}
+              />
+            )}
+
             {isConversion && (
               <PartialLeadConversionFields
                 deal={deal}
@@ -360,6 +385,7 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
                 makeOptions={makeOptions}
                 modelOptions={modelOptions}
                 trimOptions={trimOptions}
+                specificationOptions={specificationOptions}
                 emirateOptions={emirateOptions}
                 setDeal={setDeal}
               />

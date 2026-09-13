@@ -19,7 +19,7 @@ const STEPS: Array<{
   fields: Array<keyof ValuationFormValues>;
 }> = [
   { n: 1, label: "Contact Info", fields: ["fullName", "whatsapp", "consent"] },
-  { n: 2, label: "Car Details", fields: ["year", "make", "model", "mileageKm", "description"] },
+  { n: 2, label: "Car Details", fields: ["year", "make", "model", "mileageKm", "specification", "description"] },
   { n: 3, label: "Trim & Location", fields: ["trim", "optionLevel", "location"] },
 ];
 
@@ -28,7 +28,7 @@ export function ValuationForm({ registerCapture }: { registerCapture?: (capture:
   const [step, setStep] = useState<1 | 2 | 3>(1);
   // Make / model / trim options come from the admin's Catalog page, so what the
   // client adds there is what a customer actually sees here.
-  const { makes } = useVehicleCatalog();
+  const { makes, specifications } = useVehicleCatalog();
 
   const isBusy = form.state === "validating" || form.state === "submitting";
   const isLocked = form.state !== "filling";
@@ -127,7 +127,13 @@ export function ValuationForm({ registerCapture }: { registerCapture?: (capture:
             />
           )}
           {step === 2 && (
-            <StepCarDetails values={form.values} errors={form.errors} makes={makes} setField={form.setField} />
+            <StepCarDetails
+              values={form.values}
+              errors={form.errors}
+              makes={makes}
+              specifications={specifications}
+              setField={form.setField}
+            />
           )}
           {step === 3 && (
             <StepTrimLocation values={form.values} errors={form.errors} makes={makes} setField={form.setField} />

@@ -7,6 +7,7 @@ export type ValuationFormValues = {
   make: string;
   model: string;
   mileageKm: string;
+  specification: string;
   description: string;
   trim: string;
   optionLevel: OptionLevel | "";
@@ -65,6 +66,7 @@ export const emptyValues: ValuationFormValues = {
   make: "",
   model: "",
   mileageKm: "",
+  specification: "",
   description: "",
   trim: "",
   optionLevel: "",

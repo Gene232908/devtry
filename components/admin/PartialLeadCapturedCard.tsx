@@ -35,6 +35,7 @@ export function PartialLeadCapturedCard({ partial }: Props) {
           value={partial.last_trigger ? (PARTIAL_TRIGGER_LABELS[partial.last_trigger] ?? partial.last_trigger) : "—"}
         />
         <Detail label="Car" value={carSummary} />
+        <Detail label="Specification" value={partial.specification || "—"} />
         <Detail
           label="Mileage"
           value={partial.mileage_km != null ? `${partial.mileage_km.toLocaleString()} km` : "—"}

@@ -38,6 +38,7 @@ export type ProjectedLead = {
   trim: string;
   year: number;
   mileageKm: number;
+  specification: string;
   condition: string;
   optionLevel: string | undefined;
   description: string;
@@ -51,6 +52,7 @@ export type ProjectedLead = {
   callCenterId: string | null;
   purchaserId: string | null;
   inspectionScheduledAt: string | null;
+  arrivalStatus: "not_arrived" | "arrived";
   // Contact fields — only for call centre role
   fullName?: string;
   phoneE164?: string;
@@ -76,6 +78,7 @@ export function projectLeadForOwner(lead: DbLead): ProjectedLead {
     trim: lead.trim ?? "",
     year: lead.year,
     mileageKm: lead.mileage_km ?? 0,
+    specification: lead.specification ?? "",
     condition: lead.condition ?? "good",
     optionLevel: lead.option_level ?? undefined,
     description: lead.description ?? "",
@@ -88,6 +91,7 @@ export function projectLeadForOwner(lead: DbLead): ProjectedLead {
     callCenterId: lead.call_center_id ?? null,
     purchaserId: lead.purchaser_id ?? null,
     inspectionScheduledAt: lead.inspection_scheduled_at ?? null,
+    arrivalStatus: lead.arrival_status ?? "not_arrived",
   };
 }
 
@@ -107,6 +111,7 @@ export function projectLeadForCallCenter(lead: DbLead): ProjectedLead {
     trim: lead.trim ?? "",
     year: lead.year,
     mileageKm: lead.mileage_km ?? 0,
+    specification: lead.specification ?? "",
     condition: lead.condition ?? "good",
     optionLevel: lead.option_level ?? undefined,
     description: lead.description ?? "",
@@ -117,24 +122,28 @@ export function projectLeadForCallCenter(lead: DbLead): ProjectedLead {
     callCenterId: lead.call_center_id ?? null,
     purchaserId: lead.purchaser_id ?? null,
     inspectionScheduledAt: lead.inspection_scheduled_at ?? null,
+    arrivalStatus: lead.arrival_status ?? "not_arrived",
     notes: lead.notes ?? "",
     // estimatedValueAed intentionally absent
   };
 }
 
 /**
- * Purchaser view: prices and shared follow-up notes present; contact info
- * excluded.
+ * Purchaser view: customer name, prices and shared follow-up notes are present;
+ * phone and email remain excluded. The name is necessary to identify the
+ * arriving customer and complete the physical inspection.
  */
 export function projectLeadForPurchaser(lead: DbLead): ProjectedLead {
   return {
     id: lead.id,
     createdAt: lead.created_at,
+    fullName: lead.full_name,
     make: lead.make,
     model: lead.model,
     trim: lead.trim ?? "",
     year: lead.year,
     mileageKm: lead.mileage_km ?? 0,
+    specification: lead.specification ?? "",
     condition: lead.condition ?? "good",
     optionLevel: lead.option_level ?? undefined,
     description: lead.description ?? "",
@@ -147,7 +156,8 @@ export function projectLeadForPurchaser(lead: DbLead): ProjectedLead {
     callCenterId: lead.call_center_id ?? null,
     purchaserId: lead.purchaser_id ?? null,
     inspectionScheduledAt: lead.inspection_scheduled_at ?? null,
-    // fullName, phoneE164, email intentionally absent
+    arrivalStatus: lead.arrival_status ?? "not_arrived",
+    // phoneE164 and email intentionally absent
   };
 }
 

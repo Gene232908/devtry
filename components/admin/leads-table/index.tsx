@@ -179,6 +179,8 @@ export function LeadsTable() {
         onMakes={filter.setMakes}
         emirates={filter.emirates}
         onEmirates={filter.setEmirates}
+        arrivalStatuses={filter.arrivalStatuses}
+        onArrivalStatuses={filter.setArrivalStatuses}
         hasFilters={filter.hasFilters}
         onClearFilters={() => {
           if (attention || status) {
@@ -195,7 +197,7 @@ export function LeadsTable() {
       />
 
       <div className="mt-5 overflow-x-auto">
-        <table className="w-full min-w-[760px] text-left text-fluid--1">
+        <table className="w-full min-w-[880px] text-left text-fluid--1">
           <thead>
             <tr className="border-b border-border text-text-faint">
               <th className="py-2 pr-4 font-normal">Client Name</th>
@@ -213,11 +215,12 @@ export function LeadsTable() {
                 </button>
               </th>
               <th className="py-2 pr-4 font-normal">Status</th>
+              <th className="py-2 pr-4 font-normal">Arrival Status</th>
             </tr>
           </thead>
           <tbody>
             {filter.pageItems.map((lead) => (
-              <LeadRow key={lead.id} lead={lead} duplicateReview={attention === "duplicate"} />
+              <LeadRow key={lead.id} lead={lead} duplicateReview={attention === "duplicate"} showArrivalStatus={true} />
             ))}
           </tbody>
         </table>

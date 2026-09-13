@@ -392,6 +392,7 @@ export function useValuationForm() {
         model: values.model,
         year: values.year,
         mileageKm: values.mileageKm,
+        specification: values.specification,
         description: values.description,
       };
 

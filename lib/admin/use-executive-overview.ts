@@ -8,6 +8,7 @@ export type ExecutiveOverviewSeed = { data: ExecutiveOverview; range: OverviewRa
 
 // Client-side in-memory cache to make tab/filter switching instant (0ms latency)
 const overviewCache = new Map<string, ExecutiveOverview>();
+let lastKnownOverview: ExecutiveOverview | null = null;
 
 function buildCacheKey(range: OverviewRange, comparisonRange?: OverviewRange): string {
   return `${range.from}_${range.to}__${comparisonRange ? `${comparisonRange.from}_${comparisonRange.to}` : "none"}`;
@@ -20,6 +21,7 @@ export function useExecutiveOverview(range: OverviewRange, comparisonRange?: Ove
     const seedKey = buildCacheKey(seed.range);
     overviewCache.set(seedKey, seed.data);
     overviewCache.set(`${seed.range.from}_${seed.range.to}__none`, seed.data);
+    lastKnownOverview = seed.data;
   }
 
   const [state, setState] = useState<State>(() => {
@@ -28,6 +30,10 @@ export function useExecutiveOverview(range: OverviewRange, comparisonRange?: Ove
     if (cached) return { data: cached, isLoading: false, error: null };
     if (seed && range.from === seed.range.from && range.to === seed.range.to && !comparisonRange) {
       return { data: seed.data, isLoading: false, error: null };
+    }
+    // SWR fallback: show last known dashboard instantly while revalidating
+    if (lastKnownOverview) {
+      return { data: lastKnownOverview, isLoading: true, error: null };
     }
     return { data: null, isLoading: true, error: null };
   });
@@ -105,6 +111,7 @@ export function useExecutiveOverview(range: OverviewRange, comparisonRange?: Ove
         const finalData: ExecutiveOverview = compData ? { ...rawData, comparisonOverview: compData } : rawData;
 
         // Store in cache
+        lastKnownOverview = finalData;
         overviewCache.set(cacheKey, finalData);
         if (compData && comparisonRange) {
           overviewCache.set(buildCacheKey(comparisonRange), compData);

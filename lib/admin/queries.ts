@@ -284,10 +284,16 @@ export async function fetchAdminCharts(
 }
 
 const INVENTORY_SELECT = `
+  id, lead_id, make, model, trim, year, mileage_km, chassis_number,
+  purchase_price_aed, purchased_at, status, sale_price_aed, sold_at, notes,
+  commission_entries ( profit_aed, rate, commission_aed, sold_at ),
+  leads ( phone_verified, call_center_id, purchaser_id )
+`;
+const INVENTORY_SELECT_LEGACY = `
   id, lead_id, make, model, trim, year, mileage_km,
   purchase_price_aed, purchased_at, status, sale_price_aed, sold_at, notes,
   commission_entries ( profit_aed, rate, commission_aed, sold_at ),
-  leads ( phone_verified )
+  leads ( phone_verified, call_center_id, purchaser_id )
 `;
 
 /** Cars the business has bought and owns. `leadId` narrows to one lead's stock. */
@@ -297,7 +303,16 @@ export async function fetchInventory(leadId?: string | null): Promise<QueryResul
   let query = getSupabaseAdmin().from("inventory").select(INVENTORY_SELECT).order("purchased_at", { ascending: false });
   if (leadId) query = query.eq("lead_id", leadId);
 
-  const { data, error } = await query;
+  const primaryResult = await query;
+  let data = primaryResult.data as unknown[] | null;
+  let error = primaryResult.error;
+  if (error && /chassis_number/i.test(error.message ?? "")) {
+    let fallback = getSupabaseAdmin().from("inventory").select(INVENTORY_SELECT_LEGACY).order("purchased_at", { ascending: false });
+    if (leadId) fallback = fallback.eq("lead_id", leadId);
+    const legacyResult = await fallback;
+    data = legacyResult.data as unknown[] | null;
+    error = legacyResult.error;
+  }
   if (error) return { ok: false, message: error.message, status: 500 };
 
   return { ok: true, data: { items: ((data ?? []) as unknown as DbInventory[]).map(mapDbInventory) } };

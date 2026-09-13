@@ -44,6 +44,7 @@ export type InventoryItem = {
   trim: string;
   year: number;
   mileageKm: number | null;
+  chassisNumber: string;
   purchasePriceAed: number;
   purchasedAt: string;
   status: InventoryStatus;
@@ -67,6 +68,8 @@ export type InventoryItem = {
    * better than an accusation drawn from a missing join.
    */
   fromUnverifiedLead: boolean;
+  callCenterId: string | null;
+  purchaserId: string | null;
 };
 
 export const INVENTORY_STATUS_LABEL: Record<InventoryStatus, string> = {
@@ -135,6 +138,7 @@ export type DbInventory = {
   trim: string | null;
   year: number;
   mileage_km: number | null;
+  chassis_number?: string | null;
   purchase_price_aed: number | string;
   purchased_at: string;
   status: InventoryStatus;
@@ -146,7 +150,15 @@ export type DbInventory = {
   // quirk degrades to "commission not shown" instead of a crash on a money screen.
   commission_entries?: DbCommissionEntry | DbCommissionEntry[] | null;
   /** Embedded from the parent lead. Same one-or-array shape caveat as above. */
-  leads?: { phone_verified?: boolean | null } | Array<{ phone_verified?: boolean | null }> | null;
+  leads?: {
+    phone_verified?: boolean | null;
+    call_center_id?: string | null;
+    purchaser_id?: string | null;
+  } | Array<{
+    phone_verified?: boolean | null;
+    call_center_id?: string | null;
+    purchaser_id?: string | null;
+  }> | null;
 };
 
 export type DbCommissionEntry = {
@@ -177,6 +189,7 @@ export function mapDbInventory(r: DbInventory): InventoryItem {
     trim: r.trim ?? "",
     year: r.year,
     mileageKm: num(r.mileage_km),
+    chassisNumber: r.chassis_number ?? "",
     purchasePriceAed: num(r.purchase_price_aed) ?? 0,
     purchasedAt: r.purchased_at,
     status: r.status,
@@ -192,6 +205,8 @@ export function mapDbInventory(r: DbInventory): InventoryItem {
         }
       : null,
     fromUnverifiedLead: leadPhoneVerified === false,
+    callCenterId: leadRel?.call_center_id ?? null,
+    purchaserId: leadRel?.purchaser_id ?? null,
   };
 }
 

@@ -236,6 +236,32 @@ conversion.
 - Migration `0026_partial_lead_csr_handoff.sql` is required before this flow is
   active against a Supabase database.
 
+## ADR-006 — Arrival is separate from inspection completion
+
+**Date:** 2026-09-13
+**Status:** Accepted
+
+### Decision
+
+Customer arrival is an independent, one-way operational fact (`not_arrived` to
+`arrived`), recorded by assigned Call Centre staff only after a Purchaser has a
+saved inspection appointment. A Purchaser may not set a lead to `inspected`
+from the normal dropdown. They must complete the report, required checks, and
+24 photos with required notes; the server then makes the report, lead status, and audit event
+transition together.
+
+### Consequences
+
+- The dashboard/list can distinguish a scheduled customer from one who
+  physically arrived.
+- A draft inspection does not inflate the Inspected pipeline count.
+- The required report and photo data are private operational records and need
+  migrations `0027_inspection_arrival_reports.sql` and
+  `0028_inspection_audit_retention_vin.sql` before use.
+- Completed reports remain editable by the assigned Purchaser and Super Admin;
+  each saved card and photo replacement is audited.
+- Photo files are removed 60 days after sale; report data and history remain.
+
 ## Template
 
 ## ADR-XXX — Decision title

@@ -77,6 +77,7 @@ describe("mapDbInventory", () => {
     trim: null,
     year: 2022,
     mileage_km: 31000,
+    chassis_number: "VIN-DEMO-001",
     // Postgres numeric arrives over the wire as a string.
     purchase_price_aed: "170000.00",
     purchased_at: "2026-07-01T10:00:00Z",
@@ -90,6 +91,7 @@ describe("mapDbInventory", () => {
     const item = mapDbInventory(row);
     expect(item.purchasePriceAed).toBe(170000);
     expect(item.mileageKm).toBe(31000);
+    expect(item.chassisNumber).toBe("VIN-DEMO-001");
   });
 
   it("reports no commission for a car that has not sold", () => {

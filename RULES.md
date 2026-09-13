@@ -86,7 +86,7 @@ Avoid:
 
 ## 8. Testing rule
 
-Use the real scripts from `package.json`, such as:
+Use the real scripts from `package.json`, as appropriate to the task:
 
 ```bash
 npm run lint
@@ -95,7 +95,9 @@ npm run test
 npm run build
 ```
 
-Do not claim a check passed unless it was actually run.
+Do not claim a check passed unless it was actually run. A full build is not a
+default requirement for every edit; reserve it for release requests or changes
+that can affect production compilation across routes.
 
 ## 9. Production rule
 

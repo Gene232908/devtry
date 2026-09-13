@@ -25,6 +25,7 @@ export function LeadVehicleCard({ lead }: Props) {
         <Detail label="Trim" value={lead.trim || "—"} />
         <Detail label="Year" value={String(lead.year)} />
         <Detail label="Mileage" value={`${lead.mileageKm.toLocaleString()} km`} />
+        <Detail label="Specification" value={lead.specification || "—"} />
         <Detail label="Option Level" value={optionDisplay} />
         <Detail label="Location" value={lead.location || "—"} />
         <Detail label="Source" value="Web" />

@@ -48,6 +48,17 @@ Current UI validation accepts local UAE mobile numbers such as `0564145781` and 
 
 Sir Nyash also requested make/model dropdowns that can be updated without always needing the developer. Final Supabase design should consider editable vehicle option tables or settings-backed dropdown values.
 
+## 2026-09-13 arrival, specification, and inspection-report schema
+
+Migration `0027_inspection_arrival_reports.sql` adds `vehicle_specifications`,
+lead and partial-lead Specification values, independent arrival fields,
+`inspection_reports`, `inspection_photos`, a private JPG/PNG-only 8 MB storage
+bucket, and the atomic `complete_inspection_report(...)` function. Migration
+0028 adds mandatory notes and 24 photo angles, transactional report/photo audit
+writes, Inventory VIN synchronization, and 60-day post-sale photo deletion.
+Report information remains; broader lead-personal-data retention still needs
+business/legal approval.
+
 ## Future marketplace UI data needs
 
 The 2026-07-03 homepage redesign added UI-only preview sections for future buy-car and financing flows. These sections do not use live data yet. If approved later, the database will need to support:

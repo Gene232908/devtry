@@ -12,7 +12,6 @@ import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
  * SSR render — 2 serial Supabase round-trips adding 400–800ms to every
  * navigation to /admin. Removing the SSR seed cuts that to zero.
  */
-export const dynamic = "force-dynamic";
 
 export default function AdminDashboardPage() {
   if (ADMIN_PREVIEW) {

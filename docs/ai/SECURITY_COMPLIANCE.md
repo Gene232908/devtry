@@ -33,6 +33,24 @@ Read this for authentication, authorization, database, API, upload, personal-dat
   only on leads assigned to them. This is required for a safe handoff: the next
   person can see the last call outcome and agreed action.
 - Lead row scoping remains enforced server-side before notes reach the browser.
+
+## 2026-09-13 arrival and inspection-report boundary
+
+- Only the assigned Call Centre user can confirm arrival, and only after a
+  scheduled inspection has an assigned Purchaser.
+- Purchasers receive the customer name needed to identify their assigned
+  inspection, but not the customer's phone or email through their projection.
+- Inspection routes re-check staff identity, assignment, and stage on every
+  request. Photos are JPG/PNG only, max 8 MB, stored privately, and are served
+  through an authorized same-origin route after an access check; storage URLs
+  are never exposed to the browser.
+- The completion RPC is service-role-only and updates report, lead state, and
+  audit event in one transaction.
+- Inspection card saves and photo metadata/audit events use service-role-only
+  RPCs after server-side assignment checks. Photo notes are validated by the
+  API and database.
+- A `CRON_SECRET`-protected Vercel job removes private inspection photos 60
+  days after sale while keeping report information and activity history.
   Operational staff do not receive unassigned or another staff member's lead.
 - Notes are operational working notes, not a channel for exporting customer or
   financial data across leads. Final retention and staff-use policy still needs

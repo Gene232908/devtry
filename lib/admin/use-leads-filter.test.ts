@@ -59,6 +59,7 @@ describe("filterStatusOptionsForRole", () => {
       "inspected",
       "negotiating",
       "deal",
+      "closed",
     ]);
   });
 

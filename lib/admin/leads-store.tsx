@@ -240,6 +240,7 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
         // somebody else's lead; the endpoint now ignores it from any role
         // without the assignLeads capability.
         if (patch.inspectionScheduledAt !== undefined) body.inspection_scheduled_at = patch.inspectionScheduledAt;
+        if (patch.arrivalStatus !== undefined) body.arrival_status = patch.arrivalStatus;
         if (patch.estimatedValueAed !== undefined) body.estimated_value_aed = patch.estimatedValueAed;
         if (patch.notes !== undefined) body.notes = patch.notes;
         if (patch.isSpam !== undefined) body.is_spam = patch.isSpam;

@@ -95,6 +95,7 @@ async function convertPartialToLead(
   const make = str(body.make) ?? str(partial.make);
   const model = str(body.model) ?? str(partial.model);
   const year = int(body.year) ?? int(partial.year);
+  const specification = str(body.specification) ?? str(partial.specification);
   const emirate = str(body.emirate);
 
   const missing = [
@@ -102,6 +103,7 @@ async function convertPartialToLead(
     !make && "make",
     !model && "model",
     !year && "year",
+    !specification && "specification",
     !emirate && "inspection emirate",
   ].filter(Boolean);
 
@@ -130,6 +132,19 @@ async function convertPartialToLead(
   if (catalogModelError) return fail("Vehicle Catalog could not be checked. Please try again.", 503);
   if (!catalogModel) return fail("Select a model for the chosen make.", 400);
 
+  const FALLBACK_SPECIFICATION_NAMES = new Set(["GCC Specs", "American Specs", "Japanese Specs", "European Specs"]);
+  const { data: catalogSpecification, error: catalogSpecificationError } = await supabase
+    .from("vehicle_specifications")
+    .select("id")
+    .eq("name", specification)
+    .maybeSingle();
+
+  const isValidSpec = catalogSpecification || Boolean(specification && FALLBACK_SPECIFICATION_NAMES.has(specification));
+  if (!isValidSpec) {
+    if (catalogSpecificationError) return fail("Vehicle Catalog could not be checked. Please try again.", 503);
+    return fail("Select a specification from Vehicle Catalog.", 400);
+  }
+
   const callCenterId = partial.call_center_id ?? (identity.role === "call_center" ? identity.userId : null);
   const purchaserId = target === "inspection_scheduled" ? await pickNextAssignee("purchaser") : null;
 
@@ -143,6 +158,7 @@ async function convertPartialToLead(
       trim: str(body.trim),
       year,
       mileage_km: int(body.mileage_km) ?? int(partial.mileage_km),
+      specification,
       emirate,
       description: str(partial.description),
       notes,
@@ -241,6 +257,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   let nextStatus: string | undefined;
   let nextNotes: string | undefined;
+  let nextSpecification: string | null | undefined;
   if (body.status !== undefined) {
     if (typeof body.status !== "string" || !ALLOWED_STATUSES.has(body.status)) {
       return fail("Invalid status.", 400);
@@ -253,47 +270,67 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     nextNotes = body.notes;
   }
 
+  if (body.specification !== undefined) {
+    if (body.specification === null || body.specification === "") {
+      nextSpecification = null;
+    } else if (typeof body.specification === "string") {
+      nextSpecification = body.specification.trim();
+    }
+  }
+
   const supabase = getSupabaseAdmin();
   const current = access.partial;
 
   const status = nextStatus ?? current.status;
   const notes = nextNotes ?? current.notes ?? "";
+  const specification = nextSpecification !== undefined ? nextSpecification : current.specification;
 
-  const rpc = await supabase.rpc("update_partial_lead_follow_up", {
-    p_id: params.id,
-    p_status: status,
-    p_notes: notes,
-  });
+  const updatePayload: Record<string, unknown> = {
+    status,
+    notes,
+    updated_at: new Date().toISOString(),
+  };
+  if (nextSpecification !== undefined) {
+    updatePayload.specification = specification;
+  }
 
-  if (rpc.error) {
-    const { error: updateError } = await supabase
+  let { error: updateError } = await supabase
+    .from("partial_leads")
+    .update(updatePayload)
+    .eq("id", params.id)
+    .is("converted_lead_id", null);
+
+  if (updateError && updateError.message?.includes("specification")) {
+    const { error: fallbackError } = await supabase
       .from("partial_leads")
       .update({ status, notes, updated_at: new Date().toISOString() })
       .eq("id", params.id)
       .is("converted_lead_id", null);
-    if (updateError) return fail(updateError.message, 500);
+    updateError = fallbackError;
+  }
 
-    const events = [];
-    if ((current.notes ?? "") !== notes) {
-      events.push({
-        partial_lead_id: params.id,
-        type: "note_updated",
-        meta: { from: current.notes ?? "", to: notes },
-      });
-    }
-    if (current.status !== status) {
-      events.push({
-        partial_lead_id: params.id,
-        type: "status_changed",
-        meta: { from: current.status, to: status },
-      });
-    }
-    if (events.length > 0) {
-      try {
-        await supabase.from("partial_lead_events").insert(events);
-      } catch {
-        // non-fatal if optional audit table is missing
-      }
+  if (updateError) return fail(updateError.message, 500);
+
+  const events = [];
+  if ((current.notes ?? "") !== notes) {
+    events.push({
+      partial_lead_id: params.id,
+      type: "note_updated",
+      meta: { from: current.notes ?? "", to: notes },
+    });
+  }
+  if (current.status !== status) {
+    events.push({
+      partial_lead_id: params.id,
+      type: "status_changed",
+      meta: { from: current.status, to: status },
+    });
+  }
+  if (events.length > 0) {
+    try {
+      await supabase.from("partial_lead_events").insert(events);
+    } catch {
+      // non-fatal if optional audit table is missing
     }
   }
 

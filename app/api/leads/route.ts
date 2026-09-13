@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
     model: body.model,
     year: body.year,
     mileageKm: body.mileageKm,
+    specification: body.specification,
     description: body.description ?? "",
     trim: body.trim,
     optionLevel: body.optionLevel,
@@ -91,6 +92,24 @@ export async function POST(req: NextRequest) {
   }
 
   const v = parsed.data;
+
+  // Specification is configured by Super Admin in Vehicle Catalog. Validate
+  // it on the server too, so a crafted public request cannot store a made-up
+  // option that staff will not be able to filter or report on consistently.
+  const FALLBACK_SPECIFICATION_NAMES = new Set(["GCC Specs", "American Specs", "Japanese Specs", "European Specs"]);
+  const { data: catalogSpecification, error: catalogSpecificationError } = await supabase
+    .from("vehicle_specifications")
+    .select("id")
+    .eq("name", v.specification)
+    .maybeSingle();
+
+  const isValidSpec = catalogSpecification || FALLBACK_SPECIFICATION_NAMES.has(v.specification);
+  if (!isValidSpec) {
+    if (catalogSpecificationError) {
+      return err("server_error", "Vehicle Catalog is temporarily unavailable. Please try again.", 503);
+    }
+    return err("validation", "Select a valid vehicle specification.", 400);
+  }
 
   // Duplicate detection: same verified phone within the window.
   let isDuplicate = false;
@@ -122,6 +141,7 @@ export async function POST(req: NextRequest) {
     trim: v.trim,
     year: Number(v.year),
     mileage_km: Number(v.mileageKm),
+    specification: v.specification,
     description: v.description && v.description.length > 0 ? v.description : null,
     option_level: v.optionLevel,
     emirate: v.location,

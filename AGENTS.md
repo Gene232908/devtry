@@ -15,18 +15,19 @@ The AI must help as a senior full-stack developer while keeping the project:
 
 Do not claim that the system is fully secure, legally compliant, or production-ready unless verified.
 
-## Daily startup — read only these
+## Daily startup — keep it short
 
-Before a normal coding task, read:
+For every task, read only:
 
 1. `AGENTS.md`
 2. `RULES.md`
 3. `docs/ai/PROJECT_CONTEXT.md`
-4. `docs/ai/ARCHITECTURE.md`
-5. `docs/ai/FEATURES.md`
-6. `docs/ai/TASKS.md`
-7. Latest entries in `docs/ai/WORK_LOG.md`
-8. Latest entries in `docs/ai/CHANGELOG.md`
+4. `docs/ai/TASKS.md`
+
+Read `ARCHITECTURE.md`, `FEATURES.md`, or a specialist document only when the
+requested change touches that area. Read only the latest 40 lines of
+`WORK_LOG.md` or `CHANGELOG.md` when history is actually needed. Do not load
+entire historical logs into context.
 
 Then inspect the actual affected code before editing.
 
@@ -75,18 +76,14 @@ When the user sends `FINISH THE PRODUCT`, read every file under `docs/ai/` and f
 
 - `docs/ai/FINALIZATION_PROTOCOL.md`
 
-## Mandatory pre-code check
+## Mandatory pre-code check (brief)
 
 Before writing code:
 
-1. Understand the requested behavior.
-2. Inspect the existing implementation.
-3. Search all usages and dependencies of affected shared code.
-4. Identify possible regressions.
-5. Identify security and data impact.
-6. Identify mobile and performance impact.
-7. Choose the smallest safe solution.
-8. Plan how to verify the result.
+1. Restate the requested behavior in one sentence.
+2. Inspect the affected implementation and search its usages.
+3. Choose the smallest safe solution and one verification plan.
+4. Consider security, mobile, and performance only when relevant.
 
 Do not perform a broad rewrite when a small safe change is enough.
 
@@ -104,8 +101,22 @@ For every task:
 - Prevent unnecessary requests, large bundles, and unbounded data loading.
 - Keep interfaces responsive from mobile to large desktop.
 - Add or update tests when behavior changes.
-- Run available lint, type-check, test, and build commands.
+- Run checks appropriate to the change; do not run every check by default.
 - Report checks truthfully.
+
+### Verification by task size
+
+- Copy, styling, or isolated UI change: run `npm run lint` if available.
+- TypeScript, shared component, hook, or API change: run `npx tsc --noEmit`
+  plus focused tests when available.
+- Business logic, auth, database, or security change: run focused tests and
+  typecheck; run lint if the affected files are linted.
+- Release or deployment request only: run `npm run build:check`.
+
+If a check fails, fix that failure or report it immediately. Do not repeatedly
+rerun the same failing command, start unrelated refactors, or wait indefinitely.
+Use a reasonable command timeout and stop when the requested behavior is
+implemented and the relevant check has completed.
 
 ## Documentation update rule
 
@@ -119,11 +130,20 @@ After each meaningful code change, update only the affected files:
 - `DECISIONS.md` for important decisions.
 - `KNOWN_ISSUES.md` for unresolved problems.
 - `TASKS.md` for current progress.
-- `WORK_LOG.md` for the daily factual record.
-- `CHANGELOG.md` for completed changes.
+- `WORK_LOG.md` for the daily factual record only when the task is completed.
+- `CHANGELOG.md` only for a user-visible completed feature or fix.
 - `HANDOFF.md` for the latest resumable state.
 
-Do not update unrelated documentation just to say it was reviewed.
+Do not update unrelated documentation just to say it was reviewed. Do not copy
+large implementation histories into multiple documents.
+
+## Scope and progress guard
+
+Work on one requested outcome at a time. Do not broaden a task into a redesign,
+cleanup, documentation rewrite, or unrelated bug fix unless explicitly asked.
+After inspecting the code, make the first small patch quickly and report any
+blocker with the exact file, command, and error. If no meaningful code change
+is possible, stop and explain why instead of spending the session on analysis.
 
 ## Completion report
 

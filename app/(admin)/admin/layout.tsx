@@ -33,16 +33,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // from cookies without any DB round-trip. The JWT verification already happened
   // in middleware; real authorization is re-checked per page/API call.
   if (VALID_ROLES.has(roleCookie)) {
-    // getClaims() verifies the JWT locally with WebCrypto (no network call).
-    // It gives us the userId which is needed for identity.
-    let userId = "unknown";
+    const pwCheckedCookie = cookieStore.get("cvd_pw_checked")?.value;
+    let userId = pwCheckedCookie || "unknown";
     const displayName = nameCookie || null;
-    try {
-      const supabase = getSupabaseServer();
-      const { data: claims } = await supabase.auth.getClaims();
-      if (claims?.claims.sub) userId = claims.claims.sub;
-    } catch {
-      // Middleware already verified the token — safe to continue.
+    if (userId === "unknown") {
+      try {
+        const supabase = getSupabaseServer();
+        const { data: claims } = await supabase.auth.getClaims();
+        if (claims?.claims.sub) userId = claims.claims.sub;
+      } catch {
+        // Middleware already verified the token — safe to continue.
+      }
     }
 
     const identity = buildIdentity(userId, roleCookie as StaffRole, displayName);

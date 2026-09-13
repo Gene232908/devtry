@@ -21,6 +21,8 @@ type Props = {
   onMakes: (v: string[]) => void;
   emirates: string[];
   onEmirates: (v: string[]) => void;
+  arrivalStatuses?: string[];
+  onArrivalStatuses?: (v: string[]) => void;
   hasFilters: boolean;
   onClearFilters: () => void;
   onExport: () => void;
@@ -47,6 +49,8 @@ export function LeadsToolbar({
   onMakes,
   emirates,
   onEmirates,
+  arrivalStatuses = [],
+  onArrivalStatuses,
   hasFilters,
   onClearFilters,
   onExport,
@@ -89,6 +93,17 @@ export function LeadsToolbar({
           allLabel="All statuses"
           noun="statuses"
         />
+
+        {(role === "purchaser" || role === "admin" || role === "manager") && onArrivalStatuses && (
+          <MultiSelect
+            className="sm:w-44"
+            options={[{ value: "arrived", label: "Arrived" }, { value: "not_arrived", label: "Not yet arrived" }]}
+            selected={arrivalStatuses}
+            onChange={onArrivalStatuses}
+            allLabel="All arrival statuses"
+            noun="arrival statuses"
+          />
+        )}
 
         <MultiSelect
           className="sm:w-40"

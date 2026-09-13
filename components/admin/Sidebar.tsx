@@ -66,7 +66,6 @@ export function Sidebar({ className, capabilities }: Props) {
           <Link
             key={item.href}
             href={item.href}
-            prefetch={true}
             className={cn(
               "flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all",
               active
