@@ -427,10 +427,11 @@ export default function InventoryClient({
           </div>
         ) : (
           <div className="mt-5 overflow-x-auto">
-            <table className="w-full min-w-[900px] text-left text-fluid--1">
+            <table className="w-full min-w-[980px] text-left text-fluid--1">
               <thead>
                 <tr className="border-b border-border text-text-faint">
                   <th className="py-2 pr-4 font-normal">Car</th>
+                  <th className="py-2 pr-4 font-normal">Chassis / VIN Number</th>
                   <th className="py-2 pr-4 font-normal">Bought</th>
                   <th className="py-2 pr-4 text-right font-normal">Paid</th>
                   <th className="py-2 pr-4 text-right font-normal">Sold for</th>
@@ -456,7 +457,6 @@ export default function InventoryClient({
                         {item.year} {item.make} {item.model}
                       </Link>
                       {item.trim && <span className="block text-text-faint">{item.trim}</span>}
-                      {item.chassisNumber && <span className="block text-xs text-text-muted">VIN: {item.chassisNumber}</span>}
                       {/* This car came from a form nobody ever finished, so the
                           seller's number was never proved to be theirs — worth
                           knowing before ringing it about the paperwork. */}
@@ -465,6 +465,9 @@ export default function InventoryClient({
                           <ShieldAlert className="h-3.5 w-3.5" /> Unverified number
                         </span>
                       )}
+                    </td>
+                    <td className="py-3 pr-4 text-text-muted">
+                      {item.chassisNumber || "—"}
                     </td>
                     <td className="py-3 pr-4 text-text-muted">{formatDate(item.purchasedAt)}</td>
                     <td className="py-3 pr-4 text-right tabular-nums text-text-muted">
