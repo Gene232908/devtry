@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { History, Plus, Trash2, X } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -51,6 +51,7 @@ export default function AdminCatalogPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<CatalogToastState | null>(null);
   const [activity, setActivity] = useState<CatalogActivity[]>([]);
+  const [activityOpen, setActivityOpen] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
 
   // `pending` outlives the dialog's exit animation so a closing dialog cannot
@@ -388,13 +389,18 @@ export default function AdminCatalogPage() {
           onDismiss={() => setToast(null)}
         />
       )}
-      <div>
-        <h1 className="font-display text-fluid-3 text-text">Vehicle Catalog</h1>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-fluid-3 text-text">Vehicle Catalog</h1>
         <p className="mt-1 text-fluid--1 text-text-muted">
           The Make, Model, and Trim options customers choose from in the
           valuation form. Changes here are live — {makes.length} makes ·{" "}
           {totals.models} models · {totals.trims} trims.
-        </p>
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => setActivityOpen(true)}>
+          <History className="h-4 w-4 text-gold" /> See activity history
+        </Button>
       </div>
 
       {error && (
@@ -508,17 +514,27 @@ export default function AdminCatalogPage() {
         )}
       </div>
 
-      <CatalogActivityPanel
-        events={activity}
-        restoringId={restoringId}
-        onRestore={(event) =>
-          void restoreEntry(
-            event.entity_type,
-            event.entity_id,
-            event.entity_name,
-          )
-        }
-      />
+      {activityOpen && (
+        <div className="fixed inset-0 z-40" role="dialog" aria-modal="true" aria-label="Catalog activity history">
+          <button type="button" aria-label="Close activity history" className="absolute inset-0 bg-black/55" onClick={() => setActivityOpen(false)} />
+          <aside className="absolute right-0 top-0 flex h-full w-full max-w-xl flex-col overflow-y-auto border-l border-border bg-bg p-4 shadow-2xl sm:p-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.16em] text-text-faint">Vehicle Catalog</p>
+                <h2 className="mt-1 font-display text-fluid-1 text-text">Activity history</h2>
+              </div>
+              <Button variant="ghost" size="sm" aria-label="Close activity history" onClick={() => setActivityOpen(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <CatalogActivityPanel
+              events={activity}
+              restoringId={restoringId}
+              onRestore={(event) => void restoreEntry(event.entity_type, event.entity_id, event.entity_name)}
+            />
+          </aside>
+        </div>
+      )}
 
       <ConfirmDialog
         open={dialogOpen}
