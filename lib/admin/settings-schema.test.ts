@@ -6,6 +6,7 @@ describe("settingsSchema", () => {
     whatsappNumber: "+971564145781",
     callNumber: "+971564145781",
     notifyEmail: "owner@carvibedubai.com",
+    referralIncentiveAed: 500,
   };
 
   it("accepts a complete, well-formed payload", () => {
@@ -25,6 +26,10 @@ describe("settingsSchema", () => {
   it("rejects a phone number without a country code", () => {
     const parsed = settingsSchema.safeParse({ ...valid, whatsappNumber: "0564145781" });
     expect(parsed.success).toBe(false);
+  });
+
+  it("rejects a negative referral incentive", () => {
+    expect(settingsSchema.safeParse({ ...valid, referralIncentiveAed: -1 }).success).toBe(false);
   });
 
   it("rejects an empty required phone number", () => {

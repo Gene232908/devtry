@@ -53,9 +53,10 @@ describe("filterStatusOptionsForRole", () => {
     expect(options).not.toContain("closed");
   });
 
-  it("offers a purchaser exactly the statuses a lead reaches them at", () => {
+  it("offers a purchaser the statuses a lead reaches them at, including No Show", () => {
     expect(filterStatusOptionsForRole("purchaser")).toEqual([
       "inspection_scheduled",
+      "no_show",
       "inspected",
       "negotiating",
       "deal",

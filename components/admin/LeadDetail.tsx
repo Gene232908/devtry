@@ -34,6 +34,7 @@ import { LeadArrivalCard } from "@/components/admin/LeadArrivalCard";
 import { LeadScheduledInspectionCard } from "@/components/admin/LeadScheduledInspectionCard";
 import { LeadPurchaseFields } from "@/components/admin/LeadPurchaseFields";
 import { LeadStartInspectionButton } from "@/components/admin/LeadStartInspectionButton";
+import { LeadReferralCard } from "@/components/admin/LeadReferralCard";
 import { useStaffIdentity } from "@/lib/admin/staff-identity-context";
 import { hasCapability } from "@/lib/auth/permissions";
 import { statusChoicesForRole } from "@/lib/auth/lead-visibility";
@@ -315,6 +316,8 @@ export function LeadDetail({ lead }: { lead: Lead }) {
         {/* LEFT COLUMN: Vehicle Details, Customer Contact, Activity */}
         <div className="flex flex-col gap-6 min-w-0">
           <LeadVehicleCard lead={lead} />
+
+          <LeadReferralCard leadId={lead.id} />
 
           {/* Customer Contact */}
           {canViewContact && (

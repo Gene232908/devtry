@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Search, Download, RefreshCw } from "lucide-react";
+import { Search, RefreshCw, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { LeadStatus } from "@/config/mock-data";
@@ -9,6 +9,7 @@ import type { StaffRole } from "@/lib/auth/permissions";
 import { MAKES } from "@/config/vehicles";
 import { AREAS_BY_EMIRATE } from "@/config/emirates-areas";
 import { cn } from "@/lib/utils";
+import { ExportMenu } from "@/components/admin/ExportMenu";
 
 const EMIRATES = Object.keys(AREAS_BY_EMIRATE);
 
@@ -25,11 +26,13 @@ type Props = {
   onArrivalStatuses?: (v: string[]) => void;
   hasFilters: boolean;
   onClearFilters: () => void;
-  onExport: () => void;
+  onExportPdf: () => void | Promise<void>;
+  onExportExcel: () => void;
   count: number;
   isLive?: boolean;
   isRefreshing?: boolean;
   onRefresh?: () => void;
+  onCreateLead: () => void;
   /** Narrows the status filter to what that role's leads can ever be — an
    *  agent's list offering "Deal" or "Not Purchased" could never match one of
    *  their own leads. Owner roles (and demo/no-identity) still get every
@@ -53,11 +56,13 @@ export function LeadsToolbar({
   onArrivalStatuses,
   hasFilters,
   onClearFilters,
-  onExport,
+  onExportPdf,
+  onExportExcel,
   count,
   isLive,
   isRefreshing,
   onRefresh,
+  onCreateLead,
   role,
 }: Props) {
   // "valuation_sent" is retired and deliberately absent from the full list —
@@ -144,9 +149,13 @@ export function LeadsToolbar({
             {isRefreshing ? "Refreshing" : "Refresh"}
           </Button>
         )}
-        <Button variant="outline" size="sm" onClick={onExport}>
-          <Download className="h-4 w-4" /> Export
-        </Button>
+        {(role === "admin" || role === "call_center" || !role) && (
+          <Button size="sm" onClick={onCreateLead}>
+            <UserPlus className="h-4 w-4" />
+            Add lead
+          </Button>
+        )}
+        <ExportMenu onPdf={onExportPdf} onExcel={onExportExcel} />
       </div>
     </div>
   );

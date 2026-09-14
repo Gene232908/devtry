@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MAKES, TRIM_FALLBACK, getTrims } from "@/config/vehicles";
+import { MAKES, getTrims } from "@/config/vehicles";
 
 // The make / model / trim catalog the valuation form is built from.
 //
@@ -62,9 +62,10 @@ export function useVehicleCatalog() {
             name: make.name,
             models: make.models.map((model) => ({
               name: model.name,
-              // A model with no trims configured still needs something
-              // selectable, so it borrows the generic list.
-              trims: model.trims?.length ? model.trims.map((trim) => trim.name) : TRIM_FALLBACK,
+              // Live catalog data is authoritative. Do not offer a generic
+              // trim here: it would look selectable but fail server-side
+              // validation because it is not actually in Vehicle Catalog.
+              trims: model.trims?.map((trim) => trim.name) ?? [],
             })),
           }));
 

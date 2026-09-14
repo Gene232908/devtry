@@ -14,6 +14,7 @@ const STATUSES = new Set([
   "pending",
   "contacted",
   "inspection_scheduled",
+  "no_show",
   "inspected",
   "negotiating",
   "deal",

@@ -38,9 +38,9 @@ export async function GET() {
   }
 
   const fieldsWithSchedule =
-    "id, created_at, full_name, phone_e164, email, make, model, trim, year, mileage_km, specification, condition, option_level, description, emirate, status, estimated_value_aed, notes, is_duplicate, is_spam, call_center_id, purchaser_id, inspection_scheduled_at, arrival_status";
+    "id, created_at, full_name, phone_e164, email, make, model, trim, year, mileage_km, specification, condition, option_level, description, emirate, status, estimated_value_aed, notes, source, is_duplicate, is_spam, call_center_id, purchaser_id, inspection_scheduled_at, arrival_status";
   const fieldsFallback =
-    "id, created_at, full_name, phone_e164, email, make, model, trim, year, mileage_km, condition, option_level, description, emirate, status, estimated_value_aed, notes, is_duplicate, is_spam, call_center_id, purchaser_id";
+    "id, created_at, full_name, phone_e164, email, make, model, trim, year, mileage_km, condition, option_level, description, emirate, status, estimated_value_aed, notes, source, is_duplicate, is_spam, call_center_id, purchaser_id";
 
   const fetchLeads = async (fields: string) => {
     let q = getSupabaseAdmin().from("leads").select(fields);

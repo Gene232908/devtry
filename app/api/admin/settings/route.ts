@@ -10,19 +10,21 @@ type DbSettings = {
   call_number: string | null;
   notify_email: string | null;
   visible_stats: string[] | null;
+  referral_incentive_aed?: number | string | null;
 };
 
 // `buy_a_car_enabled` is intentionally not selected or written. Nothing reads
 // it — the public "Buy a Car — Coming Soon" button is hard-coded — so offering
 // it as a setting promised an effect it did not have. The column stays in the
 // database for the marketplace it was planned for. See lib/admin/settings-schema.ts.
-const SETTINGS_COLUMNS = "whatsapp_number, call_number, notify_email, visible_stats";
+const SETTINGS_COLUMNS = "whatsapp_number, call_number, notify_email, visible_stats, referral_incentive_aed";
 
 function mapSettings(row: DbSettings) {
   return {
     whatsappNumber: row.whatsapp_number ?? "",
     callNumber: row.call_number ?? "",
     notifyEmail: row.notify_email ?? "",
+    referralIncentiveAed: Number(row.referral_incentive_aed ?? 0),
     visibleStats: row.visible_stats ?? [],
   };
 }
@@ -95,7 +97,7 @@ export async function PATCH(req: NextRequest) {
     );
   }
 
-  const { whatsappNumber, callNumber, notifyEmail } = parsed.data;
+  const { whatsappNumber, callNumber, notifyEmail, referralIncentiveAed } = parsed.data;
 
   const { data, error } = await getSupabaseAdmin()
     .from("settings")
@@ -103,6 +105,7 @@ export async function PATCH(req: NextRequest) {
       whatsapp_number: whatsappNumber,
       call_number: callNumber,
       notify_email: notifyEmail,
+      referral_incentive_aed: referralIncentiveAed,
       updated_at: new Date().toISOString(),
     })
     .eq("id", 1)

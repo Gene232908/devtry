@@ -20,7 +20,7 @@ export type StatementStatus = "draft" | "issued" | "paid";
 export type StaffCommission = {
   id: string;
   displayName: string;
-  role: "call_center" | "purchaser";
+  role: "admin" | "manager" | "call_center" | "purchaser";
   totalCarsSold: number;
   totalProfit: number;
   totalCommission: number;
@@ -34,10 +34,11 @@ export type StaffCommission = {
 
 export type StaffCommissionEntry = {
   id: string;
+  kind: "role_commission" | "referral_incentive";
   leadName: string;
   carDetails: string;
   soldAt: string;
-  profit: number;
+  profit: number | null;
   commission: number;
 };
 
@@ -48,6 +49,15 @@ export type DbStaffCommissionEntry = {
   role: "call_center" | "purchaser";
   profit_aed: number | string;
   commission_aed: number | string;
+  sold_at: string;
+  paid_at: string | null;
+  inventory_id: string;
+};
+
+export type DbStaffReferralIncentive = {
+  id: string;
+  staff_id: string;
+  incentive_aed: number | string;
   sold_at: string;
   paid_at: string | null;
   inventory_id: string;

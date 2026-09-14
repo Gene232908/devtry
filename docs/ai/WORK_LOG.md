@@ -4,6 +4,17 @@ This is the factual source for reports.
 
 Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
+## 2026-09-14
+
+### Completed
+
+- Fixed the Vehicle Catalog add flow so successful Make, Model, and Trim writes update the affected local list instead of requiring a second full-catalog fetch.
+- Added clear expired-session handling, concurrent-write protection, and matching 120-character client/server name validation.
+- Added contextual, auto-dismissing duplicate-entry toast messages for existing Makes, Models, and Trims.
+- Added live duplicate hints, case-insensitive server/database safeguards, non-destructive archive/restore with Undo, and an owner-only recent catalog activity panel. Requires migration `0029_catalog_safety_activity.sql` for archive/activity storage.
+- Added theme-aligned pagination showing 15 models per selected make.
+- Added focused catalog request tests. TypeScript, ESLint, all 215 Vitest tests, and the production build check passed.
+
 ## 2026-09-13
 
 ### Completed
@@ -1407,6 +1418,45 @@ log's history.
   PDF route test passed.
 
 ## 2026-09-12 - Admin overview single-scroll layout
+
+## 2026-09-14 - Staff manual lead creation
+
+- Added a responsive internal lead form available to every authenticated staff
+  role, with validated customer, intake-source, and vehicle fields.
+- Added server-derived creator attribution, duplicate detection, Call Centre
+  routing, activity history metadata, and source display/export.
+- Kept referral incentive, referral payout, and commission invoice changes out
+  of this implementation as requested.
+
+## 2026-09-14 - Proof-backed employee referrals
+
+- Added employee/client referral capture to the manual lead form, requiring a
+  written explanation plus private JPG, PNG, or PDF proof.
+- Added sale-triggered employee incentive creation with an amount snapshot
+  from Settings, plus unified staff commission payment and invoice display.
+- Verified with `npx tsc --noEmit`, `npm test` (221 passing), `npm run lint`,
+  and `npm run build:check`.
+
+## 2026-09-14 - Optional inspection booking on manual leads
+
+- Added an optional date/time field to manual lead creation without adding a
+  new status. A booking uses the existing Inspection Scheduled workflow and
+  assigns the next Purchaser; no booking keeps the lead New.
+- Verified with `npx tsc --noEmit`, `npm test` (223 passing), `npm run lint`,
+  and `npm run build:check`.
+
+## 2026-09-14 - No Show inspection status
+
+- Added a real `No Show` status, visibility rules, role permissions, Leads
+  filtering, dashboard count, and rescheduling path through the existing
+  Inspection Scheduled status.
+- Added migration `0032_no_show_status.sql`; no new environment variables.
+
+## 2026-09-14 - Manual lead access clarified
+
+- Restricted manual lead creation to Super Admin and Call Centre, matching Sir
+  Nyash's confirmed workflow. Purchaser UI access and server capability were
+  both removed.
 
 - Removed the fixed-height, independently scrolling admin main area. The browser
   document is now the sole vertical scroll owner and the top bar remains sticky.

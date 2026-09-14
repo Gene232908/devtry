@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   BadgeCheck,
   CalendarClock,
+  CircleAlert,
   CircleDashed,
   Handshake,
   MessageCircle,
@@ -62,6 +63,7 @@ const PIPELINE_ICON = {
   pending: CircleDashed,
   contacted: PhoneCall,
   inspection_scheduled: CalendarClock,
+  no_show: CircleAlert,
   inspected: Search,
   negotiating: Handshake,
   deal: BadgeCheck,

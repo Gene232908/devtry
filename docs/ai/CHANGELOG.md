@@ -6,6 +6,8 @@ Use reverse chronological order.
 
 ### Fixed
 
+- **Vehicle Catalog stopped accepting entries during long editing sessions.** Successful Make, Model, and Trim inserts now update the local catalog instead of depending on a second full-catalog request. Expired sessions are identified clearly, rapid duplicate submissions are blocked, duplicate entries show a contextual toast, catalog names are validated on both client and server, and large make lists are paginated at 15 models per page.
+
 - **Admin overview nested scrolling.** Removed the fixed-height nested vertical
   scroll container from the shared admin shell. Admin pages now use the single
   browser-level scrollbar, while the top bar stays sticky and dashboard
@@ -338,6 +340,21 @@ Use reverse chronological order.
   Make/Model combination even if a request is manually crafted.
 
 ## 2026-09-10 Demo script
+
+## 2026-09-14 - Manual lead entry
+
+- Authorized staff can create leads for direct walk-ins, calls, WhatsApp
+  messages, and other documented intake channels from the Leads Directory.
+- Added automatic creator audit attribution, duplicate-phone warning, Call
+  Centre routing, and lead-source display/export.
+- Referral incentive and payout behavior was not added.
+
+## 2026-09-14 - Verified employee referral incentive
+
+- Manual leads can now record one proof-backed employee or client referral.
+- Added a configurable Super Admin referral amount that is frozen when a
+  referred vehicle is sold, then shown in the employee's existing commission
+  invoice and paid with their other outstanding commission.
 
 - Added a simplified Incomplete Forms explanation and an easy-to-present CSR
   confirmation and Purchaser handoff scenario to the admin demo PDF.

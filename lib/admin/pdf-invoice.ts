@@ -5,16 +5,17 @@
 
 export type StaffCommissionEntryForPdf = {
   id: string;
+  kind: "role_commission" | "referral_incentive";
   leadName: string;
   carDetails: string;
   soldAt: string;
-  profit: number;
+  profit: number | null;
   commission: number;
 };
 
 export type StaffCommissionForPdf = {
   displayName: string;
-  role: "call_center" | "purchaser";
+  role: "admin" | "manager" | "call_center" | "purchaser";
   totalCarsSold: number;
   totalProfit: number;
   totalCommission: number;
@@ -23,9 +24,8 @@ export type StaffCommissionForPdf = {
 };
 
 export function downloadStaffInvoicePdf(staff: StaffCommissionForPdf) {
-  const isAgent = staff.role === "call_center";
-  const roleTitle = isAgent ? "Call Center Agent" : "Purchaser";
-  const rateLabel = isAgent ? "2%" : "10%";
+  const roleTitle = staff.role === "call_center" ? "Call Center Agent" : staff.role === "purchaser" ? "Purchaser" : staff.role === "admin" ? "Super Admin" : "Owner";
+  const rateLabel = staff.role === "call_center" ? "2%" : staff.role === "purchaser" ? "10%" : "Role-based and referral incentive";
   const now = new Date().toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
@@ -51,7 +51,7 @@ export function downloadStaffInvoicePdf(staff: StaffCommissionForPdf) {
     `BT\n/F2 10 Tf\n40 688 Td\n(Role / Position:) Tj\nET\n` +
     `BT\n/F1 10 Tf\n130 688 Td\n(${esc(roleTitle)}) Tj\nET\n` +
     `BT\n/F2 10 Tf\n40 671 Td\n(Commission Rate:) Tj\nET\n` +
-    `BT\n/F1 10 Tf\n130 671 Td\n(${rateLabel} of profit per closed car) Tj\nET\n` +
+    `BT\n/F1 10 Tf\n130 671 Td\n(${rateLabel}) Tj\nET\n` +
     `BT\n/F2 10 Tf\n360 705 Td\n(Invoice Date:) Tj\nET\n` +
     `BT\n/F1 10 Tf\n440 705 Td\n(${esc(now)}) Tj\nET\n` +
     `BT\n/F2 10 Tf\n360 688 Td\n(Payment Status:) Tj\nET\n` +
@@ -82,7 +82,7 @@ export function downloadStaffInvoicePdf(staff: StaffCommissionForPdf) {
       `BT\n/F1 9 Tf\n48 ${yText} Td\n(${esc(e.leadName)}) Tj\nET\n` +
       `BT\n/F1 9 Tf\n170 ${yText} Td\n(${esc(e.carDetails)}) Tj\nET\n` +
       `BT\n/F1 9 Tf\n310 ${yText} Td\n(${esc(e.soldAt)}) Tj\nET\n` +
-      `BT\n/F1 9 Tf\n395 ${yText} Td\n(${esc(formatAedNum(e.profit))}) Tj\nET\n` +
+      `BT\n/F1 9 Tf\n395 ${yText} Td\n(${esc(e.profit === null ? "Referral" : formatAedNum(e.profit))}) Tj\nET\n` +
       `BT\n/F2 9 Tf\n475 ${yText} Td\n(${esc(formatAedNum(e.commission))}) Tj\nET\n`;
     currentY -= 24;
   });

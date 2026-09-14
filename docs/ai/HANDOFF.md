@@ -15,6 +15,8 @@
 
 ## Last completed work
 
+**2026-09-14:** Vehicle Catalog reliability and pagination fix completed locally. Make, Model, and Trim inserts no longer trigger a full catalog reload; the editor updates the inserted record locally, reports expired sessions explicitly, blocks concurrent duplicate writes, and validates names to 120 characters on client and server. Re-entering an existing value shows a contextual, dismissible toast and an inline hint. The selected make now displays 15 models per themed page. Catalog removal now archives rather than permanently deletes; Undo/Restore and the ten most recent owner actions use new migration `0029_catalog_safety_activity.sql`. A pre-migration deployment retains public catalog reads and normal adds but safely refuses archive actions. Verified with TypeScript, ESLint, 215 Vitest tests, and `npm run build:check`. Production deployment and migration verification remain pending.
+
 **2026-09-09:** Dashboard UI/UX and chart visibility overhaul completed.
 - Solved single-color confusion: 8-stage progressive chromatic conversion funnel with stage retention %, operational urgency inventory aging (Emerald, Sky, Amber, Coral Red), and tri-color staff performance.
 - Fixed invisible gross profit: Implemented Dual Y-Axis so gross profit (e.g. AED 1,500) has its own vertical scale and stands tall alongside high revenue (AED 20,000) with vibrant Emerald styling and a Gross Margin % badge.
@@ -71,6 +73,22 @@ data for one complete CSR-arrival → Purchaser-report → PDF test. No deployme
 or remote database write was performed in this change.
 
 ## Exact next action
+
+Apply `supabase/migrations/0030_manual_leads.sql` to the intended Supabase
+project, then create one non-production manual lead from each role. Confirm a
+Call Centre creator receives their own lead, other roles route it to the Call
+Centre queue, the source is visible, and a repeated phone is flagged. Referral
+incentives are enabled by applying `0031_referral_incentives.sql` immediately
+after `0030_manual_leads.sql`. No additional Vercel environment variable is
+required.
+
+After both migrations, use non-production data to verify: create a manual
+employee-referred lead with a proof file, buy its vehicle, mark the inventory
+car Sold, confirm the frozen amount appears in that employee's Commission
+screen and invoice, then use the Super Admin payment action once.
+
+Apply `supabase/migrations/0032_no_show_status.sql` after the inspection
+migrations before using the No Show status in production.
 
 Apply `supabase/migrations/0026_partial_lead_csr_handoff.sql` in the intended
 Supabase SQL Editor, then use a safe test record: capture an incomplete form,

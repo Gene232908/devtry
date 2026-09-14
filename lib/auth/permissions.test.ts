@@ -28,6 +28,7 @@ describe("ROLE_CAPABILITIES", () => {
     "manageStaff",
     "viewDashboard",
     "viewAllLeads",
+    "createLeads",
     "viewLeadContact",
     "viewPrices",
     "viewCommissions",
@@ -48,9 +49,10 @@ describe("ROLE_CAPABILITIES", () => {
   });
 
   it("manager has all capabilities (legacy full-access)", () => {
-    for (const cap of allCaps) {
+    for (const cap of allCaps.filter((cap) => cap !== "createLeads")) {
       expect(ROLE_CAPABILITIES.manager).toContain(cap);
     }
+    expect(ROLE_CAPABILITIES.manager).not.toContain("createLeads");
   });
 
   it("call_center can see contact info, commissions, incomplete forms, and blocked numbers", () => {
@@ -58,6 +60,7 @@ describe("ROLE_CAPABILITIES", () => {
     expect(ROLE_CAPABILITIES.call_center).toContain("viewCommissions");
     expect(ROLE_CAPABILITIES.call_center).toContain("viewIncompleteForms");
     expect(ROLE_CAPABILITIES.call_center).toContain("viewBlockedNumbers");
+    expect(ROLE_CAPABILITIES.call_center).toContain("createLeads");
     expect(ROLE_CAPABILITIES.call_center).not.toContain("viewPrices");
     expect(ROLE_CAPABILITIES.call_center).not.toContain("viewDashboard");
     expect(ROLE_CAPABILITIES.call_center).not.toContain("viewInventory");
@@ -69,6 +72,7 @@ describe("ROLE_CAPABILITIES", () => {
     expect(ROLE_CAPABILITIES.purchaser).toContain("viewPrices");
     expect(ROLE_CAPABILITIES.purchaser).toContain("viewInventory");
     expect(ROLE_CAPABILITIES.purchaser).toContain("viewCommissions");
+    expect(ROLE_CAPABILITIES.purchaser).not.toContain("createLeads");
     expect(ROLE_CAPABILITIES.purchaser).not.toContain("viewLeadContact");
     expect(ROLE_CAPABILITIES.purchaser).not.toContain("viewDashboard");
     expect(ROLE_CAPABILITIES.purchaser).not.toContain("viewIncompleteForms");

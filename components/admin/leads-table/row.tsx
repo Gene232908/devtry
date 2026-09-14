@@ -17,6 +17,15 @@ import { formatAed, formatDate } from "@/lib/format";
 
 type Props = { lead: Lead; duplicateReview?: boolean; showArrivalStatus?: boolean };
 
+const SOURCE_LABELS: Record<string, string> = {
+  web: "Website form",
+  recovered: "Recovered form",
+  manual_walk_in: "Walk-in",
+  manual_phone_call: "Phone call",
+  manual_whatsapp: "WhatsApp / message",
+  manual_other: "Other",
+};
+
 export const LeadRow = memo(function LeadRow({ lead, duplicateReview = false, showArrivalStatus = false }: Props) {
   return (
     <tr className="border-b border-border last:border-0 hover:bg-surface-2/50">
@@ -35,6 +44,7 @@ export const LeadRow = memo(function LeadRow({ lead, duplicateReview = false, sh
       <td className="py-3 pr-4 text-text-muted">
         {lead.year} {lead.make} {lead.model}
       </td>
+      <td className="py-3 pr-4 text-text-muted">{SOURCE_LABELS[lead.source ?? "web"] ?? "Other"}</td>
       <td className="py-3 pr-4 text-text-muted">{lead.mileageKm.toLocaleString()} km</td>
       <td className="py-3 pr-4 text-text-muted">{lead.location || "—"}</td>
       <td className="py-3 pr-4 text-text-muted">{formatDate(lead.createdAt)}</td>

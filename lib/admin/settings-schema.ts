@@ -38,6 +38,7 @@ export const settingsSchema = z.object({
   // Optional: notifications can be switched off entirely, and an empty box is
   // how that is expressed.
   notifyEmail: z.union([z.literal(""), z.string().trim().email("Enter a valid email address.")]),
+  referralIncentiveAed: z.coerce.number().min(0, "Referral incentive cannot be negative.").max(1_000_000, "Enter a valid incentive amount."),
 });
 
 export type SettingsInput = z.infer<typeof settingsSchema>;

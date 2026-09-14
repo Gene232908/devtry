@@ -23,6 +23,8 @@ import {
 import { useFreshServerData, useServerState } from "@/lib/admin/use-fresh-server-data";
 import { ADMIN_PREVIEW, PREVIEW_NOTICE } from "@/lib/admin/preview-mode";
 import { useStaffIdentity } from "@/lib/admin/staff-identity-context";
+import { ExportMenu } from "@/components/admin/ExportMenu";
+import { exportExcel, exportInventoryPdf, inventoryExportRows } from "@/lib/admin/export-reports";
 
 // Cars the business has bought and now owns. Stock arrives here automatically
 // when a lead is marked as a Deal — there is no "add a car" button, because a
@@ -394,6 +396,13 @@ export default function InventoryClient({
               A control that exists to fetch data the screen already fetched
               teaches people not to trust what is on screen without pressing
               it — which is the opposite of what it looks like it is for. */}
+        </div>
+
+        <div className="mt-3 flex justify-end">
+          <ExportMenu
+            onPdf={() => exportInventoryPdf(visible)}
+            onExcel={() => exportExcel("CarVibeDubai Inventory", inventoryExportRows(visible), "carvibedubai-inventory.xls")}
+          />
         </div>
 
         {visible.length === 0 ? (

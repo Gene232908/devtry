@@ -4,6 +4,7 @@ import { Lead, LeadStatus } from "@/config/mock-data";
 export type DbLead = {
   id: string;
   created_at: string;
+  source?: string | null;
   full_name: string;
   phone_e164: string;
   email: string | null;
@@ -53,6 +54,7 @@ export function mapDbLead(r: DbLead): Lead {
     estimatedValueAed: r.estimated_value_aed != null ? Number(r.estimated_value_aed) : null,
     notes: r.notes ?? "",
     createdAt: r.created_at,
+    source: r.source ?? "web",
     isDuplicate: r.is_duplicate ?? undefined,
     isSpam: r.is_spam ?? undefined,
     callCenterId: r.call_center_id ?? null,

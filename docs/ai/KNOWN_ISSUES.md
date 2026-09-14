@@ -2,6 +2,13 @@
 
 Record unresolved bugs, risks, and technical debt.
 
+## ISSUE-011 — Catalog add appeared to stop after extended editing
+
+**Severity:** Medium
+**Status:** Resolved in code 2026-09-14; deployed-session verification pending
+
+The catalog editor performed a second full `/api/vehicles` read after every successful Make, Model, or Trim insert. As the catalog grew, that extra request became increasingly expensive; if it failed or the staff session expired, the UI reported the operation as failed even though the insert request could already have succeeded. The editor now consumes the inserted record returned by the write API and updates only the affected local list. Background focus refresh remains, duplicate submissions are blocked while any write is active, 401 responses explicitly identify an expired session, and names are capped at 120 characters on both client and server. The selected make now displays 15 models per themed page.
+
 ## ISSUE-010 — The database is in Tokyo; the users are in Dubai
 
 **Severity:** Medium (decides how the dashboard feels in production)

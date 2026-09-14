@@ -21,6 +21,7 @@ import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 import { demoCommissionStatements } from "@/config/demo-admin-data";
 
 import { useStaffIdentity } from "@/lib/admin/staff-identity-context";
+import { ROLE_LABELS } from "@/lib/auth/permissions";
 import {
   COMMISSION_SCOPES,
   CommissionScopeFilter,
@@ -42,9 +43,9 @@ const DEMO_AGENTS: StaffCommission[] = [
     isPaidThisMonth: false,
     paidAt: null,
     entries: [
-      { id: "e1", leadName: "Ahmad Hassan", carDetails: "2022 BMW X5", soldAt: "2026-09-02", profit: 18000, commission: 360 },
-      { id: "e2", leadName: "Sara Ali", carDetails: "2023 Mercedes GLC", soldAt: "2026-09-05", profit: 22000, commission: 440 },
-      { id: "e3", leadName: "Omar Khalid", carDetails: "2021 Range Rover Sport", soldAt: "2026-08-28", profit: 15000, commission: 300 },
+      { id: "e1", kind: "role_commission", leadName: "Ahmad Hassan", carDetails: "2022 BMW X5", soldAt: "2026-09-02", profit: 18000, commission: 360 },
+      { id: "e2", kind: "role_commission", leadName: "Sara Ali", carDetails: "2023 Mercedes GLC", soldAt: "2026-09-05", profit: 22000, commission: 440 },
+      { id: "e3", kind: "role_commission", leadName: "Omar Khalid", carDetails: "2021 Range Rover Sport", soldAt: "2026-08-28", profit: 15000, commission: 300 },
     ],
   },
   {
@@ -57,8 +58,8 @@ const DEMO_AGENTS: StaffCommission[] = [
     isPaidThisMonth: false,
     paidAt: null,
     entries: [
-      { id: "e4", leadName: "Khalid Noor", carDetails: "2022 Toyota Land Cruiser", soldAt: "2026-09-01", profit: 25000, commission: 500 },
-      { id: "e5", leadName: "Layla Mohammed", carDetails: "2023 Audi Q7", soldAt: "2026-09-04", profit: 20000, commission: 400 },
+      { id: "e4", kind: "role_commission", leadName: "Khalid Noor", carDetails: "2022 Toyota Land Cruiser", soldAt: "2026-09-01", profit: 25000, commission: 500 },
+      { id: "e5", kind: "role_commission", leadName: "Layla Mohammed", carDetails: "2023 Audi Q7", soldAt: "2026-09-04", profit: 20000, commission: 400 },
     ],
   },
 ];
@@ -74,8 +75,8 @@ const DEMO_PURCHASERS: StaffCommission[] = [
     isPaidThisMonth: false,
     paidAt: null,
     entries: [
-      { id: "e6", leadName: "Rashed Abdullah", carDetails: "2023 Porsche Cayenne", soldAt: "2026-09-03", profit: 32000, commission: 3200 },
-      { id: "e7", leadName: "Nadia Yusuf", carDetails: "2022 Lexus RX", soldAt: "2026-08-30", profit: 16000, commission: 1600 },
+      { id: "e6", kind: "role_commission", leadName: "Rashed Abdullah", carDetails: "2023 Porsche Cayenne", soldAt: "2026-09-03", profit: 32000, commission: 3200 },
+      { id: "e7", kind: "role_commission", leadName: "Nadia Yusuf", carDetails: "2022 Lexus RX", soldAt: "2026-08-30", profit: 16000, commission: 1600 },
     ],
   },
 ];
@@ -87,11 +88,13 @@ export default function CommissionClient({
   initialError,
   initialAgents,
   initialPurchasers,
+  initialReferralRecipients,
 }: {
   initialStatements: CommissionStatement[];
   initialError: string | null;
   initialAgents?: StaffCommission[];
   initialPurchasers?: StaffCommission[];
+  initialReferralRecipients?: StaffCommission[];
 }) {
   useFreshServerData();
   const identity = useStaffIdentity();
@@ -114,6 +117,7 @@ export default function CommissionClient({
   const [purchasers, setPurchasers] = useServerState<StaffCommission[]>(
     initialPurchasers ?? (ADMIN_PREVIEW ? DEMO_PURCHASERS : []),
   );
+  const [referralRecipients, setReferralRecipients] = useServerState<StaffCommission[]>(initialReferralRecipients ?? []);
 
   // Developer commission (existing quarterly system)
   const [statements, setStatements] = useServerState<CommissionStatement[]>(initialStatements);
@@ -178,11 +182,12 @@ export default function CommissionClient({
       if (res.ok && body.ok) {
         setAgents(body.data.agents ?? []);
         setPurchasers(body.data.purchasers ?? []);
+        setReferralRecipients(body.data.referralRecipients ?? []);
       }
     } catch {
       // Non-fatal
     }
-  }, [setAgents, setPurchasers]);
+  }, [setAgents, setPurchasers, setReferralRecipients]);
 
   // ─── Pay handlers ─────────────────────────────────────────────────────────
 
@@ -287,8 +292,9 @@ export default function CommissionClient({
     const rows: StaffCommission[] = [];
     if (selectedScopes.includes("agents")) rows.push(...agents);
     if (selectedScopes.includes("purchasers")) rows.push(...purchasers);
+    if (selectedScopes.includes("referrals")) rows.push(...referralRecipients);
     return rows;
-  }, [agents, purchasers, selectedScopes]);
+  }, [agents, purchasers, referralRecipients, selectedScopes]);
   const selectedStaffOutstanding = useMemo(
     () => selectedStaff.reduce((total, staff) => total + staff.totalCommission, 0),
     [selectedStaff],
@@ -590,7 +596,7 @@ function StaffCommissionView({
                       <p className="font-medium text-text">{staff.displayName}</p>
                       {!isStaffSelf && (
                         <p className="mt-0.5 text-[0.72rem] text-text-faint">
-                          {staff.role === "call_center" ? "Agent (2%)" : "Purchaser (10%)"}
+                          {ROLE_LABELS[staff.role]}
                         </p>
                       )}
                     </td>
@@ -666,7 +672,7 @@ function StaffDetailModal({
             <div className="flex items-center gap-2">
               <h2 className="text-fluid-0 font-medium text-text">{staff.displayName}</h2>
               <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[0.72rem] font-medium text-gold">
-                {staff.role === "call_center" ? "Agent (2%)" : "Purchaser (10%)"}
+                {ROLE_LABELS[staff.role]}
               </span>
             </div>
             <p className="text-fluid--1 text-text-muted">Commission Details &amp; Closed Deals Statement</p>
@@ -706,6 +712,7 @@ function StaffDetailModal({
                   <tr className="border-b border-border text-text-faint">
                     <th className="py-2 pr-4 font-normal">Customer</th>
                     <th className="py-2 pr-4 font-normal">Car</th>
+                    <th className="py-2 pr-4 font-normal">Type</th>
                     <th className="py-2 pr-4 font-normal">Sold Date</th>
                     <th className="py-2 pr-4 text-right font-normal">Profit</th>
                     <th className="py-2 pr-1 text-right font-normal">Commission</th>
@@ -716,9 +723,10 @@ function StaffDetailModal({
                     <tr key={entry.id} className="border-b border-border last:border-0">
                       <td className="py-2.5 pr-4 text-text">{entry.leadName}</td>
                       <td className="py-2.5 pr-4 text-text-muted">{entry.carDetails}</td>
+                      <td className="py-2.5 pr-4 text-text-muted">{entry.kind === "referral_incentive" ? "Referral incentive" : "Role commission"}</td>
                       <td className="py-2.5 pr-4 text-text-muted">{formatDate(entry.soldAt)}</td>
                       <td className="py-2.5 pr-4 text-right tabular-nums text-text-muted">
-                        {formatAed(entry.profit)}
+                        {entry.profit === null ? "—" : formatAed(entry.profit)}
                       </td>
                       <td className="py-2.5 pr-1 text-right tabular-nums text-gold">
                         {formatAed(entry.commission)}

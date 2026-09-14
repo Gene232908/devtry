@@ -174,6 +174,28 @@ The project still requires qualified UAE legal/compliance review before producti
 
 Never commit:
 
+## 2026-09-14 manual lead boundary
+
+- `POST /api/admin/leads/manual` requires a current active staff identity and
+  the explicit `createLeads` capability for every role.
+- Creator identity and role are derived server-side and cannot be supplied by
+  the browser. Phone, source, vehicle details, and text lengths are validated
+  before the service-role insert.
+- Purchaser contact-data restrictions remain unchanged. A lead created by a
+  Purchaser enters the existing Call Centre assignment flow rather than
+  bypassing the inspection handoff.
+
+## 2026-09-14 referral evidence boundary
+
+- Referral proof accepts only JPG, PNG, or PDF files up to 8 MB and is stored
+  in the private `referral-proofs` bucket; the browser receives no public URL.
+- Proof metadata and bytes are read only through authenticated server routes
+  after the existing lead-visibility check. The selected employee referrer is
+  validated as an active profile on the server.
+- Incentive creation and payout occur in database functions invoked only by
+  server-side service-role routes. The client cannot select the payout amount
+  or mark an incentive paid.
+
 - Secrets.
 - Real personal data.
 - Database dumps.

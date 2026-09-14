@@ -4,12 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export const COMMISSION_SCOPES = ["agents", "purchasers", "developer"] as const;
+export const COMMISSION_SCOPES = ["agents", "purchasers", "referrals", "developer"] as const;
 export type CommissionScope = (typeof COMMISSION_SCOPES)[number];
 
 const SCOPE_LABEL: Record<CommissionScope, string> = {
   agents: "Agents",
   purchasers: "Purchasers",
+  referrals: "Referral recipients",
   developer: "Developer",
 };
 

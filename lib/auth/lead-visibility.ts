@@ -26,6 +26,7 @@ import type { StaffRole } from "@/lib/auth/permissions";
  */
 export const PURCHASER_VISIBLE_STATUSES = [
   "inspection_scheduled",
+  "no_show",
   "inspected",
   "negotiating",
   "deal",
@@ -33,7 +34,7 @@ export const PURCHASER_VISIBLE_STATUSES = [
 ] as const;
 
 /** Statuses a Call Centre agent may move a lead to, in pipeline order. */
-export const AGENT_STATUS_CHOICES = ["new", "contacted", "inspection_scheduled"] as const;
+export const AGENT_STATUS_CHOICES = ["new", "contacted", "inspection_scheduled", "no_show"] as const;
 
 /**
  * Statuses a purchaser may move a lead to, in the order they are offered.

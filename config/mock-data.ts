@@ -9,6 +9,7 @@ export type LeadStatus =
   | "pending"
   | "contacted"
   | "inspection_scheduled"
+  | "no_show"
   | "inspected"
   | "negotiating"
   | "deal"
@@ -35,6 +36,7 @@ export type Lead = {
   estimatedValueAed: number | null;
   notes: string;
   createdAt: string;
+  source?: string;
   isDuplicate?: boolean;
   isSpam?: boolean;
   callCenterId?: string | null;

@@ -262,7 +262,45 @@ transition together.
   each saved card and photo replacement is audited.
 - Photo files are removed 60 days after sale; report data and history remain.
 
+## ADR-007 — Vehicle catalog entries are archived, not permanently deleted
+
+**Date:** 2026-09-14
+**Status:** Accepted
+
+### Decision
+
+Catalog Make, Model, and Trim removals set an archive timestamp. Archived
+entries disappear from the public valuation form, preserve historic vehicle
+records, can be restored by an owner, and write an admin-only activity entry.
+Case-insensitive partial unique indexes prevent duplicate active entries across
+concurrent tabs.
+
+### Consequences
+
+- Migration `0029_catalog_safety_activity.sql` is required before archive and
+  activity features are active in Supabase.
+- The deployed application remains readable and can still add catalog entries
+  before that migration; it refuses archival rather than performing a risky
+  permanent delete.
+
 ## Template
+
+## ADR-Referral incentive snapshot at sale
+
+**Date:** 2026-09-14
+**Status:** Accepted
+
+### Decision
+
+Employee referral incentive eligibility is recorded with a proof-backed manual
+lead, but the payable amount is copied from Settings only when the vehicle is
+marked Sold. The entry is paid through the existing staff commission payment
+flow.
+
+### Consequences
+
+Changing the setting affects future sold vehicles only; historic sold entries
+remain auditable and unchanged.
 
 ## ADR-XXX — Decision title
 

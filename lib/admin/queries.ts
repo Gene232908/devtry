@@ -27,6 +27,7 @@ import {
   type CommissionStatement,
   type DbStatement,
   type DbStaffCommissionEntry,
+  type DbStaffReferralIncentive,
   type StaffCommission,
 } from "@/lib/admin/commission";
 
@@ -697,7 +698,7 @@ export async function fetchCommissionStatements(): Promise<QueryResult<{ stateme
  */
 export async function fetchStaffCommission(
   identity: { role: string; userId: string },
-): Promise<QueryResult<{ agents: StaffCommission[]; purchasers: StaffCommission[] }>> {
+): Promise<QueryResult<{ agents: StaffCommission[]; purchasers: StaffCommission[]; referralRecipients: StaffCommission[] }>> {
   if (!isSupabaseConfigured()) return NOT_CONFIGURED;
 
   const supabase = getSupabaseAdmin();
@@ -715,7 +716,7 @@ export async function fetchStaffCommission(
   if (staffError) return { ok: false, message: staffError.message, status: 500 };
 
   const staff = (staffRows ?? []) as { id: string; display_name: string | null; role: string; created_at: string }[];
-  if (staff.length === 0) return { ok: true, data: { agents: [], purchasers: [] } };
+  if (staff.length === 0 && !isOwner) return { ok: true, data: { agents: [], purchasers: [], referralRecipients: [] } };
 
   const staffIds = staff.map((s) => s.id);
 
@@ -727,13 +728,38 @@ export async function fetchStaffCommission(
 
   if (entryError) return { ok: false, message: entryError.message, status: 500 };
 
+  // Referral incentives are additive to ordinary role commission. A deployment
+  // before migration 0031 must keep the existing commission screen usable.
+  let referralRows: DbStaffReferralIncentive[] = [];
+  let referralsQuery = supabase
+    .from("staff_referral_incentives")
+    .select("id, staff_id, incentive_aed, sold_at, paid_at, inventory_id");
+  if (!isOwner) referralsQuery = referralsQuery.eq("staff_id", identity.userId);
+  const referralsResult = await referralsQuery;
+  if (!referralsResult.error) {
+    referralRows = (referralsResult.data ?? []) as unknown as DbStaffReferralIncentive[];
+  } else if (!/staff_referral_incentives/.test(referralsResult.error.message ?? "")) {
+    return { ok: false, message: referralsResult.error.message, status: 500 };
+  }
+
+  const referralStaffIds = Array.from(new Set(referralRows.map((entry) => entry.staff_id)));
+  const missingReferralStaffIds = referralStaffIds.filter((id) => !staffIds.includes(id));
+  if (missingReferralStaffIds.length > 0 && isOwner) {
+    const { data: referralProfiles, error: referralProfilesError } = await supabase
+      .from("profiles")
+      .select("id, display_name, role, created_at")
+      .in("id", missingReferralStaffIds);
+    if (referralProfilesError) return { ok: false, message: referralProfilesError.message, status: 500 };
+    staff.push(...((referralProfiles ?? []) as { id: string; display_name: string | null; role: string; created_at: string }[]));
+  }
+
   const entries = (entryRows ?? []) as unknown as DbStaffCommissionEntry[];
 
   // Car and customer names for the entries list, fetched separately rather
   // than nested-embedded — same reasoning as mapDbInventory's one-or-array
   // handling: a schema-cache quirk on either relation degrades to "name
   // blank" instead of losing the commission row entirely.
-  const inventoryIds = Array.from(new Set(entries.map((e) => e.inventory_id)));
+  const inventoryIds = Array.from(new Set([...entries.map((e) => e.inventory_id), ...referralRows.map((e) => e.inventory_id)]));
   const { data: invRows } = inventoryIds.length
     ? await supabase.from("inventory").select("id, lead_id, make, model, year").in("id", inventoryIds)
     : { data: [] as { id: string; lead_id: string; make: string; model: string; year: number }[] };
@@ -751,15 +777,24 @@ export async function fetchStaffCommission(
     : { data: [] as { id: string; full_name: string }[] };
   const leadNameById = new Map(((leadRows ?? []) as { id: string; full_name: string }[]).map((r) => [r.id, r.full_name]));
 
-  const entriesByStaff = new Map<string, DbStaffCommissionEntry[]>();
+  type CombinedEntry = (DbStaffCommissionEntry & { kind: "role_commission" }) | (DbStaffReferralIncentive & { kind: "referral_incentive" });
+  const entriesByStaff = new Map<string, CombinedEntry[]>();
   for (const e of entries) {
-    const list = entriesByStaff.get(e.staff_id);
-    if (list) list.push(e);
-    else entriesByStaff.set(e.staff_id, [e]);
+    const entry = { ...e, kind: "role_commission" as const };
+    const list = entriesByStaff.get(entry.staff_id);
+    if (list) list.push(entry);
+    else entriesByStaff.set(entry.staff_id, [entry]);
+  }
+  for (const e of referralRows) {
+    const entry = { ...e, kind: "referral_incentive" as const };
+    const list = entriesByStaff.get(entry.staff_id);
+    if (list) list.push(entry);
+    else entriesByStaff.set(entry.staff_id, [entry]);
   }
 
   const agents: StaffCommission[] = [];
   const purchasers: StaffCommission[] = [];
+  const referralRecipients: StaffCommission[] = [];
 
   for (const s of staff) {
     const own = entriesByStaff.get(s.id) ?? [];
@@ -771,10 +806,10 @@ export async function fetchStaffCommission(
     const result: StaffCommission = {
       id: s.id,
       displayName: s.display_name ?? s.id,
-      role: s.role as "call_center" | "purchaser",
+      role: s.role as StaffCommission["role"],
       totalCarsSold: unpaid.length,
-      totalProfit: unpaid.reduce((n, e) => n + Number(e.profit_aed), 0),
-      totalCommission: unpaid.reduce((n, e) => n + Number(e.commission_aed), 0),
+      totalProfit: unpaid.reduce((n, e) => n + (e.kind === "role_commission" ? Number(e.profit_aed) : 0), 0),
+      totalCommission: unpaid.reduce((n, e) => n + (e.kind === "role_commission" ? Number(e.commission_aed) : Number(e.incentive_aed)), 0),
       isPaidThisMonth: unpaid.length === 0,
       paidAt: latestPaidAt,
       entries: unpaid.map((e) => {
@@ -784,17 +819,19 @@ export async function fetchStaffCommission(
           leadName: (inv ? leadNameById.get(inv.lead_id) : null) ?? "—",
           carDetails: inv ? `${inv.year} ${inv.make} ${inv.model}`.trim() : "—",
           soldAt: e.sold_at,
-          profit: Number(e.profit_aed),
-          commission: Number(e.commission_aed),
+          kind: e.kind,
+          profit: e.kind === "role_commission" ? Number(e.profit_aed) : null,
+          commission: e.kind === "role_commission" ? Number(e.commission_aed) : Number(e.incentive_aed),
         };
       }),
     };
 
     if (s.role === "call_center") agents.push(result);
-    else purchasers.push(result);
+    else if (s.role === "purchaser") purchasers.push(result);
+    else if (own.some((entry) => entry.kind === "referral_incentive")) referralRecipients.push(result);
   }
 
-  return { ok: true, data: { agents, purchasers } };
+  return { ok: true, data: { agents, purchasers, referralRecipients } };
 }
 
 // ---------------------------------------------------------------------------
@@ -816,15 +853,28 @@ export async function fetchSettings(): Promise<QueryResult<{ settings: Settings;
       .from("settings")
       // `buy_a_car_enabled` is not read: nothing consumes it, and the public
       // "Buy a Car — Coming Soon" button is hard-coded. See settings-schema.ts.
-      .select("whatsapp_number, call_number, notify_email, visible_stats")
+      .select("whatsapp_number, call_number, notify_email, visible_stats, referral_incentive_aed")
       .eq("id", 1)
       .single(),
     supabase.from("profiles").select("id, email, role, display_name").order("created_at", { ascending: true }),
   ]);
 
-  if (settingsRes.error) return { ok: false, message: settingsRes.error.message, status: 500 };
+  // The manual referral feature is additive. Keep Settings readable until its
+  // migration is applied instead of breaking the whole page on the new column.
+  let settingsData = settingsRes.data;
+  let settingsError = settingsRes.error;
+  if (settingsError && /referral_incentive_aed/.test(settingsError.message ?? "")) {
+    const fallback = await supabase
+      .from("settings")
+      .select("whatsapp_number, call_number, notify_email, visible_stats")
+      .eq("id", 1)
+      .single();
+    settingsData = fallback.data as typeof settingsData;
+    settingsError = fallback.error;
+  }
+  if (settingsError) return { ok: false, message: settingsError.message, status: 500 };
 
-  const row = settingsRes.data as {
+  const row = settingsData as {
     whatsapp_number: string | null;
     call_number: string | null;
     notify_email: string | null;
@@ -844,7 +894,8 @@ export async function fetchSettings(): Promise<QueryResult<{ settings: Settings;
       settings: {
         whatsappNumber: row.whatsapp_number ?? "",
         callNumber: row.call_number ?? "",
-        notifyEmail: row.notify_email ?? "",
+      notifyEmail: row.notify_email ?? "",
+      referralIncentiveAed: Number((row as { referral_incentive_aed?: number | string | null }).referral_incentive_aed ?? 0),
         visibleStats: row.visible_stats ?? [],
       },
       managers,

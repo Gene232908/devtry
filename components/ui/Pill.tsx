@@ -15,6 +15,7 @@ const STATUS_STYLE: Record<LeadStatus, string> = {
   pending: "bg-warning/15 text-warning",
   contacted: "bg-success/15 text-success",
   inspection_scheduled: "bg-success/15 text-success",
+  no_show: "bg-danger/15 text-danger",
   inspected: "bg-gold/15 text-gold",
   negotiating: "bg-gold/15 text-gold",
   // The win state — the only one given the solid gold treatment.
@@ -28,6 +29,7 @@ const STATUS_DOT: Record<LeadStatus, string> = {
   pending: "bg-warning",
   contacted: "bg-success",
   inspection_scheduled: "bg-success",
+  no_show: "bg-danger",
   inspected: "bg-gold",
   negotiating: "bg-gold",
   deal: "bg-gold",

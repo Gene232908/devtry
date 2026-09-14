@@ -39,6 +39,7 @@ export type ExecutiveOverview = {
     newLeads: number;
     contacted: number;
     inspectionScheduled: number;
+    noShow: number;
     underNegotiation: number;
     deals: number;
   };
@@ -279,6 +280,7 @@ export async function fetchExecutiveOverview(
     newLeads: leads.filter((lead) => lead.status === "new").length,
     contacted: leads.filter((lead) => lead.status === "contacted").length,
     inspectionScheduled: leads.filter((lead) => lead.status === "inspection_scheduled").length,
+    noShow: leads.filter((lead) => lead.status === "no_show").length,
     underNegotiation: leads.filter((lead) => lead.status === "negotiating").length,
     deals: leads.filter((lead) => lead.status === "deal").length,
   };

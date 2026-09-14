@@ -105,6 +105,13 @@ export function FollowUpPanel({
       href: stageHref("inspection_scheduled"),
     },
     {
+      label: "No Show",
+      value: data.noShow,
+      icon: CircleAlert,
+      tone: "text-red-400",
+      href: stageHref("no_show"),
+    },
+    {
       label: "Under negotiation",
       value: data.underNegotiation,
       icon: CircleAlert,

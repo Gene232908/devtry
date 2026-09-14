@@ -50,8 +50,8 @@ export async function POST(req: NextRequest) {
   if (profileError) {
     return NextResponse.json({ ok: false, error: { message: profileError.message } }, { status: 500 });
   }
-  if (!profile || (profile.role !== "call_center" && profile.role !== "purchaser")) {
-    return NextResponse.json({ ok: false, error: { message: "That account does not earn commission." } }, { status: 400 });
+  if (!profile) {
+    return NextResponse.json({ ok: false, error: { message: "That staff account was not found." } }, { status: 400 });
   }
 
   const { data, error } = await supabase.rpc("pay_staff_commission", { p_staff_id: body.staffId });

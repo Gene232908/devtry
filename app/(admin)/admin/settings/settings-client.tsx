@@ -69,6 +69,7 @@ export default function SettingsClient({ initialSettings, initialError, canEdit 
       draft.whatsappNumber !== persisted.whatsappNumber ||
       draft.callNumber !== persisted.callNumber ||
       draft.notifyEmail !== persisted.notifyEmail
+      || draft.referralIncentiveAed !== persisted.referralIncentiveAed
     );
   }, [draft, persisted]);
 
@@ -93,16 +94,18 @@ export default function SettingsClient({ initialSettings, initialError, canEdit 
         initialSettings.whatsappNumber,
         initialSettings.callNumber,
         initialSettings.notifyEmail,
+        initialSettings.referralIncentiveAed,
       ])
     : "";
 
   useEffect(() => {
     if (!serverFingerprint) return;
-    const incoming = JSON.parse(serverFingerprint) as [string, string, string];
+    const incoming = JSON.parse(serverFingerprint) as [string, string, string, number];
     const next: SettingsInput = {
       whatsappNumber: incoming[0],
       callNumber: incoming[1],
       notifyEmail: incoming[2],
+      referralIncentiveAed: incoming[3],
     };
     setPersisted(next);
     if (!dirtyRef.current) setDraft(next);
@@ -254,6 +257,22 @@ export default function SettingsClient({ initialSettings, initialError, canEdit 
           </p>
         </Card>
 
+        <Card className="flex flex-col gap-4 p-5">
+          <h3 className="text-fluid-0 text-text">Referral incentive</h3>
+          <Input
+            label="Incentive amount (AED)"
+            name="referralIncentiveAed"
+            type="number"
+            min="0"
+            step="0.01"
+            value={String(draft.referralIncentiveAed)}
+            error={errors.referralIncentiveAed}
+            disabled={!canEdit || saving}
+            onChange={(e) => update("referralIncentiveAed", Number(e.target.value))}
+          />
+          <p className="text-fluid--1 text-text-faint">This amount is frozen when a referred vehicle is marked Sold. Changing it affects future sales only.</p>
+        </Card>
+
 
       </div>
 
@@ -318,5 +337,6 @@ function toInput(s: Settings | null): SettingsInput | null {
     whatsappNumber: s.whatsappNumber,
     callNumber: s.callNumber,
     notifyEmail: s.notifyEmail,
+    referralIncentiveAed: s.referralIncentiveAed,
   };
 }

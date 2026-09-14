@@ -38,6 +38,7 @@ export default async function AdminCommissionPage() {
         initialError={statementsResult && !statementsResult.ok ? statementsResult.message : null}
         initialAgents={staffResult.ok ? staffResult.data.agents : []}
         initialPurchasers={staffResult.ok ? staffResult.data.purchasers : []}
+        initialReferralRecipients={staffResult.ok ? staffResult.data.referralRecipients : []}
       />
     </Suspense>
   );

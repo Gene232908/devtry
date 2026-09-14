@@ -59,6 +59,22 @@ writes, Inventory VIN synchronization, and 60-day post-sale photo deletion.
 Report information remains; broader lead-personal-data retention still needs
 business/legal approval.
 
+## 2026-09-14 catalog safety schema
+
+Migration `0029_catalog_safety_activity.sql` adds `archived_at` fields to the
+three vehicle catalog tables, partial case-insensitive unique indexes for active
+entries, and an owner-only `catalog_activity` audit table. Catalog references in
+leads and inventory are historical text values, so archiving keeps historical
+records intact without rewriting them.
+
+## 2026-09-14 manual lead attribution
+
+Migration `0030_manual_leads.sql` adds nullable `leads.created_by`, linked to
+the authenticated staff profile. Manual intake uses the existing `source`
+column with `manual_walk_in`, `manual_phone_call`, `manual_whatsapp`, or
+`manual_other`; detailed source context is preserved in the creation event.
+Referral incentive and payout data are not part of this migration.
+
 ## Future marketplace UI data needs
 
 The 2026-07-03 homepage redesign added UI-only preview sections for future buy-car and financing flows. These sections do not use live data yet. If approved later, the database will need to support:
@@ -99,6 +115,21 @@ These do not create new public lead fields today. The actual lead capture remain
   while the UI exposes only pre-conversion stages. Migration 0026 must be run.
 
 After `FINISH THE PRODUCT`:
+
+## Referral incentive data â€” 2026-09-14
+
+- Migration `0031_referral_incentives.sql` adds
+  `settings.referral_incentive_aed`, `lead_referrals`, private
+  `referral-proofs` storage, and `staff_referral_incentives`.
+- A `lead_referrals` row permits exactly one employee or one client referrer.
+  It stores both a required explanation and proof-object metadata; the proof
+  itself remains in a non-public storage bucket.
+- `sell_inventory_item` creates one employee incentive per sold inventory
+  item, copying the current setting into the immutable `incentive_aed` field.
+  Client referrals never create an incentive entry.
+
+- Migration `0032_no_show_status.sql` adds the `no_show` value to the existing
+  `lead_status` enum. No new table or environment variable is required.
 
 - SQL migrations.
 - Tables and relationships.

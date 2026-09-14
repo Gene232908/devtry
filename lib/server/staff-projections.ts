@@ -33,6 +33,7 @@ import type { DbLead } from "@/lib/admin/lead-mapper";
 export type ProjectedLead = {
   id: string;
   createdAt: string;
+  source: string;
   make: string;
   model: string;
   trim: string;
@@ -70,6 +71,7 @@ export function projectLeadForOwner(lead: DbLead): ProjectedLead {
   return {
     id: lead.id,
     createdAt: lead.created_at,
+    source: lead.source ?? "web",
     fullName: lead.full_name,
     phoneE164: lead.phone_e164,
     email: lead.email ?? undefined,
@@ -103,6 +105,7 @@ export function projectLeadForCallCenter(lead: DbLead): ProjectedLead {
   return {
     id: lead.id,
     createdAt: lead.created_at,
+    source: lead.source ?? "web",
     fullName: lead.full_name,
     phoneE164: lead.phone_e164,
     email: lead.email ?? undefined,
@@ -137,6 +140,7 @@ export function projectLeadForPurchaser(lead: DbLead): ProjectedLead {
   return {
     id: lead.id,
     createdAt: lead.created_at,
+    source: lead.source ?? "web",
     fullName: lead.full_name,
     make: lead.make,
     model: lead.model,

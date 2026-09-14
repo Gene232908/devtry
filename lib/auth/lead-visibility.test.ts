@@ -95,11 +95,12 @@ describe("visibleLeadsFor", () => {
 });
 
 describe("status choices", () => {
-  it("offers an agent exactly New, Contacted, Inspection Scheduled", () => {
+  it("offers an agent No Show alongside the inspection workflow", () => {
     expect(statusChoicesForRole("call_center")).toEqual([
       "new",
       "contacted",
       "inspection_scheduled",
+      "no_show",
     ]);
   });
 

@@ -1,23 +1,69 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
+import { isSupabaseConfigured } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/server/require-admin";
+import { setCatalogArchived } from "@/lib/server/catalog-archive";
 
 export const dynamic = "force-dynamic";
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: { id: string } },
+) {
   const auth = await requireAdmin();
   if (!auth.ok) {
-    return NextResponse.json({ ok: false, error: { message: auth.message } }, { status: auth.status });
+    return NextResponse.json(
+      { ok: false, error: { message: auth.message } },
+      { status: auth.status },
+    );
   }
 
   if (!isSupabaseConfigured()) {
-    return NextResponse.json({ ok: false, error: { message: "Database is not configured." } }, { status: 503 });
+    return NextResponse.json(
+      { ok: false, error: { message: "Database is not configured." } },
+      { status: 503 },
+    );
   }
 
-  const { error } = await getSupabaseAdmin().from("car_models").delete().eq("id", params.id);
-  if (error) {
-    return NextResponse.json({ ok: false, error: { message: error.message } }, { status: 500 });
-  }
+  const result = await setCatalogArchived(
+    "model",
+    params.id,
+    true,
+    auth.identity,
+  );
+  if (!result.ok)
+    return NextResponse.json(
+      { ok: false, error: { message: result.message } },
+      { status: result.status },
+    );
 
-  return NextResponse.json({ ok: true, data: { id: params.id } });
+  return NextResponse.json({ ok: true, data: { entry: result.data } });
+}
+
+export async function PATCH(
+  _req: NextRequest,
+  { params }: { params: { id: string } },
+) {
+  const auth = await requireAdmin();
+  if (!auth.ok)
+    return NextResponse.json(
+      { ok: false, error: { message: auth.message } },
+      { status: auth.status },
+    );
+  if (!isSupabaseConfigured())
+    return NextResponse.json(
+      { ok: false, error: { message: "Database is not configured." } },
+      { status: 503 },
+    );
+  const result = await setCatalogArchived(
+    "model",
+    params.id,
+    false,
+    auth.identity,
+  );
+  if (!result.ok)
+    return NextResponse.json(
+      { ok: false, error: { message: result.message } },
+      { status: result.status },
+    );
+  return NextResponse.json({ ok: true, data: { entry: result.data } });
 }

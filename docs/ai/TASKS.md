@@ -2,6 +2,17 @@
 
 ## Current objective
 
+- [x] 2026-09-14 Staff Manual Lead Creation:
+  - Added authenticated manual lead entry for Super Admin and Call Centre roles,
+    with Walk-in, Phone call, WhatsApp/message, and Other intake sources.
+  - Added server-derived creator attribution, duplicate review flags, existing
+    Call Centre routing, source visibility, and export support.
+  - Added optional inspection scheduling, No Show handling, employee referral
+    proof, frozen sold-time incentive amounts, and combined monthly commission
+    invoice support.
+  - Apply migrations `0030_manual_leads.sql`, `0031_referral_incentives.sql`,
+    and `0032_no_show_status.sql` before live use.
+
 - [x] 2026-09-13 Customer Service Arrival Confirmation & Multi-View Visibility:
   - Enabled Call Centre staff, Super Admin, and Manager accounts to record customer arrival across stages `["inspection_scheduled", "inspected", "negotiating", "deal"]` in `LeadDetail.tsx` and `route.ts`.
   - Added visible arrival indicators across the platform: header badge (`✓ Customer Arrived`), Scheduled Inspection card badge and updated message, dedicated Purchaser arrival card, inspection workspace header badge, and Leads Directory table column.
@@ -120,6 +131,15 @@
 - [x] 2026-06-30 How It Works and Contact changed to unique non-photo layouts instead of reusing the hero image.
 
 ## Update rule
+
+### Next action — production database verification
+
+- [ ] Apply migrations `0030_manual_leads.sql`, `0031_referral_incentives.sql`,
+  and `0032_no_show_status.sql` to the intended Supabase project before
+  deploying this workflow.
+- [ ] With non-production data, verify employee referral creation with proof,
+  sale-triggered frozen incentive, combined staff invoice, and Super Admin
+  payment.
 
 ### Next action — arrival and inspection report
 

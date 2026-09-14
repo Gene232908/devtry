@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -14,12 +15,13 @@ import { Card } from "@/components/ui/Card";
 import { useLeads } from "@/lib/admin/leads-store";
 import { useLeadsFilter } from "@/lib/admin/use-leads-filter";
 import { useStaffIdentity } from "@/lib/admin/staff-identity-context";
-import { exportLeadsCsv } from "@/lib/admin/export-csv";
+import { exportExcel, exportLeadsPdf, leadExportRows } from "@/lib/admin/export-reports";
 import { cn } from "@/lib/utils";
 import { LeadsToolbar } from "./toolbar";
 import { LeadRow } from "./row";
 import { LeadsTableSkeleton } from "./skeleton";
 import { Pagination } from "./pagination";
+import { ManualLeadDialog } from "@/components/admin/ManualLeadDialog";
 
 const ATTENTION_CONFIG: Record<
   string,
@@ -65,11 +67,13 @@ const PIPELINE_CONFIG: Record<string, { title: string; description: string }> = 
   new: { title: "New Leads", description: "Leads currently waiting at the New stage." },
   contacted: { title: "Contacted Leads", description: "Leads currently marked as Contacted." },
   inspection_scheduled: { title: "Inspection Scheduled", description: "Leads with an inspection currently booked." },
+  no_show: { title: "No Show Leads", description: "Customers who did not attend their scheduled inspection." },
   negotiating: { title: "Leads Under Negotiation", description: "Leads currently in price or terms discussion." },
   deal: { title: "Deals", description: "Leads currently marked as Deal." },
 };
 
 export function LeadsTable() {
+  const [manualLeadOpen, setManualLeadOpen] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const attention = searchParams.get("attention");
@@ -188,20 +192,29 @@ export function LeadsTable() {
           }
           filter.clearFilters();
         }}
-        onExport={() => exportLeadsCsv(filter.allFiltered)}
+        onExportPdf={() => exportLeadsPdf(filter.allFiltered)}
+        onExportExcel={() => exportExcel("CarVibeDubai Leads", leadExportRows(filter.allFiltered), "carvibedubai-leads.xls")}
         count={filter.totalCount}
         isLive={isLive}
         isRefreshing={isRefreshing}
         onRefresh={refresh}
+        onCreateLead={() => setManualLeadOpen(true)}
         role={identity?.role}
       />
 
+      <ManualLeadDialog
+        open={manualLeadOpen}
+        onClose={() => setManualLeadOpen(false)}
+        onCreated={refresh}
+      />
+
       <div className="mt-5 overflow-x-auto">
-        <table className="w-full min-w-[880px] text-left text-fluid--1">
+        <table className="w-full min-w-[980px] text-left text-fluid--1">
           <thead>
             <tr className="border-b border-border text-text-faint">
               <th className="py-2 pr-4 font-normal">Client Name</th>
               <th className="py-2 pr-4 font-normal">Car Details</th>
+              <th className="py-2 pr-4 font-normal">Lead Source</th>
               <th className="py-2 pr-4 font-normal">Mileage</th>
               <th className="py-2 pr-4 font-normal">Emirate</th>
               <th className="py-2 pr-4 font-normal">

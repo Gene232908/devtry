@@ -39,7 +39,19 @@ function messageFor(event: DbLeadEvent, actor?: ActorSnapshot): string {
         ? `Viewed by ${name} (${ROLE_LABELS[roleValue]}).`
         : "Viewed before staff view tracking was enabled.";
     }
-    case "lead_created": return "Lead submitted via website valuation form.";
+    case "lead_created": {
+      const source = typeof meta.source === "string" ? meta.source : "website";
+      const sourceLabel = source === "website"
+        ? "website valuation form"
+        : source.replace(/^manual_/, "").replace(/_/g, " ");
+      const sourceNote = typeof meta.source_note === "string" && meta.source_note.trim()
+        ? ` Source detail: ${meta.source_note.trim()}`
+        : "";
+      const referral = typeof meta.referral_type === "string" && meta.referral_type !== "none"
+        ? ` Referral recorded: ${meta.referral_type === "employee" ? "employee" : "client"}.`
+        : "";
+      return `Lead created${actionBy(meta, actor)} via ${sourceLabel}.${sourceNote}${referral}`;
+    }
     case "status_change": {
       const from = STATUS_LABEL[String(meta.from)] ?? String(meta.from ?? "");
       const to = STATUS_LABEL[String(meta.to)] ?? String(meta.to ?? "");
