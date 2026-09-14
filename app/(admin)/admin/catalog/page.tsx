@@ -301,7 +301,7 @@ export default function AdminCatalogPage() {
       const res = await fetch(endpoint, { method: "DELETE" });
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.ok) {
-        setError(json?.error?.message ?? "Couldn't archive that entry.");
+        setError(json?.error?.message ?? "Couldn't hide that entry.");
         return;
       }
       if (pending.kind === "make" && pending.id === selectedMakeId)
@@ -309,7 +309,7 @@ export default function AdminCatalogPage() {
       await loadCatalog();
       await loadActivity();
       showToast(
-        `${pending.name} is archived and hidden from the valuation form.`,
+        `${pending.name} is now hidden from the valuation form.`,
         "Undo",
         () => {
           void restoreEntry(pending.kind, pending.id, pending.name);
@@ -453,7 +453,7 @@ export default function AdminCatalogPage() {
                   })
                 }
               >
-                <Trash2 className="h-4 w-4" /> Archive make
+                <Trash2 className="h-4 w-4" /> Hide make
               </Button>
             </div>
 
@@ -525,15 +525,15 @@ export default function AdminCatalogPage() {
         tone="danger"
         title={
           pending?.kind === "make"
-            ? "Archive this make?"
+            ? "Hide this make from the valuation form?"
             : pending?.kind === "model"
-              ? "Archive this model?"
-              : "Archive this trim?"
+              ? "Hide this model from the valuation form?"
+              : "Hide this trim from the valuation form?"
         }
         description={
           pending?.kind === "make" ? (
             <>
-              Archiving <span className="text-text">{pending.name}</span> hides
+              Hiding <span className="text-text">{pending.name}</span> hides
               its{" "}
               {pending.modelCount === 1
                 ? "1 model"
@@ -543,7 +543,7 @@ export default function AdminCatalogPage() {
             </>
           ) : pending?.kind === "model" ? (
             <>
-              Archiving <span className="text-text">{pending.name}</span> hides
+              Hiding <span className="text-text">{pending.name}</span> hides
               its{" "}
               {pending.trimCount === 1
                 ? "1 trim"
@@ -558,7 +558,7 @@ export default function AdminCatalogPage() {
             </>
           )
         }
-        confirmLabel="Archive"
+        confirmLabel="Hide from valuation form"
         cancelLabel="Cancel"
         busy={deleting}
         onConfirm={() => void runDelete()}

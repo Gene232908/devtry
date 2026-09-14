@@ -61,7 +61,7 @@ export function CatalogActivityPanel({
                   loading={restoringId === event.entity_id}
                   onClick={() => onRestore(event)}
                 >
-                  <RotateCcw className="h-3.5 w-3.5" /> Restore
+                  <RotateCcw className="h-3.5 w-3.5" /> Restore to catalog
                 </Button>
               )}
             </li>

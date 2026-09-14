@@ -116,7 +116,7 @@ function CatalogModelRow({
         </button>
         <button
           type="button"
-          aria-label={`Archive ${model.name}`}
+          aria-label={`Hide ${model.name} from valuation form`}
           onClick={() =>
             onArchive({
               kind: "model",
@@ -147,7 +147,7 @@ function CatalogModelRow({
                   {trim.name}
                   <button
                     type="button"
-                    aria-label={`Archive trim ${trim.name}`}
+                    aria-label={`Hide trim ${trim.name} from valuation form`}
                     onClick={() =>
                       onArchive({ kind: "trim", id: trim.id, name: trim.name })
                     }
@@ -180,7 +180,7 @@ function CatalogModelRow({
           </div>
           {duplicate && trimDraft.trim() && (
             <p className="mt-1.5 text-[0.72rem] text-gold">
-              Existing trim on {makeName} {model.name}: {duplicate.name}
+              This trim already exists under {makeName} → {model.name}: {duplicate.name}
             </p>
           )}
         </div>

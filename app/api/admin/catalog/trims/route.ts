@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
       {
         ok: false,
         error: {
-          message: `This trim already exists on ${makeName} ${model.name}.`,
+          message: `Trim "${duplicateCheck.duplicate.name}" already exists under ${makeName} → ${model.name}.`,
         },
       },
       { status: 409 },
