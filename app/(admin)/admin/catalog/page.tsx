@@ -52,6 +52,7 @@ export default function AdminCatalogPage() {
   const [toast, setToast] = useState<CatalogToastState | null>(null);
   const [activity, setActivity] = useState<CatalogActivity[]>([]);
   const [activityOpen, setActivityOpen] = useState(false);
+  const [activityLoading, setActivityLoading] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
 
   // `pending` outlives the dialog's exit animation so a closing dialog cannot
@@ -82,17 +83,19 @@ export default function AdminCatalogPage() {
   }, [loadCatalog]);
 
   const loadActivity = useCallback(async () => {
-    const response = await fetch("/api/admin/catalog/activity", {
-      cache: "no-store",
-    });
-    const json = await response.json().catch(() => null);
-    if (response.ok && json?.ok)
-      setActivity(json.data.events as CatalogActivity[]);
+    setActivityLoading(true);
+    try {
+      const response = await fetch("/api/admin/catalog/activity", { cache: "no-store" });
+      const json = await response.json().catch(() => null);
+      if (response.ok && json?.ok) setActivity(json.data.events as CatalogActivity[]);
+    } finally {
+      setActivityLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    void loadActivity();
-  }, [loadActivity]);
+    if (activityOpen) void loadActivity();
+  }, [activityOpen, loadActivity]);
 
   // Keeps the catalog current without a manual reload. It used to fetch once on
   // mount and never again — not on focus, not on any timer — so a make added
@@ -167,6 +170,7 @@ export default function AdminCatalogPage() {
     setError(null);
     const result = await postCatalog<T>(endpoint, body, failure);
     if (!result.ok) setError(result.message);
+    else if (activityOpen) void loadActivity();
     return result.ok ? result.data : null;
   }
 
@@ -529,6 +533,7 @@ export default function AdminCatalogPage() {
             </div>
             <CatalogActivityPanel
               events={activity}
+              loading={activityLoading}
               restoringId={restoringId}
               onRestore={(event) => void restoreEntry(event.entity_type, event.entity_id, event.entity_name)}
             />

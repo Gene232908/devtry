@@ -16,10 +16,12 @@ export type CatalogActivity = {
 
 export function CatalogActivityPanel({
   events,
+  loading = false,
   restoringId,
   onRestore,
 }: {
   events: CatalogActivity[];
+  loading?: boolean;
   restoringId: string | null;
   onRestore: (event: CatalogActivity) => void;
 }) {
@@ -29,7 +31,9 @@ export function CatalogActivityPanel({
         <History className="h-4 w-4 text-gold" />
         <h2 className="text-fluid-0 text-text">Recent catalog activity</h2>
       </div>
-      {events.length === 0 ? (
+      {loading ? (
+        <p className="mt-3 text-fluid--1 text-text-faint">Loading activity history…</p>
+      ) : events.length === 0 ? (
         <p className="mt-3 text-fluid--1 text-text-faint">
           No recent catalog changes.
         </p>
