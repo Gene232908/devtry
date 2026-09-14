@@ -47,15 +47,24 @@ async function exportPdf(title: string, rows: ExportRow[], filename: string) {
   const columnWidth = headers.length ? (pageWidth - margin * 2) / headers.length : pageWidth - margin * 2;
   const fontSize = headers.length > 10 ? 5.5 : 7;
   const rowHeight = 16;
+  const cellPadding = 6;
+  const fitText = (value: string, maxWidth: number, size: number, textFont: typeof font) => {
+    if (textFont.widthOfTextAtSize(value, size) <= maxWidth) return value;
+    let result = value;
+    while (result.length > 1 && textFont.widthOfTextAtSize(`${result}…`, size) > maxWidth) result = result.slice(0, -1);
+    return `${result}…`;
+  };
   let page = document.addPage([pageWidth, pageHeight]);
   let y = pageHeight - margin;
   const drawCell = (value: string | number, index: number, isHeader = false) => {
     const text = String(value ?? "").replace(/[\r\n]+/g, " ");
-    page.drawText(text.slice(0, Math.max(8, Math.floor(columnWidth / (fontSize * 0.5)))), {
+    const textFont = isHeader ? bold : font;
+    const fitted = fitText(text, columnWidth - cellPadding, fontSize, textFont);
+    page.drawText(fitted, {
       x: margin + index * columnWidth + 3,
       y: y - rowHeight + 4,
       size: fontSize,
-      font: isHeader ? bold : font,
+      font: textFont,
       color: rgb(0.08, 0.08, 0.1),
     });
   };
@@ -88,7 +97,6 @@ export function leadExportRows(leads: Lead[]): ExportRow[] {
   return leads.map((lead) => ({
     "Client Name": lead.fullName ?? "",
     Mobile: lead.phoneE164 ?? "",
-    Email: lead.email ?? "",
     Make: lead.make,
     Model: lead.model,
     Trim: lead.trim,
