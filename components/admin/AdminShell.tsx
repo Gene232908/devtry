@@ -41,7 +41,7 @@ export function AdminShell({ children, identity }: Props) {
           // around a login form implies a session that does not exist.
           children
         ) : (
-          <div className="flex min-h-screen flex-col bg-bg">
+          <div className="flex min-h-screen flex-col bg-bg overflow-x-hidden max-w-full">
             {/* Keep the header visible while the document, not a nested main, scrolls. */}
             <div className="sticky top-0 z-30">
               <Topbar onMenuClick={() => setMobileSidebarOpen(true)} identity={identity} />
@@ -51,7 +51,11 @@ export function AdminShell({ children, identity }: Props) {
 
               {mobileSidebarOpen && (
                 <div className="fixed inset-0 z-40 flex lg:hidden">
-                  <Sidebar className="flex" capabilities={capabilities} />
+                  <Sidebar
+                    className="flex"
+                    capabilities={capabilities}
+                    onNavigate={() => setMobileSidebarOpen(false)}
+                  />
                   <button
                     type="button"
                     aria-label="Close sidebar"
@@ -63,7 +67,7 @@ export function AdminShell({ children, identity }: Props) {
                 </div>
               )}
 
-              <main className="min-w-0 flex-1 p-4 sm:p-6">
+              <main className="min-w-0 flex-1 p-4 sm:p-6 overflow-x-hidden max-w-full">
                 <div key={pathname} className="animate-fade-in motion-reduce:animate-none">
                   {ADMIN_PREVIEW && (
                     <div className="mb-5 flex items-start gap-3 rounded-card border border-gold/40 bg-gold/10 px-4 py-3">

@@ -304,7 +304,7 @@ export default function SettingsClient({ initialSettings, initialError, canEdit 
           disabled={!canEdit || saving || dirty || notificationTest.kind === "sending" || !persisted?.notifyEmail}
         >
           {notificationTest.kind === "sending" ? <Loader2 className="h-4 w-4 animate-spin" /> : <MailCheck className="h-4 w-4" />}
-          {notificationTest.kind === "sending" ? "Sending testâ€¦" : "Send test email"}
+          {notificationTest.kind === "sending" ? "Sending test..." : "Send test email"}
         </Button>
 
         {notificationTest.kind === "sent" && (

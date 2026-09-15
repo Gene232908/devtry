@@ -15,14 +15,7 @@ import { useLeads } from "@/lib/admin/leads-store";
 import { useUnsavedGuard } from "@/lib/admin/use-unsaved-guard";
 import { mockLeadEvents, Lead, LeadStatus } from "@/config/mock-data";
 import { type Draft, draftFromLead } from "@/lib/admin/lead-draft";
-import {
-  DETAIL_STATUS_OPTIONS,
-  formatAed,
-  formatDate,
-  requiresPurchasePrice,
-  STATUS_HINT,
-  STATUS_LABEL,
-} from "@/lib/format";
+import { DETAIL_STATUS_OPTIONS, formatAed, formatDate, requiresPurchasePrice, STATUS_HINT, STATUS_LABEL } from "@/lib/format";
 import { type LeadEvent, type LeadViewSummary } from "@/lib/admin/lead-events";
 import { INVENTORY_STATUS_LABEL, type InventoryItem } from "@/lib/admin/inventory";
 import { useStaffOptions } from "@/lib/admin/use-staff-options";

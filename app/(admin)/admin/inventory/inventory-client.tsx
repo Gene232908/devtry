@@ -1,14 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { BadgeDollarSign, Search, ShieldAlert, X } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { Search, ShieldAlert, X } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { SellCarDialog } from "@/components/admin/SellCarDialog";
-import { formatAed, formatDate } from "@/lib/format";
+import { formatAed } from "@/lib/format";
 import { formatUaeMonth, uaeMonthKey } from "@/lib/uae-time";
 import {
   AGENT_COMMISSION_RATE,
@@ -20,22 +18,17 @@ import {
   type InventoryItem,
   type InventoryStatus,
 } from "@/lib/admin/inventory";
+import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 import { useFreshServerData, useServerState } from "@/lib/admin/use-fresh-server-data";
-import { ADMIN_PREVIEW, PREVIEW_NOTICE } from "@/lib/admin/preview-mode";
 import { useStaffIdentity } from "@/lib/admin/staff-identity-context";
 import { ExportMenu } from "@/components/admin/ExportMenu";
 import { exportExcel, exportInventoryPdf, inventoryExportRows } from "@/lib/admin/export-reports";
+import { InventoryTable, type InventoryRole } from "@/components/admin/InventoryTable";
+import { MobileInventoryList } from "@/components/admin/MobileInventoryList";
 
 // Cars the business has bought and now owns. Stock arrives here automatically
 // when a lead is marked as a Deal — there is no "add a car" button, because a
 // car with no lead behind it would have no purchase price to be paid against.
-
-const STATUS_STYLE: Record<InventoryStatus, string> = {
-  in_stock: "border-gold/40 bg-gold/10 text-gold",
-  reserved: "border-info/40 bg-info/10 text-info",
-  sold: "border-success/40 bg-success/10 text-success",
-  withdrawn: "border-border bg-surface-2 text-text-muted",
-};
 
 // "All" is no longer an option in the list: with checkboxes it is simply
 // nothing ticked, and a box labelled "All" sitting alongside the others could
@@ -50,15 +43,6 @@ const ROLE_FILTER_OPTIONS: Array<{ value: InventoryRole; label: string }> = [
   { value: "purchaser", label: "Purchaser" },
   { value: "developer", label: "Developer" },
 ];
-type InventoryRole = "call_center" | "purchaser" | "developer";
-
-function StatusChip({ status }: { status: InventoryStatus }) {
-  return (
-    <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-fluid--1 ${STATUS_STYLE[status]}`}>
-      {INVENTORY_STATUS_LABEL[status]}
-    </span>
-  );
-}
 
 /**
  * `initialItems` is rendered by the server in `page.tsx`, so this screen paints
@@ -347,7 +331,7 @@ export default function InventoryClient({
 
       <Card className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
             <MultiSelect
               className="w-full sm:w-52"
               options={STATUS_FILTER_OPTIONS}
@@ -435,106 +419,31 @@ export default function InventoryClient({
             </p>
           </div>
         ) : (
-          <div className="mt-5 overflow-x-auto">
-            <table className="w-full min-w-[980px] text-left text-fluid--1">
-              <thead>
-                <tr className="border-b border-border text-text-faint">
-                  <th className="py-2 pr-4 font-normal">Car</th>
-                  <th className="py-2 pr-4 font-normal">Chassis / VIN Number</th>
-                  <th className="py-2 pr-4 font-normal">Bought</th>
-                  <th className="py-2 pr-4 text-right font-normal">Paid</th>
-                  <th className="py-2 pr-4 text-right font-normal">Sold for</th>
-                  <th className="py-2 pr-4 text-right font-normal">Profit</th>
-                  {(!isOwner || roleFilter.includes("call_center")) && (
-                    <th className="py-2 pr-4 text-right font-normal">Call Centre 2%</th>
-                  )}
-                  {(!isOwner || roleFilter.includes("purchaser")) && (
-                    <th className="py-2 pr-4 text-right font-normal">Purchaser 10%</th>
-                  )}
-                  {(!isOwner || roleFilter.includes("developer")) && (
-                    <th className="py-2 pr-4 text-right font-normal">Developer 2%</th>
-                  )}
-                  <th className="py-2 pr-4 font-normal">Status</th>
-                  <th className="py-2 pr-1 text-right font-normal">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visible.map((item) => (
-                  <tr key={item.id} className="border-b border-border last:border-0 hover:bg-surface-2/50">
-                    <td className="py-3 pr-4">
-                      <Link href={`/admin/leads/${item.leadId}`} className="text-text hover:text-gold">
-                        {item.year} {item.make} {item.model}
-                      </Link>
-                      {item.trim && <span className="block text-text-faint">{item.trim}</span>}
-                      {/* This car came from a form nobody ever finished, so the
-                          seller's number was never proved to be theirs — worth
-                          knowing before ringing it about the paperwork. */}
-                      {item.fromUnverifiedLead && (
-                        <span className="mt-0.5 inline-flex items-center gap-1 text-fluid--1 text-warning">
-                          <ShieldAlert className="h-3.5 w-3.5" /> Unverified number
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 pr-4 text-text-muted">
-                      {item.chassisNumber || "—"}
-                    </td>
-                    <td className="py-3 pr-4 text-text-muted">{formatDate(item.purchasedAt)}</td>
-                    <td className="py-3 pr-4 text-right tabular-nums text-text-muted">
-                      {formatAed(item.purchasePriceAed)}
-                    </td>
-                    <td className="py-3 pr-4 text-right tabular-nums text-text-muted">
-                      {formatAed(item.salePriceAed)}
-                    </td>
-                    <td
-                      className={`py-3 pr-4 text-right tabular-nums ${
-                        (item.commission?.profitAed ?? 0) < 0 ? "text-danger" : "text-text"
-                      }`}
-                    >
-                      {item.commission ? formatAed(item.commission.profitAed) : "—"}
-                    </td>
-                    {(!isOwner || roleFilter.includes("call_center")) && (
-                      <td className="py-3 pr-4 text-right tabular-nums text-gold">
-                        {item.commission ? formatAed(round2(Math.max(item.commission.profitAed, 0) * AGENT_COMMISSION_RATE)) : "—"}
-                      </td>
-                    )}
-                    {(!isOwner || roleFilter.includes("purchaser")) && (
-                      <td className="py-3 pr-4 text-right tabular-nums text-gold">
-                        {item.commission ? formatAed(round2(Math.max(item.commission.profitAed, 0) * PURCHASER_COMMISSION_RATE)) : "—"}
-                      </td>
-                    )}
-                    {(!isOwner || roleFilter.includes("developer")) && (
-                      <td className="py-3 pr-4 text-right tabular-nums text-gold">
-                        {item.commission ? formatAed(item.commission.commissionAed) : "—"}
-                      </td>
-                    )}
-                    <td className="py-3 pr-4">
-                      <StatusChip status={item.status} />
-                    </td>
-                    <td className="py-3 pl-2 pr-1 text-right">
-                      {/* Nothing to sell once it is sold. `withdrawn` is kept in
-                          the check for legacy rows: it means deliberately not
-                          for sale, so offering the button would be wrong. */}
-                      {item.status === "sold" || item.status === "withdrawn" ? (
-                        <span className="text-text-faint">—</span>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          className="px-3"
-                          onClick={() => {
-                            setSellError(null);
-                            setSelling(item);
-                          }}
-                          title={ADMIN_PREVIEW ? PREVIEW_NOTICE : "Record the price this car sold for"}
-                        >
-                          <BadgeDollarSign className="h-4 w-4" /> Mark sold
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {/* Mobile / Medium Screen Streamlined List (Car priority, no wide table overflow) */}
+            <div className="mt-5 block lg:hidden">
+              <MobileInventoryList
+                items={visible}
+                onSell={(item) => {
+                  setSellError(null);
+                  setSelling(item);
+                }}
+              />
+            </div>
+
+            {/* Desktop / Large Screen Full 11-Column Table */}
+            <div className="hidden lg:block">
+              <InventoryTable
+                items={visible}
+                roleFilter={roleFilter}
+                isOwner={isOwner}
+                onSell={(item) => {
+                  setSellError(null);
+                  setSelling(item);
+                }}
+              />
+            </div>
+          </>
         )}
       </Card>
 

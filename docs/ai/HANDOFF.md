@@ -15,6 +15,13 @@
 
 ## Last completed work
 
+**2026-09-15:** Multi-Tab Comprehensive Responsiveness Audit & Multi-Viewport Verification.
+- Audited all admin portal tabs (/admin, /admin/inventory, /admin/commission, /admin/incomplete, /admin/blocked, /admin/catalog, /admin/staff, /admin/settings, /admin/leads/[id]) across mobile (390x844), tablet (768x1024), laptop (1366x768), and desktop XL (1920x1080).
+- Fixed Commission table action button collision by increasing min table width to 820px, expanding the actions column to 28%, and applying `whitespace-nowrap`.
+- Added `sm:flex-wrap` to Inventory filters and `whitespace-nowrap` to Inventory and Blocked numbers tables.
+- Added `onNavigate` handler to `Sidebar.tsx` / `AdminShell.tsx` for immediate mobile drawer auto-dismissal.
+- Verified zero button overlaps, zero text crowding, and zero broken functions across all 222 Vitest tests, TypeScript, and ESLint.
+
 **2026-09-14:** Vehicle Catalog reliability and pagination fix completed locally. Make, Model, and Trim inserts no longer trigger a full catalog reload; the editor updates the inserted record locally, reports expired sessions explicitly, blocks concurrent duplicate writes, and validates names to 120 characters on client and server. Re-entering an existing value shows a contextual, dismissible toast and an inline hint. The selected make now displays 15 models per themed page. Catalog removal now archives rather than permanently deletes; Undo/Restore and the ten most recent owner actions use new migration `0029_catalog_safety_activity.sql`. A pre-migration deployment retains public catalog reads and normal adds but safely refuses archive actions. Verified with TypeScript, ESLint, 215 Vitest tests, and `npm run build:check`. Production deployment and migration verification remain pending.
 
 **2026-09-09:** Dashboard UI/UX and chart visibility overhaul completed.

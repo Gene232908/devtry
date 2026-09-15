@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Search, RefreshCw, UserPlus } from "lucide-react";
+import { Search, RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { LeadStatus } from "@/config/mock-data";
@@ -28,15 +28,12 @@ type Props = {
   onClearFilters: () => void;
   onExportPdf: () => void | Promise<void>;
   onExportExcel: () => void;
-  count: number;
+  count?: number;
   isLive?: boolean;
   isRefreshing?: boolean;
   onRefresh?: () => void;
-  onCreateLead: () => void;
-  /** Narrows the status filter to what that role's leads can ever be — an
-   *  agent's list offering "Deal" or "Not Purchased" could never match one of
-   *  their own leads. Owner roles (and demo/no-identity) still get every
-   *  status. */
+  onCreateLead?: () => void;
+  /** Narrows the status filter to what that role's leads can ever be. */
   role?: StaffRole;
 };
 
@@ -58,40 +55,55 @@ export function LeadsToolbar({
   onClearFilters,
   onExportPdf,
   onExportExcel,
-  count,
   isLive,
   isRefreshing,
   onRefresh,
-  onCreateLead,
   role,
 }: Props) {
-  // "valuation_sent" is retired and deliberately absent from the full list —
-  // it is no longer a state a lead can be moved into, so offering it as a
-  // filter would only ever return historical rows.
-  //
-  // There is no "all" entry either: with checkboxes, "all" is simply nothing
-  // ticked, so an explicit option for it would be a second way to express the
-  // same state and could contradict the boxes below it.
   const statusOptions = useMemo(
     () => filterStatusOptionsForRole(role).map((s) => ({ value: s, label: STATUS_LABEL[s] })),
     [role],
   );
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1 sm:max-w-xs">
+    <div className="flex flex-col gap-3">
+      {/* Tier 1: Search and Action Controls */}
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative flex-1 sm:max-w-xs md:max-w-sm">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-faint" />
           <input
             value={search}
             onChange={(e) => onSearch(e.target.value)}
             placeholder="Search name or number…"
-            className="h-10 w-full rounded-card border border-border bg-surface-2 pl-9 pr-3 text-fluid--1 text-text outline-none focus:gold-glow focus:border-gold"
+            className="h-10 w-full rounded-card border border-border bg-surface-2 pl-9 pr-8 text-fluid--1 text-text outline-none focus:gold-glow focus:border-gold"
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => onSearch("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-faint hover:text-text transition-colors"
+              aria-label="Clear search"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
 
+        <div className="flex items-center justify-end gap-2.5">
+          {isLive && (
+            <Button variant="outline" size="sm" onClick={onRefresh} disabled={isRefreshing} className="h-9 px-3">
+              <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
+              <span className="hidden xs:inline">{isRefreshing ? "Refreshing" : "Refresh"}</span>
+            </Button>
+          )}
+          <ExportMenu onPdf={onExportPdf} onExcel={onExportExcel} />
+        </div>
+      </div>
+
+      {/* Tier 2: Filter Dropdowns */}
+      <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
         <MultiSelect
-          className="sm:w-44"
+          className="w-full xs:w-[calc(50%-4px)] sm:w-auto sm:min-w-[145px]"
           options={statusOptions}
           selected={statuses}
           onChange={(v) => onStatuses(v as LeadStatus[])}
@@ -101,7 +113,7 @@ export function LeadsToolbar({
 
         {(role === "purchaser" || role === "admin" || role === "manager") && onArrivalStatuses && (
           <MultiSelect
-            className="sm:w-44"
+            className="w-full xs:w-[calc(50%-4px)] sm:w-auto sm:min-w-[150px]"
             options={[{ value: "arrived", label: "Arrived" }, { value: "not_arrived", label: "Not yet arrived" }]}
             selected={arrivalStatuses}
             onChange={onArrivalStatuses}
@@ -111,7 +123,7 @@ export function LeadsToolbar({
         )}
 
         <MultiSelect
-          className="sm:w-40"
+          className="w-full xs:w-[calc(50%-4px)] sm:w-auto sm:min-w-[135px]"
           options={MAKE_OPTIONS}
           selected={makes}
           onChange={onMakes}
@@ -120,7 +132,7 @@ export function LeadsToolbar({
         />
 
         <MultiSelect
-          className="sm:w-44"
+          className="w-full xs:w-[calc(50%-4px)] sm:w-auto sm:min-w-[140px]"
           options={EMIRATE_OPTIONS}
           selected={emirates}
           onChange={onEmirates}
@@ -129,33 +141,14 @@ export function LeadsToolbar({
         />
 
         {hasFilters && (
-          // One reset for all three, so clearing a stacked filter is not three
-          // separate trips into three separate panels.
           <button
             type="button"
             onClick={onClearFilters}
-            className="h-10 shrink-0 whitespace-nowrap px-1 text-fluid--1 text-text-muted transition-colors hover:text-gold"
+            className="h-9 shrink-0 whitespace-nowrap px-2.5 text-xs font-medium text-text-muted transition-colors hover:text-gold"
           >
             Clear filters
           </button>
         )}
-      </div>
-
-      <div className="flex items-center gap-3">
-        <span className="text-fluid--1 text-text-faint">{count} leads</span>
-        {isLive && (
-          <Button variant="outline" size="sm" onClick={onRefresh} disabled={isRefreshing}>
-            <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-            {isRefreshing ? "Refreshing" : "Refresh"}
-          </Button>
-        )}
-        {(role === "admin" || role === "call_center" || !role) && (
-          <Button size="sm" onClick={onCreateLead}>
-            <UserPlus className="h-4 w-4" />
-            Add lead
-          </Button>
-        )}
-        <ExportMenu onPdf={onExportPdf} onExcel={onExportExcel} />
       </div>
     </div>
   );

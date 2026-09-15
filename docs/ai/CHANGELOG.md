@@ -6,6 +6,8 @@ Use reverse chronological order.
 
 ### Fixed
 
+- **Responsive Topbar Emblem Mode, Zero Horizontal Page Scroll & Streamlined Entity Views.** Hidden the `"CARVIBEDUBAI"` wordmark text in the admin header on mobile, tablet, and smaller laptop screens so only the circular gold emblem is displayed, completely eliminating header crowding and profile avatar cutoff on narrow viewports (e.g. 440px iPhone 16 Pro Max). Enforced `overflow-x-hidden max-w-full` across the admin shell and redesigned the Executive Dashboard Date Filter to prevent horizontal page scrolling. Extended the streamlined mobile list view across mobile to medium screens (<1024px) for the Leads Directory (Client Name priority) and created `MobileInventoryList` for the Inventory Directory (Car priority with direct tap-to-details), reserving heavy multi-column tables for desktop screens. Refactored Inventory components to keep `inventory-client.tsx` strictly under 500 lines.
+
 - **Vehicle Catalog stopped accepting entries during long editing sessions.** Successful Make, Model, and Trim inserts now update the local catalog instead of depending on a second full-catalog request. Expired sessions are identified clearly, rapid duplicate submissions are blocked, duplicate entries show a contextual toast, catalog names are validated on both client and server, and large make lists are paginated at 15 models per page.
 
 - **Admin overview nested scrolling.** Removed the fixed-height nested vertical

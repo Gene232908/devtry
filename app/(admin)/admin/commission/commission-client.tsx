@@ -539,6 +539,7 @@ function StaffCommissionView({
   // individual view gets a total that means something to the person reading it.
   const totalCarsSold = staffList.reduce((n, s) => n + s.totalCarsSold, 0);
 
+
   return (
     <>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -572,10 +573,10 @@ function StaffCommissionView({
                 right next to it. Fixed widths give every column its own
                 share regardless of how short or long its content happens to
                 be, so the gaps between columns read as even. */}
-            <table className="w-full min-w-[640px] table-fixed text-left text-fluid--1">
+            <table className="w-full min-w-[820px] table-fixed text-left text-fluid--1">
               <thead>
                 <tr className="border-b border-border text-text-faint">
-                  <th className="w-[22%] py-2 pr-4 font-normal">Name</th>
+                  <th className="w-[20%] py-2 pr-4 font-normal">Name</th>
                   <th className="w-[11%] py-2 pr-4 text-right font-normal">Cars Sold</th>
                   <th className="w-[15%] py-2 pr-4 text-right font-normal">Total Profit</th>
                   {/* Extra right padding (pr-8, not pr-4) on purpose: this
@@ -584,9 +585,9 @@ function StaffCommissionView({
                       each other with nothing but the column boundary between
                       "AED 400" and "Unpaid". The padding pulls the number back
                       from that boundary to open up real breathing room. */}
-                  <th className="w-[17%] py-2 pr-8 text-right font-normal">Commission</th>
-                  <th className="w-[13%] py-2 pr-4 font-normal">Status</th>
-                  <th className="w-[22%] py-2 pr-1 font-normal"></th>
+                  <th className="w-[15%] py-2 pr-8 text-right font-normal">Commission</th>
+                  <th className="w-[11%] py-2 pr-4 font-normal">Status</th>
+                  <th className="w-[28%] py-2 pr-1 font-normal"></th>
                 </tr>
               </thead>
               <tbody>

@@ -19,6 +19,30 @@ Check approximately:
 - Start with one-column mobile layouts.
 - Add columns only when readable.
 
+## 2026-09-15 Multi-Tab Responsive Hardening & Action Button Alignment
+
+- **Modal Portal Teleportation & Pinned Layout**: All modal dialogs (`Dialog.tsx`) use `createPortal(..., document.body)` so they escape parent CSS `backdrop-filter` or containing blocks. Overlays use `overflow-y-auto` with `my-auto` self-centering to prevent flexbox negative margin top clipping. Multi-input modal forms (`ManualLeadDialog.tsx`) use a pinned header (`shrink-0`), scrollable body (`flex-1 overflow-y-auto`), and pinned footer (`shrink-0`) bounded by `max-h-[calc(100vh-2rem)]`, ensuring the title and action buttons are always on-screen and never overlap or clip at the top.
+- **Multi-Tab Responsive Table Hardening**: Enforces generous minimum widths on administrative data tables containing multi-button actions (e.g. Commission table set to `min-w-[820px]` with 28% action column width; Blocked numbers limits table set to `min-w-[760px]`). Action buttons and numeric/date figures are strictly wrapped with `whitespace-nowrap` to eliminate button collision and multi-line wrapping.
+- **Adaptive Filter Containers**: Uses `sm:flex-wrap` and flexible containers across filter toolbars (such as in Inventory) so multi-select dropdowns and search bars wrap neatly without spilling out or crowding on 768px–1366px screens.
+- **Mobile Navigation Drawer Auto-Dismiss**: The mobile sidebar drawer accepts `onNavigate` and triggers on every link tap, ensuring immediate drawer closure without requiring manual backdrop dismissal.
+
+## 2026-09-15 Logo Emblem Mode, Zero Horizontal Scroll & Streamlined Entity Views
+
+- **Logo Emblem Mode for Topbar (`Logo.tsx`)**: In the admin topbar (`size="sm"`), the `"CARVIBEDUBAI"` wordmark text is hidden on mobile, tablet, and laptop screens (`isSmall ? "hidden 2xl:flex" : "flex"`). Only the circular gold emblem is displayed, freeing ~130px of horizontal space. This prevents the right-aligned user profile avatar menu and "+ Lead" CTA from being pushed off-screen or clipped on narrow viewports (e.g. 440px iPhone 16 Pro Max, 390px, 768px).
+- **Zero Horizontal Page Scrolling Enforcement (`AdminShell.tsx` & `OverviewDateFilter.tsx`)**: Root admin shell and `<main>` containers enforce `overflow-x-hidden max-w-full`. The Executive Dashboard Date Filter Card uses `flex-col sm:flex-row sm:items-center` so that date triggers, backlog reset button, and status badges stack neatly without blowing out screen bounds (`scrollWidth <= innerWidth`).
+- **Streamlined Entity View Ruling (<1024px / `<lg`)**:
+  - **Leads Directory & Recent Leads**: On mobile and medium screens (`block lg:hidden`), displays a streamlined client card list prioritizing the **Client Name** as the bold primary element, with car & date subtitle, status pill, and direct tap target to `/admin/leads/[id]`. Wide 9-column tables are reserved for large desktop viewports (`hidden lg:block`).
+  - **Inventory Directory (`MobileInventoryList.tsx`)**: On mobile and medium screens (`block lg:hidden`), replaces the 11-column 980px table with a streamlined car-first list prioritizing the **Car Details** (Year, Make, Model, Trim, VIN) with purchase price, status pill, "Mark sold" trigger, and direct link to lead details. Desktop retains the full 11-column financial/commission table (`hidden lg:block`).
+  - **Rule 1 File-Size Maintenance**: Extracted `InventoryTable.tsx` and `MobileInventoryList.tsx` from `inventory-client.tsx`, keeping `inventory-client.tsx` at 468 lines (strictly under the 500-line limit).
+
+## 2026-09-15 Leads Directory Responsive Pattern & Topbar CTA
+
+- **Mobile Viewport (<768px / md:hidden)**: Instead of rendering heavy 9-column horizontal tables on small screens, switch to a streamlined `MobileLeadsList`. Displays the **Client Name** as the primary high-contrast element with avatar initial, vehicle subtitle, date, status pill, arrival indicator, and touch chevron. Eliminates forced horizontal scrolling on phones while providing immediate 44px+ tap navigation to `/admin/leads/[id]`.
+- **Laptop & Desktop Viewports (>=768px / hidden md:block)**: Renders the complete 9-column table. Enforces `whitespace-nowrap`, `tabular-nums`, and balanced minimum column widths (`min-w-[105px]` - `min-w-[180px]`) so cells like mileage (`20,000 km`) and submission dates (`14 Sept 2026`) never wrap awkwardly to two lines.
+- **2-Tier Responsive Table Toolbar**: Splits the toolbar into Tier 1 (Search input with clear icon + lead counter badge + refresh button + export dropdown) and Tier 2 (Multi-select dropdown filters + clear filters button). Removes "+ Add Lead" from the table header to avoid horizontal crowding on 1024px–1440px laptops (e.g. 1366x768).
+- **Persistent Glowing Topbar CTA**: Moves "+ Add Lead" to the Topbar next to the user profile menu for Super Admin and Call Centre roles. Uses an illuminated amber-gold gradient with glowing shadow and high contrast icon (`<UserPlus>`) so staff can trigger manual intake globally from anywhere without hunting for the table toolbar button.
+- **Isolated Logo Mark**: Uses an isolated transparent gold emblem (`logo-mark.png`) inside the circular header badge rather than scaling the full circular logo image. Ensures crisp 1:1 centering without microscopic duplicate text ("CarVibeDubai") or clipping artifacts.
+
 ## 2026-09-12 Admin document scrolling
 
 - The admin shell uses the browser document as its one vertical scroll owner.

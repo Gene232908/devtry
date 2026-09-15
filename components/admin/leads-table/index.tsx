@@ -21,6 +21,7 @@ import { LeadsToolbar } from "./toolbar";
 import { LeadRow } from "./row";
 import { LeadsTableSkeleton } from "./skeleton";
 import { Pagination } from "./pagination";
+import { MobileLeadsList } from "./mobile-list";
 import { ManualLeadDialog } from "@/components/admin/ManualLeadDialog";
 
 const ATTENTION_CONFIG: Record<
@@ -208,30 +209,44 @@ export function LeadsTable() {
         onCreated={refresh}
       />
 
-      <div className="mt-5 overflow-x-auto">
-        <table className="w-full min-w-[980px] text-left text-fluid--1">
+      {/* Mobile to Medium Streamlined View (Client Name priority, no crowded 9-column horizontal overflow) */}
+      <div className="mt-5 block lg:hidden">
+        <MobileLeadsList
+          leads={filter.pageItems}
+          duplicateReview={attention === "duplicate"}
+          emptyMessage={
+            activeAttention
+              ? `No leads currently match '${activeAttention.title}'. Great job!`
+              : "No leads match your filters."
+          }
+        />
+      </div>
+
+      {/* Desktop / Laptop Full 9-Column Table */}
+      <div className="mt-5 hidden lg:block overflow-x-auto rounded-xl border border-white/[0.08] bg-surface-1/40">
+        <table className="w-full min-w-[1080px] text-left text-fluid--1">
           <thead>
-            <tr className="border-b border-border text-text-faint">
-              <th className="py-2 pr-4 font-normal">Client Name</th>
-              <th className="py-2 pr-4 font-normal">Car Details</th>
-              <th className="py-2 pr-4 font-normal">Lead Source</th>
-              <th className="py-2 pr-4 font-normal">Mileage</th>
-              <th className="py-2 pr-4 font-normal">Emirate</th>
-              <th className="py-2 pr-4 font-normal">
-                <button className="flex items-center gap-1" onClick={() => filter.toggleSort("date")}>
+            <tr className="border-b border-border/80 text-text-faint text-xs font-semibold uppercase tracking-wider">
+              <th className="py-3 pl-4 pr-3 min-w-[160px]">Client Name</th>
+              <th className="py-3 pr-3 min-w-[180px]">Car Details</th>
+              <th className="py-3 pr-3 min-w-[110px] whitespace-nowrap">Lead Source</th>
+              <th className="py-3 pr-3 min-w-[105px] whitespace-nowrap">Mileage</th>
+              <th className="py-3 pr-3 min-w-[100px] whitespace-nowrap">Emirate</th>
+              <th className="py-3 pr-3 min-w-[125px] whitespace-nowrap">
+                <button className="flex items-center gap-1 hover:text-text transition-colors" onClick={() => filter.toggleSort("date")}>
                   Date <ArrowUpDown className="h-3 w-3" />
                 </button>
               </th>
-              <th className="py-2 pr-4 font-normal">
-                <button className="flex items-center gap-1" onClick={() => filter.toggleSort("value")}>
+              <th className="py-3 pr-3 min-w-[110px] whitespace-nowrap">
+                <button className="flex items-center gap-1 hover:text-text transition-colors" onClick={() => filter.toggleSort("value")}>
                   Est. Value <ArrowUpDown className="h-3 w-3" />
                 </button>
               </th>
-              <th className="py-2 pr-4 font-normal">Status</th>
-              <th className="py-2 pr-4 font-normal">Arrival Status</th>
+              <th className="py-3 pr-3 min-w-[115px] whitespace-nowrap">Status</th>
+              <th className="py-3 pr-4 min-w-[130px] whitespace-nowrap">Arrival Status</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-white/[0.04]">
             {filter.pageItems.map((lead) => (
               <LeadRow key={lead.id} lead={lead} duplicateReview={attention === "duplicate"} showArrivalStatus={true} />
             ))}

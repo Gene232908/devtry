@@ -240,34 +240,34 @@ export default function BlockedNumbersClient({
             </p>
           </div>
           <div className="mt-5 overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-fluid--1">
+            <table className="w-full min-w-[760px] text-left text-fluid--1">
               <thead>
                 <tr className="border-b border-border text-text-faint">
-                  <th className="py-2 pr-4 font-normal">Number</th>
-                  <th className="py-2 pr-4 font-normal">Why</th>
-                  <th className="py-2 pr-4 text-right font-normal">Codes sent</th>
-                  <th className="py-2 pr-4 text-right font-normal">Never verified</th>
-                  <th className="py-2 pr-4 text-right font-normal">Refused</th>
-                  <th className="py-2 pr-4 text-right font-normal">Wrong codes</th>
-                  <th className="py-2 pr-1 text-right font-normal">Action</th>
+                  <th className="py-2 pr-4 font-normal whitespace-nowrap">Number</th>
+                  <th className="py-2 pr-4 font-normal whitespace-nowrap">Why</th>
+                  <th className="py-2 pr-4 text-right font-normal whitespace-nowrap">Codes sent</th>
+                  <th className="py-2 pr-4 text-right font-normal whitespace-nowrap">Never verified</th>
+                  <th className="py-2 pr-4 text-right font-normal whitespace-nowrap">Refused</th>
+                  <th className="py-2 pr-4 text-right font-normal whitespace-nowrap">Wrong codes</th>
+                  <th className="py-2 pr-1 text-right font-normal whitespace-nowrap">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {limits.rows.map((row) => (
                   <tr key={row.phone_e164} className="border-b border-border last:border-0">
-                    <td className="py-3 pr-4 tabular-nums text-text">{row.phone_e164}</td>
-                    <td className="py-3 pr-4">
+                    <td className="py-3 pr-4 tabular-nums text-text whitespace-nowrap">{row.phone_e164}</td>
+                    <td className="py-3 pr-4 whitespace-nowrap">
                       <span className={LIMIT_REASON_TONE[row.reason ?? "refused"]}>
                         {LIMIT_REASON_LABEL[row.reason ?? "refused"]}
                       </span>
                     </td>
-                    <td className="py-3 pr-4 text-right tabular-nums text-text-muted">
+                    <td className="py-3 pr-4 text-right tabular-nums text-text-muted whitespace-nowrap">
                       {row.sends}/{limits.caps.phone}
                     </td>
-                    <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{row.unverified}</td>
-                    <td className="py-3 pr-4 text-right tabular-nums text-warning">{row.refusedSends}</td>
-                    <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{row.failedVerifies}</td>
-                    <td className="py-3 pl-2 pr-1 text-right">
+                    <td className="py-3 pr-4 text-right tabular-nums text-text-muted whitespace-nowrap">{row.unverified}</td>
+                    <td className="py-3 pr-4 text-right tabular-nums text-warning whitespace-nowrap">{row.refusedSends}</td>
+                    <td className="py-3 pr-4 text-right tabular-nums text-text-muted whitespace-nowrap">{row.failedVerifies}</td>
+                    <td className="py-3 pl-2 pr-1 text-right whitespace-nowrap">
                       {row.reason === "blocklist" ? (
                         <span className="text-text-faint">Blocked</span>
                       ) : (
@@ -350,11 +350,11 @@ export default function BlockedNumbersClient({
             <table className="w-full min-w-[720px] text-left text-fluid--1">
               <thead>
                 <tr className="border-b border-border text-text-faint">
-                  <th className="py-2 pr-4 font-normal">Client Name</th>
-                  <th className="py-2 pr-4 font-normal">Number</th>
-                  <th className="py-2 pr-4 font-normal">Reason</th>
-                  <th className="py-2 pr-4 font-normal">Blocked</th>
-                  <th className="py-2 pr-1 font-normal text-right">Actions</th>
+                  <th className="py-2 pr-4 font-normal whitespace-nowrap">Client Name</th>
+                  <th className="py-2 pr-4 font-normal whitespace-nowrap">Number</th>
+                  <th className="py-2 pr-4 font-normal whitespace-nowrap">Reason</th>
+                  <th className="py-2 pr-4 font-normal whitespace-nowrap">Blocked</th>
+                  <th className="py-2 pr-1 font-normal text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -372,13 +372,13 @@ export default function BlockedNumbersClient({
                         <span className="text-text-muted">{row.full_name || "—"}</span>
                       )}
                     </td>
-                    <td className="py-3 pr-4 text-text-muted">{row.phone_e164}</td>
+                    <td className="py-3 pr-4 text-text-muted whitespace-nowrap">{row.phone_e164}</td>
                     <td className="py-3 pr-4 text-text-muted">
                       {REASON_LABELS[row.reason] ?? row.reason}
                       {row.note && <span className="block text-text-faint">{row.note}</span>}
                     </td>
-                    <td className="py-3 pr-4 text-text-muted">{formatDate(row.created_at)}</td>
-                    <td className="py-3 pl-2 pr-1 text-right">
+                    <td className="py-3 pr-4 text-text-muted whitespace-nowrap">{formatDate(row.created_at)}</td>
+                    <td className="py-3 pl-2 pr-1 text-right whitespace-nowrap">
                       <Button
                         variant="outline"
                         className="px-3"

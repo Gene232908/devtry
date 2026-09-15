@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogOut, ChevronDown, Menu } from "lucide-react";
+import { LogOut, ChevronDown, Menu, UserPlus } from "lucide-react";
 import { Logo } from "@/components/public/Logo";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { ROLE_LABELS, type StaffIdentity } from "@/lib/auth/permissions";
+import { useLeads } from "@/lib/admin/leads-store";
+import { ManualLeadDialog } from "@/components/admin/ManualLeadDialog";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -17,10 +19,18 @@ type Props = {
 export function Topbar({ onMenuClick, identity }: Props) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [addLeadOpen, setAddLeadOpen] = useState(false);
+  const { refresh } = useLeads();
 
   const displayName = identity?.displayName ?? "Admin";
   const initial = displayName.charAt(0).toUpperCase();
   const roleLabel = identity ? (ROLE_LABELS[identity.role] ?? identity.role) : "";
+
+  const canCreateLead =
+    identity?.role === "admin" ||
+    identity?.role === "manager" ||
+    identity?.role === "call_center" ||
+    !identity;
 
   async function handleSignOut() {
     try {
@@ -63,7 +73,21 @@ export function Topbar({ onMenuClick, identity }: Props) {
         </span>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2.5 sm:gap-4">
+        {/* Prominent, Eye-Catching Add Lead CTA for Super Admin & Customer Service */}
+        {canCreateLead && (
+          <button
+            type="button"
+            onClick={() => setAddLeadOpen(true)}
+            className="group relative inline-flex items-center gap-1.5 sm:gap-2 overflow-hidden rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-bold text-zinc-950 shadow-[0_0_20px_rgba(245,158,11,0.35)] transition-all duration-200 hover:scale-[1.03] hover:shadow-[0_0_28px_rgba(245,158,11,0.55)] active:scale-[0.98] border border-amber-300/60"
+            title="Create a new walk-in or manual customer lead"
+          >
+            <span className="absolute inset-0 bg-white/20 opacity-0 transition-opacity group-hover:opacity-100" />
+            <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4 stroke-[2.5] text-zinc-950 transition-transform group-hover:scale-110" />
+            <span className="tracking-wide"><span className="hidden xs:inline">Add </span>Lead</span>
+          </button>
+        )}
+
         <div className="relative">
           <button
             type="button"
@@ -107,6 +131,14 @@ export function Topbar({ onMenuClick, identity }: Props) {
           )}
         </div>
       </div>
+
+      <ManualLeadDialog
+        open={addLeadOpen}
+        onClose={() => setAddLeadOpen(false)}
+        onCreated={async () => {
+          await refresh();
+        }}
+      />
     </header>
   );
 }

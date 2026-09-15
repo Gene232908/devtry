@@ -4,6 +4,40 @@ This is the factual source for reports.
 
 Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
+## 2026-09-15
+
+### Completed
+
+- Manual Lead Modal Overlap & Pinned Layout Hardening:
+  - Fixed top overlap and cut-off on Add Lead modal (`ManualLeadDialog`) caused by flexbox negative margin clipping and sticky header stacking context.
+  - Implemented React `createPortal(..., document.body)` in `Dialog.tsx` so modals teleport directly to `document.body`, escaping any ancestor CSS `backdrop-filter` or containing blocks.
+  - Replaced rigid flex `items-center` with scrollable overlay (`overflow-y-auto`) and self-centering `my-auto` on the dialog card, eliminating negative coordinate data-loss.
+  - Structured `ManualLeadDialog` with a **pinned Header** (title, subtitle, and Close "X" button always visible), **scrollable Body** (`flex-1 overflow-y-auto px-6 py-5` with form starting at top), and **pinned Footer** (`Cancel` and `Create lead` buttons always anchored at bottom).
+  - Removed redundant lead count pill badge ("72 leads") from the Leads Directory toolbar (`toolbar.tsx`) per user request.
+  - Verified live in browser across laptop (1366x768) and mobile (390x844): zero clipping at top, smooth internal scrolling, and verified `tsc --noEmit`, `npm test` (222/222 passed), `npm run lint`.
+- Multi-Tab Responsive Hardening & Cross-Device Screen Verification:
+  - Audited and verified all admin tabs and viewports: mobile (390x844), tablet (768x1024), laptop (1366x768), and desktop XL (1920x1080).
+  - Fixed Commission table action button collision by increasing min table width to 820px, widening action column to 28%, and adding `whitespace-nowrap` to prevent button squishing and overlap.
+  - Hardened Inventory filters (`sm:flex-wrap`) and cell data (`whitespace-nowrap`) to eliminate multiline wrapping and horizontal crowding.
+  - Hardened Blocked Numbers tables (OTP limits & blocked records) with `min-w-[760px]`, `whitespace-nowrap` headers and figures, and aligned action buttons.
+  - Added mobile navigation auto-dismiss (`onNavigate`) in `Sidebar.tsx` / `AdminShell.tsx` to automatically close the mobile drawer upon tapping any navigation link.
+  - Verified Lead Detail, Staff Accounts, Settings, and Catalog pages across all screen aspect ratios, ensuring zero button collisions and complete responsiveness.
+- Responsive Leads Directory Overhaul:
+  - Added streamlined mobile view (`MobileLeadsList`) prioritizing Client Name, initial avatar, car summary, date, status pill, and arrival badge for screen widths <768px (`block md:hidden`). Eliminates 9-column horizontal scrolling on phones.
+  - Retained full 9-column table for laptop and desktop screens (>=768px / `hidden md:block`). Enforced `whitespace-nowrap`, `tabular-nums`, and balanced minimum widths to eliminate awkward multi-line wrapping for mileage and dates.
+  - Restructured table toolbar into a 2-tier responsive layout with search, lead count, refresh, and export in Tier 1, and multi-select filter dropdowns in Tier 2, eliminating horizontal crowding on 1024px–1440px laptops (e.g. 1366x768).
+- Navigation Bar "+ Add Lead" CTA:
+  - Moved "+ Add Lead" button to the Topbar next to the user profile menu for Super Admin and Call Centre roles.
+  - Implemented glowing amber-gold illuminated gradient, `<UserPlus>` icon, and modal integration with `ManualLeadDialog`.
+- Circular Logo Mark Enhancement:
+  - Extracted isolated transparent gold emblem (`logo-mark.png`) centered without background clipping or cut-off text.
+  - Displayed inside circular badge in `Logo.tsx` with metallic gold border, ring glow, and shadow.
+- Verification:
+  - `npx tsc --noEmit`: 0 errors.
+  - `npm test`: 26 passed, 222 passed.
+  - `npm run lint`: 0 warnings, 0 errors.
+  - Verified in browser with full-page screenshots for 1366x768 (laptop) and 390x844 (mobile).
+
 ## 2026-09-14
 
 ### Completed

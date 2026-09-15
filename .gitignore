@@ -33,10 +33,9 @@ dev-*.log
 .tmp/
 /tmp/*.log
 /tmp/docxcheck*/
-/tmp/pdfs/*.png
-/tmp/pdfs/*.html
-/tmp/pdfs/*.py
-/tmp/pdfs/dashboard-render/
+/tmp/pdf-read-tools/
+/tmp/pdf-tools/
+/tmp/pdfs/
 .next-stale-*/
 
 # local env files

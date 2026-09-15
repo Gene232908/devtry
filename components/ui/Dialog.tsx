@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,9 +20,11 @@ type DialogProps = {
   className?: string;
   /** Hides the close button for steps the visitor should not dismiss mid-flight. */
   hideClose?: boolean;
+  /** When true, the children provide their own custom header and close button. */
+  customHeader?: boolean;
 };
 
-export function Dialog({ open, onClose, title, children, className, hideClose }: DialogProps) {
+export function Dialog({ open, onClose, title, children, className, hideClose, customHeader }: DialogProps) {
   const [mounted, setMounted] = useState(open);
   const [closing, setClosing] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -54,12 +57,12 @@ export function Dialog({ open, onClose, title, children, className, hideClose }:
     };
   }, [open, onClose]);
 
-  if (!mounted) return null;
+  if (!mounted || typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div
       className={cn(
-        "fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4",
+        "fixed inset-0 z-50 overflow-y-auto bg-black/85 p-3 sm:p-6",
         closing ? "animate-overlay-out" : "animate-overlay-in",
       )}
       role="dialog"
@@ -69,29 +72,34 @@ export function Dialog({ open, onClose, title, children, className, hideClose }:
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div
-        className={cn(
-          "w-full max-w-md rounded-card border border-border-gold/70 bg-bg-elev/95 p-6 card-shadow",
-          closing ? "animate-pop-out" : "animate-pop-in",
-          "motion-reduce:animate-none",
-          className,
-        )}
-      >
-        <div className="mb-4 flex items-center justify-between">
-          {title && <h3 className="font-display text-fluid-2 text-text">{title}</h3>}
-          {!hideClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close"
-              className="ml-auto rounded-full p-1.5 text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
-            >
-              <X className="h-5 w-5" />
-            </button>
+      <div className="flex min-h-full justify-center">
+        <div
+          className={cn(
+            "relative my-auto w-full max-w-md rounded-card border border-border-gold/70 bg-bg-elev/95 p-6 card-shadow",
+            closing ? "animate-pop-out" : "animate-pop-in",
+            "motion-reduce:animate-none",
+            className,
           )}
+        >
+          {!customHeader && (title || !hideClose) && (
+            <div className="mb-4 flex items-center justify-between">
+              {title && <h3 className="font-display text-fluid-2 text-text">{title}</h3>}
+              {!hideClose && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label="Close"
+                  className="ml-auto rounded-full p-1.5 text-text-muted transition-colors hover:bg-surface-2 hover:text-text"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              )}
+            </div>
+          )}
+          {children}
         </div>
-        {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

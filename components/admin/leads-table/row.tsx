@@ -6,15 +6,6 @@ import { StatusPill } from "@/components/ui/Pill";
 import { Lead } from "@/config/mock-data";
 import { formatAed, formatDate } from "@/lib/format";
 
-// Status is intentionally READ-ONLY here. It can only be changed inside
-// Customer Details, where a change is reviewed and saved deliberately — a
-// dropdown in a list row makes it far too easy to reclassify the wrong lead
-// with a stray click, and there is no note recorded to explain why.
-//
-// Mobile and WhatsApp are not shown either: the client name is the way in, so
-// contact details are read on the detail page where opening the lead also marks
-// it as picked up.
-
 type Props = { lead: Lead; duplicateReview?: boolean; showArrivalStatus?: boolean };
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -22,16 +13,16 @@ const SOURCE_LABELS: Record<string, string> = {
   recovered: "Recovered form",
   manual_walk_in: "Walk-in",
   manual_phone_call: "Phone call",
-  manual_whatsapp: "WhatsApp / message",
+  manual_whatsapp: "WhatsApp / msg",
   manual_other: "Other",
 };
 
 export const LeadRow = memo(function LeadRow({ lead, duplicateReview = false, showArrivalStatus = false }: Props) {
   return (
-    <tr className="border-b border-border last:border-0 hover:bg-surface-2/50">
-      <td className="py-3 pr-4">
-        <div className="flex flex-col gap-1">
-          <Link href={`/admin/leads/${lead.id}`} className="text-text hover:text-gold">
+    <tr className="border-b border-border/50 last:border-0 hover:bg-white/[0.02] transition-colors">
+      <td className="py-3.5 pl-4 pr-3 min-w-[160px]">
+        <div className="flex flex-col gap-0.5">
+          <Link href={`/admin/leads/${lead.id}`} className="font-semibold text-text hover:text-gold transition-colors">
             {lead.fullName || "Customer"}
           </Link>
           {duplicateReview && (
@@ -41,26 +32,36 @@ export const LeadRow = memo(function LeadRow({ lead, duplicateReview = false, sh
           )}
         </div>
       </td>
-      <td className="py-3 pr-4 text-text-muted">
+      <td className="py-3.5 pr-3 min-w-[180px] text-text-muted">
         {lead.year} {lead.make} {lead.model}
       </td>
-      <td className="py-3 pr-4 text-text-muted">{SOURCE_LABELS[lead.source ?? "web"] ?? "Other"}</td>
-      <td className="py-3 pr-4 text-text-muted">{lead.mileageKm.toLocaleString()} km</td>
-      <td className="py-3 pr-4 text-text-muted">{lead.location || "—"}</td>
-      <td className="py-3 pr-4 text-text-muted">{formatDate(lead.createdAt)}</td>
-      <td className="py-3 pr-4 text-text-muted">{formatAed(lead.estimatedValueAed)}</td>
-      <td className="py-3 pr-4">
+      <td className="py-3.5 pr-3 min-w-[110px] text-text-muted whitespace-nowrap text-xs">
+        {SOURCE_LABELS[lead.source ?? "web"] ?? "Other"}
+      </td>
+      <td className="py-3.5 pr-3 min-w-[105px] text-text-muted whitespace-nowrap tabular-nums text-xs">
+        {lead.mileageKm.toLocaleString()} km
+      </td>
+      <td className="py-3.5 pr-3 min-w-[100px] text-text-muted whitespace-nowrap text-xs">
+        {lead.location || "—"}
+      </td>
+      <td className="py-3.5 pr-3 min-w-[125px] text-text-muted whitespace-nowrap tabular-nums text-xs">
+        {formatDate(lead.createdAt)}
+      </td>
+      <td className="py-3.5 pr-3 min-w-[110px] text-text-muted whitespace-nowrap tabular-nums text-xs">
+        {formatAed(lead.estimatedValueAed)}
+      </td>
+      <td className="py-3.5 pr-3 min-w-[115px] whitespace-nowrap">
         <StatusPill status={lead.status} />
       </td>
       {showArrivalStatus && (
-        <td className="py-3 pr-4">
+        <td className="py-3.5 pr-4 min-w-[130px] whitespace-nowrap">
           {lead.arrivalStatus === "arrived" ? (
-            <span className="inline-flex items-center rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-400">
+            <span className="inline-flex items-center rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-0.5 text-xs font-medium text-emerald-400 shadow-sm">
               Arrived
             </span>
           ) : (
             <span className="text-xs text-text-faint">
-              Not yet arrived
+              {lead.status === "inspection_scheduled" ? "Awaiting" : "Not yet arrived"}
             </span>
           )}
         </td>

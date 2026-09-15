@@ -367,9 +367,9 @@ export function OverviewDateFilter({ value, onChange, isLoading }: Props) {
   return (
     <div className="relative w-full" ref={popoverRef}>
       {/* Sleek Primary Date Filter Control Bar */}
-      <Card className="p-3 border-border-gold/40 bg-surface/95 backdrop-blur-sm shadow-sm flex flex-wrap items-center justify-between gap-3">
+      <Card className="p-3 border-border-gold/40 bg-surface/95 backdrop-blur-sm shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 max-w-full overflow-hidden">
         {/* Left: Prominent Interactive Date Trigger */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <button
             type="button"
             id="overview-date-filter-trigger"
@@ -377,18 +377,18 @@ export function OverviewDateFilter({ value, onChange, isLoading }: Props) {
             onClick={() => setIsOpen((prev) => !prev)}
             aria-expanded={isOpen}
             className={cn(
-              "flex items-center gap-2.5 px-3.5 py-2 rounded-lg font-medium border transition-all cursor-pointer select-none",
+              "flex items-center gap-2 px-3 py-2 rounded-lg font-medium border transition-all cursor-pointer select-none text-xs sm:text-sm",
               isOpen || !isLiveWeek
                 ? "border-gold bg-surface-2 text-gold shadow-[0_0_15px_rgba(212,175,55,0.22)] ring-1 ring-gold/40"
                 : "border-border-gold/50 bg-surface-2/90 text-text hover:border-gold/70 hover:bg-surface-2",
             )}
           >
             <CalendarIcon className="h-4 w-4 text-gold shrink-0" />
-            <div className="flex items-center gap-2 text-left">
-              <span className="text-[11px] uppercase tracking-wider text-text-muted font-semibold">
+            <div className="flex items-center gap-1.5 text-left">
+              <span className="text-[10px] sm:text-[11px] uppercase tracking-wider text-text-muted font-semibold">
                 Date Filter:
               </span>
-              <span className="font-bold text-text text-fluid--1">
+              <span className="font-bold text-text text-xs sm:text-fluid--1">
                 {value.label}
               </span>
             </div>
@@ -407,7 +407,7 @@ export function OverviewDateFilter({ value, onChange, isLoading }: Props) {
               variant="outline"
               size="sm"
               onClick={() => applyPreset("week")}
-              className="h-9 px-3 text-fluid--1 text-text-muted hover:text-text gap-1.5 border-border-gold/40 hover:border-gold/60"
+              className="h-8 sm:h-9 px-2.5 sm:px-3 text-xs text-text-muted hover:text-text gap-1.5 border-border-gold/40 hover:border-gold/60 shrink-0"
               title="Reset to Live Week"
             >
               <RotateCcw className="h-3.5 w-3.5 text-gold" />
@@ -417,7 +417,7 @@ export function OverviewDateFilter({ value, onChange, isLoading }: Props) {
         </div>
 
         {/* Right: Informational Timezone & Status Pill */}
-        <div className="flex items-center gap-3 text-fluid--1 text-text-faint ml-auto">
+        <div className="flex items-center justify-between sm:justify-end gap-2.5 text-fluid--1 text-text-faint w-full sm:w-auto">
           {!isLiveWeek ? (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-gold/15 text-gold border border-gold/30">
               <span className="w-1.5 h-1.5 rounded-full bg-gold" />
@@ -429,7 +429,7 @@ export function OverviewDateFilter({ value, onChange, isLoading }: Props) {
               Live Week
             </span>
           )}
-          <span className="hidden sm:inline-block text-[11px] text-text-muted font-medium">
+          <span className="text-[11px] text-text-muted font-medium">
             UAE Time (UTC+4)
           </span>
         </div>
