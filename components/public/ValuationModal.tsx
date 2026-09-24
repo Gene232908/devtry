@@ -4,10 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Banknote, MapPin, ShieldCheck, X } from "lucide-react";
 import { copy } from "@/config/copy";
 import { ValuationForm } from "./valuation-form";
-import { VALUATION_MODAL_EVENT } from "./open-valuation-modal";
+import { type ValuationModalMode, VALUATION_MODAL_EVENT } from "./open-valuation-modal";
 
 export function ValuationModal() {
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<ValuationModalMode>("valuation");
   // Set by the form. Records whatever was typed into a half-finished form
   // before this modal unmounts and that state is gone for good.
   const captureRef = useRef<(() => void) | null>(null);
@@ -24,7 +25,9 @@ export function ValuationModal() {
   }, []);
 
   useEffect(() => {
-    function onOpen() {
+    function onOpen(event: Event) {
+      const requested = (event as CustomEvent<{ mode?: ValuationModalMode }>).detail?.mode;
+      setMode(requested === "scrap" ? "scrap" : "valuation");
       setOpen(true);
     }
 
@@ -78,7 +81,9 @@ export function ValuationModal() {
           <div className="p-5 sm:p-7 lg:p-8">
             <div className="mb-5 flex items-center justify-between gap-4 pr-12">
               <div>
-                <p className="text-fluid--1 font-medium uppercase text-gold">{copy.valuation.eyebrow}</p>
+                <p className="text-fluid--1 font-medium uppercase text-gold">
+                  {mode === "scrap" ? "Scrap inquiry" : copy.valuation.eyebrow}
+                </p>
               </div>
               <span className="hidden items-center gap-2 rounded-full border border-border-gold/60 bg-surface-2/70 px-3 py-2 text-fluid--1 font-light text-text-muted sm:inline-flex">
                 <ShieldCheck className="h-4 w-4 text-gold" />
@@ -86,7 +91,7 @@ export function ValuationModal() {
               </span>
             </div>
 
-            <ValuationForm registerCapture={registerCapture} />
+            <ValuationForm registerCapture={registerCapture} mode={mode} />
           </div>
 
           <div className="relative hidden min-h-[560px] flex-col justify-between overflow-hidden border-l border-border-gold/55 bg-[radial-gradient(120%_85%_at_82%_0%,rgba(212,175,78,.18),transparent_58%)] p-8 lg:flex">
@@ -111,7 +116,9 @@ export function ValuationModal() {
                 We Buy Cars Across the UAE
               </h3>
               <p className="mt-3 max-w-xs text-fluid--1 font-light leading-7 text-text-muted">
-                Wherever you are in the UAE, get a free car valuation and request a market-based offer from CarVibeDubai.
+                {mode === "scrap"
+                  ? "Tell us about your scrap vehicle. The CarVibeDubai team will review the request and contact you directly."
+                  : "Wherever you are in the UAE, get a free car valuation and request a market-based offer from CarVibeDubai."}
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-2">
                 {["Instant cash", "Free inspection", "All 7 Emirates"].map((chip) => (

@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const result = await fetchInventory(leadId);
+  const result = await fetchInventory(leadId, auth.identity);
 
   if (!result.ok) {
     return NextResponse.json({ ok: false, error: { message: result.message } }, { status: result.status });

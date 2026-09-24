@@ -88,24 +88,46 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   if (saved.error || !saved.data) return fail(saved.error?.message ?? "Couldn't save the inspection report.", 500);
   const report = { id: String(saved.data) };
 
-  if (!complete || existing?.status === "completed") {
+  if (!complete) {
     return NextResponse.json({ ok: true, data: { id: report.id, status: existing?.status ?? "draft" } });
   }
 
-  const { data: photos, error: photosError } = await access.supabase.from("inspection_photos").select("angle, note").eq("inspection_report_id", report.id);
-  if (photosError) return fail(photosError.message, 500);
-  const documentedPhotos = (photos ?? []).filter((photo: { angle: string; note: string | null }) => photo.note?.trim()).map((photo: { angle: string }) => photo.angle);
-  if (!isCompleteInspectionReport(parsed.data, documentedPhotos)) {
-    return fail("Complete the vehicle details, every condition check, tyre year and failure note, and all 24 photos with notes before saving the inspection.", 400);
+  if (existing?.status !== "completed") {
+    const { data: photos, error: photosError } = await access.supabase.from("inspection_photos").select("angle, note").eq("inspection_report_id", report.id);
+    if (photosError) return fail(photosError.message, 500);
+    const documentedPhotos = (photos ?? []).filter((photo: { angle: string; note: string | null }) => photo.note?.trim()).map((photo: { angle: string }) => photo.angle);
+    if (!isCompleteInspectionReport(parsed.data, documentedPhotos)) {
+      return fail("Complete the vehicle details, every condition check, tyre year and failure note, and all 24 photos with notes before saving the inspection.", 400);
+    }
+
+    const { error: completeError } = await access.supabase.rpc("complete_inspection_report", {
+      p_report_id: report.id,
+      p_lead_id: params.id,
+      p_actor: access.auth.userId,
+      p_actor_name: access.auth.displayName,
+      p_actor_role: access.auth.role,
+    });
+    if (completeError) return fail(completeError.message, 409);
   }
 
-  const { error: completeError } = await access.supabase.rpc("complete_inspection_report", {
-    p_report_id: report.id,
-    p_lead_id: params.id,
-    p_actor: access.auth.userId,
-    p_actor_name: access.auth.displayName,
-    p_actor_role: access.auth.role,
-  });
-  if (completeError) return fail(completeError.message, 409);
+  // Reconcile the lead stage after the completion RPC. The RPC normally makes
+  // this update atomically, but the guarded fallback keeps an older deployed
+  // function version from reporting success while the lead still looks
+  // Inspection Scheduled in the Leads store.
+  const { error: statusError } = await access.supabase
+    .from("leads")
+    .update({ status: "inspected" })
+    .eq("id", params.id)
+    .eq("status", "inspection_scheduled");
+  if (statusError) return fail(statusError.message, 500);
+
+  const { data: verifiedLead, error: verifiedLeadError } = await access.supabase
+    .from("leads")
+    .select("status")
+    .eq("id", params.id)
+    .single();
+  if (verifiedLeadError || !["inspected", "negotiating", "deal", "closed"].includes(verifiedLead?.status ?? "")) {
+    return fail("The inspection was saved, but the lead status could not be updated to Inspected. Please refresh and try again.", 409);
+  }
   return NextResponse.json({ ok: true, data: { id: report.id, status: "completed" } });
 }

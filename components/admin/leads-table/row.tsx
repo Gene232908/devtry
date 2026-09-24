@@ -36,7 +36,7 @@ export const LeadRow = memo(function LeadRow({ lead, duplicateReview = false, sh
         {lead.year} {lead.make} {lead.model}
       </td>
       <td className="py-3.5 pr-3 min-w-[110px] text-text-muted whitespace-nowrap text-xs">
-        {SOURCE_LABELS[lead.source ?? "web"] ?? "Other"}
+        {lead.inquiryType === "scrap" ? "Scrap inquiry" : SOURCE_LABELS[lead.source ?? "web"] ?? "Other"}
       </td>
       <td className="py-3.5 pr-3 min-w-[105px] text-text-muted whitespace-nowrap tabular-nums text-xs">
         {lead.mileageKm.toLocaleString()} km

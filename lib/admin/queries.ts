@@ -2,7 +2,7 @@ import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { getOtpCaps, type OtpCaps } from "@/lib/server/otp-guards";
 import { LEAD_PIPELINE } from "@/lib/format";
 import { mapDbInventory, type DbInventory, type InventoryItem } from "@/lib/admin/inventory";
-import { PARTIAL_LEAD_COLUMNS, type PartialLead } from "@/lib/admin/partial-lead";
+import { PARTIAL_LEAD_COLUMNS, PARTIAL_LEAD_COLUMNS_LEGACY, type PartialLead } from "@/lib/admin/partial-lead";
 import type { Manager, Settings } from "@/lib/admin/settings-schema";
 import {
   buildLastSevenUaeDays,
@@ -288,7 +288,7 @@ const INVENTORY_SELECT = `
   id, lead_id, make, model, trim, year, mileage_km, chassis_number,
   purchase_price_aed, purchased_at, status, sale_price_aed, sold_at, notes,
   commission_entries ( profit_aed, rate, commission_aed, sold_at ),
-  leads ( phone_verified, call_center_id, purchaser_id )
+  leads ( phone_verified, call_center_id, purchaser_id, inquiry_type )
 `;
 const INVENTORY_SELECT_LEGACY = `
   id, lead_id, make, model, trim, year, mileage_km,
@@ -298,7 +298,10 @@ const INVENTORY_SELECT_LEGACY = `
 `;
 
 /** Cars the business has bought and owns. `leadId` narrows to one lead's stock. */
-export async function fetchInventory(leadId?: string | null): Promise<QueryResult<{ items: InventoryItem[] }>> {
+export async function fetchInventory(
+  leadId?: string | null,
+  identity?: { role: string; userId: string },
+): Promise<QueryResult<{ items: InventoryItem[] }>> {
   if (!isSupabaseConfigured()) return NOT_CONFIGURED;
 
   let query = getSupabaseAdmin().from("inventory").select(INVENTORY_SELECT).order("purchased_at", { ascending: false });
@@ -307,7 +310,7 @@ export async function fetchInventory(leadId?: string | null): Promise<QueryResul
   const primaryResult = await query;
   let data = primaryResult.data as unknown[] | null;
   let error = primaryResult.error;
-  if (error && /chassis_number/i.test(error.message ?? "")) {
+  if (error && /chassis_number|inquiry_type/i.test(error.message ?? "")) {
     let fallback = getSupabaseAdmin().from("inventory").select(INVENTORY_SELECT_LEGACY).order("purchased_at", { ascending: false });
     if (leadId) fallback = fallback.eq("lead_id", leadId);
     const legacyResult = await fallback;
@@ -316,7 +319,54 @@ export async function fetchInventory(leadId?: string | null): Promise<QueryResul
   }
   if (error) return { ok: false, message: error.message, status: 500 };
 
-  return { ok: true, data: { items: ((data ?? []) as unknown as DbInventory[]).map(mapDbInventory) } };
+  const items = ((data ?? []) as unknown as DbInventory[]).map(mapDbInventory);
+  const inventoryIds = items.map((item) => item.id);
+  const { data: staffCommissionRows, error: staffCommissionError } = inventoryIds.length
+    ? await getSupabaseAdmin()
+      .from("staff_commission_entries")
+      .select("inventory_id, role, commission_aed")
+      .in("inventory_id", inventoryIds)
+      .is("paid_at", null)
+    : { data: [], error: null };
+
+  // An old database without migration 0025 can still list inventory. Newer
+  // databases use the frozen rows instead of re-calculating staff pay in UI.
+  if (staffCommissionError && !/staff_commission_entries/.test(staffCommissionError.message ?? "")) {
+    return { ok: false, message: staffCommissionError.message, status: 500 };
+  }
+  const staffCommissionByInventory = new Map<string, { callCenter: number | null; purchaser: number | null }>();
+  for (const row of (staffCommissionRows ?? []) as { inventory_id: string; role: string; commission_aed: number | string }[]) {
+    const current = staffCommissionByInventory.get(row.inventory_id) ?? { callCenter: null, purchaser: null };
+    if (row.role === "call_center") current.callCenter = Number(row.commission_aed);
+    if (row.role === "purchaser") current.purchaser = Number(row.commission_aed);
+    staffCommissionByInventory.set(row.inventory_id, current);
+  }
+
+  const scopedItems = items.map((item) => {
+    const staffCommission = staffCommissionByInventory.get(item.id);
+    const next = {
+      ...item,
+      callCenterCommissionAed: staffCommission?.callCenter ?? null,
+      purchaserCommissionAed: staffCommission?.purchaser ?? null,
+    };
+    // Purchasers can see their own 10% ledger amount, but never the developer
+    // amount or another staff member's commission through the page payload.
+    if (identity?.role === "purchaser") {
+      return {
+        ...next,
+        // Assignment UUIDs are needed only while this server function scopes
+        // the result. Do not serialize either staff identifier to a Purchaser.
+        callCenterId: null,
+        purchaserId: null,
+        callCenterCommissionAed: null,
+        purchaserCommissionAed: item.purchaserId === identity.userId ? next.purchaserCommissionAed : null,
+        commission: next.commission ? { ...next.commission, rate: 0, commissionAed: 0 } : null,
+      };
+    }
+    return next;
+  });
+
+  return { ok: true, data: { items: scopedItems } };
 }
 
 /** Valuation forms started but never submitted. Converted rows are excluded. */
@@ -327,19 +377,22 @@ export async function fetchPartialLeads(identity?: { role: string; userId: strin
   // books an inspection. An incomplete form is unverified recovery work.
   if (identity?.role === "purchaser") return { ok: true, data: { partialLeads: [] } };
 
-  let query = getSupabaseAdmin()
-    .from("partial_leads")
-    .select(PARTIAL_LEAD_COLUMNS)
-    // Only unconverted rows are ever returned, so someone who later completed
-    // the form disappears from here automatically and is never shown in both
-    // places.
-    .is("converted_lead_id", null);
+  const createQuery = (columns: string) => {
+    let query = getSupabaseAdmin()
+      .from("partial_leads")
+      .select(columns)
+      // Only unconverted rows are ever returned, so someone who later completed
+      // the form disappears from here automatically and is never shown in both
+      // places.
+      .is("converted_lead_id", null);
+    if (identity?.role === "call_center") query = query.eq("call_center_id", identity.userId);
+    return query.order("created_at", { ascending: false });
+  };
 
-  if (identity?.role === "call_center") {
-    query = query.eq("call_center_id", identity.userId);
+  let { data, error } = await createQuery(PARTIAL_LEAD_COLUMNS);
+  if (error && /inquiry_type|scrap_condition|scrap_asking_price_aed/i.test(error.message ?? "")) {
+    ({ data, error } = await createQuery(PARTIAL_LEAD_COLUMNS_LEGACY));
   }
-
-  const { data, error } = await query.order("created_at", { ascending: false });
 
   if (error) return { ok: false, message: error.message, status: 500 };
 
@@ -355,15 +408,20 @@ export async function fetchPartialLead(
   if (identity?.role === "purchaser") return { ok: false, message: "Not found.", status: 404 };
 
   const supabase = getSupabaseAdmin();
-  let query = supabase
-    .from("partial_leads")
-    .select(PARTIAL_LEAD_COLUMNS)
-    .eq("id", id)
-    .is("converted_lead_id", null);
+  const createQuery = (columns: string) => {
+    let query = supabase
+      .from("partial_leads")
+      .select(columns)
+      .eq("id", id)
+      .is("converted_lead_id", null);
+    if (identity?.role === "call_center") query = query.eq("call_center_id", identity.userId);
+    return query.maybeSingle();
+  };
 
-  if (identity?.role === "call_center") query = query.eq("call_center_id", identity.userId);
-
-  const { data, error } = await query.maybeSingle();
+  let { data, error } = await createQuery(PARTIAL_LEAD_COLUMNS);
+  if (error && /inquiry_type|scrap_condition|scrap_asking_price_aed/i.test(error.message ?? "")) {
+    ({ data, error } = await createQuery(PARTIAL_LEAD_COLUMNS_LEGACY));
+  }
 
   if (error) return { ok: false, message: error.message, status: 500 };
   if (!data) return { ok: false, message: "Not found.", status: 404 };
@@ -733,7 +791,8 @@ export async function fetchStaffCommission(
   let referralRows: DbStaffReferralIncentive[] = [];
   let referralsQuery = supabase
     .from("staff_referral_incentives")
-    .select("id, staff_id, incentive_aed, sold_at, paid_at, inventory_id");
+    .select("id, staff_id, incentive_aed, sold_at, paid_at, inventory_id")
+    .gt("incentive_aed", 0);
   if (!isOwner) referralsQuery = referralsQuery.eq("staff_id", identity.userId);
   const referralsResult = await referralsQuery;
   if (!referralsResult.error) {
@@ -795,6 +854,7 @@ export async function fetchStaffCommission(
   const agents: StaffCommission[] = [];
   const purchasers: StaffCommission[] = [];
   const referralRecipients: StaffCommission[] = [];
+  const redactAgentProfit = !isOwner && identity.role === "call_center";
 
   for (const s of staff) {
     const own = entriesByStaff.get(s.id) ?? [];
@@ -807,8 +867,8 @@ export async function fetchStaffCommission(
       id: s.id,
       displayName: s.display_name ?? s.id,
       role: s.role as StaffCommission["role"],
-      totalCarsSold: unpaid.length,
-      totalProfit: unpaid.reduce((n, e) => n + (e.kind === "role_commission" ? Number(e.profit_aed) : 0), 0),
+      totalCarsSold: unpaid.filter((e) => e.kind === "role_commission").length,
+      totalProfit: redactAgentProfit ? 0 : unpaid.reduce((n, e) => n + (e.kind === "role_commission" ? Number(e.profit_aed) : 0), 0),
       totalCommission: unpaid.reduce((n, e) => n + (e.kind === "role_commission" ? Number(e.commission_aed) : Number(e.incentive_aed)), 0),
       isPaidThisMonth: unpaid.length === 0,
       paidAt: latestPaidAt,
@@ -820,7 +880,7 @@ export async function fetchStaffCommission(
           carDetails: inv ? `${inv.year} ${inv.make} ${inv.model}`.trim() : "—",
           soldAt: e.sold_at,
           kind: e.kind,
-          profit: e.kind === "role_commission" ? Number(e.profit_aed) : null,
+          profit: redactAgentProfit || e.kind !== "role_commission" ? null : Number(e.profit_aed),
           commission: e.kind === "role_commission" ? Number(e.commission_aed) : Number(e.incentive_aed),
         };
       }),
@@ -828,7 +888,7 @@ export async function fetchStaffCommission(
 
     if (s.role === "call_center") agents.push(result);
     else if (s.role === "purchaser") purchasers.push(result);
-    else if (own.some((entry) => entry.kind === "referral_incentive")) referralRecipients.push(result);
+    if (own.some((entry) => entry.kind === "referral_incentive")) referralRecipients.push(result);
   }
 
   return { ok: true, data: { agents, purchasers, referralRecipients } };

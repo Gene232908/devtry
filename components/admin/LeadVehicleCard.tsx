@@ -28,8 +28,15 @@ export function LeadVehicleCard({ lead }: Props) {
         <Detail label="Specification" value={lead.specification || "—"} />
         <Detail label="Option Level" value={optionDisplay} />
         <Detail label="Location" value={lead.location || "—"} />
-        <Detail label="Source" value="Web" />
+        <Detail label="Source" value={lead.inquiryType === "scrap" ? "Scrap Inquiry" : "Website Valuation"} />
       </div>
+
+      {lead.inquiryType === "scrap" && (
+        <div className="grid grid-cols-1 gap-4 border-t border-border pt-4 sm:grid-cols-2">
+          <Detail label="Scrap condition" value={lead.scrapCondition || "â€”"} />
+          <Detail label="Scrap asking price" value={lead.scrapAskingPriceAed == null ? "â€”" : `AED ${lead.scrapAskingPriceAed.toLocaleString("en-US")}`} />
+        </div>
+      )}
 
       {lead.description ? (
         <div className="border-t border-border pt-4 min-w-0 max-w-full overflow-hidden">

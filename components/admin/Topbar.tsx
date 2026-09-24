@@ -10,6 +10,7 @@ import { ROLE_LABELS, type StaffIdentity } from "@/lib/auth/permissions";
 import { useLeads } from "@/lib/admin/leads-store";
 import { ManualLeadDialog } from "@/components/admin/ManualLeadDialog";
 import { cn } from "@/lib/utils";
+import { InspectionNotificationBell } from "@/components/admin/InspectionNotificationBell";
 
 type Props = {
   onMenuClick?: () => void;
@@ -87,6 +88,8 @@ export function Topbar({ onMenuClick, identity }: Props) {
             <span className="tracking-wide"><span className="hidden xs:inline">Add </span>Lead</span>
           </button>
         )}
+
+        <InspectionNotificationBell identity={identity} />
 
         <div className="relative">
           <button

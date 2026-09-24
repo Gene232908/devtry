@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
   ListChecks,
@@ -34,6 +34,7 @@ type SidebarItem = {
 const ALL_ITEMS: SidebarItem[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, gate: "viewDashboard" },
   { href: "/admin/leads", label: "Leads", icon: ListChecks },
+  { href: "/admin/leads?origin=scrap", label: "Scrap Inquiries", icon: Car, gate: "viewAllLeads" },
   { href: "/admin/inventory", label: "Inventory", icon: Car, gate: "viewInventory" },
   { href: "/admin/commission", label: "Commission", icon: Percent, gate: "viewCommissions" },
   { href: "/admin/incomplete", label: "Incomplete Forms", icon: FileClock, gate: "viewIncompleteForms" },
@@ -54,6 +55,8 @@ type Props = {
 
 export function Sidebar({ className, capabilities, onNavigate }: Props) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const isScrapRoute = pathname === "/admin/leads" && searchParams.get("origin") === "scrap";
 
   const items = capabilities
     ? ALL_ITEMS.filter((item) => !item.gate || capabilities.includes(item.gate))
@@ -62,7 +65,11 @@ export function Sidebar({ className, capabilities, onNavigate }: Props) {
   return (
     <aside className={cn("flex h-full w-60 flex-col gap-1.5 border-r border-white/[0.08] bg-[#050508]/90 backdrop-blur-2xl p-4 shadow-[4px_0_24px_rgba(0,0,0,0.6)]", className)}>
       {items.map((item) => {
-        const active = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
+        const active = item.href === "/admin/leads?origin=scrap"
+          ? isScrapRoute
+          : item.href === "/admin/leads"
+            ? pathname === "/admin/leads" && !isScrapRoute
+            : pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
         const Icon = item.icon;
         return (
           <Link

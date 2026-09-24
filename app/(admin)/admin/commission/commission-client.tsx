@@ -293,7 +293,7 @@ export default function CommissionClient({
     if (selectedScopes.includes("agents")) rows.push(...agents);
     if (selectedScopes.includes("purchasers")) rows.push(...purchasers);
     if (selectedScopes.includes("referrals")) rows.push(...referralRecipients);
-    return rows;
+    return Array.from(new Map(rows.map((staff) => [staff.id, staff])).values());
   }, [agents, purchasers, referralRecipients, selectedScopes]);
   const selectedStaffOutstanding = useMemo(
     () => selectedStaff.reduce((total, staff) => total + staff.totalCommission, 0),
@@ -322,7 +322,7 @@ export default function CommissionClient({
   const pageTitle = isStaffSelfViewer ? "My Commission" : "Commission";
 
   const pageDesc = isAgentViewer
-    ? "Track your earnings and download statement invoices for your closed deals (2% of profit per car)."
+    ? "Track your 2% commission and download statement invoices for your closed deals."
     : isPurchaserViewer
     ? "Track your earnings and download statement invoices for your closed deals (10% of profit per car)."
     : "Review agent, purchaser, and developer commission in one place.";
@@ -384,8 +384,8 @@ export default function CommissionClient({
           staffList={myAgentList}
           emptyLabel="agents"
           isStaffSelf={true}
+          hideProfit
           onViewDetails={setDetailTarget}
-          onMarkPaid={() => {}}
         />
       )}
 
@@ -396,35 +396,55 @@ export default function CommissionClient({
           emptyLabel="purchasers"
           isStaffSelf={true}
           onViewDetails={setDetailTarget}
-          onMarkPaid={() => {}}
         />
       )}
 
       {/* ─── Super Admin Multi-Tab View ─────────────────────────────────── */}
       {!isStaffSelfViewer && showsStaffCommission && (
-        <StaffCommissionView
-          totalOutstanding={selectedStaffOutstanding}
-          staffList={selectedStaff}
-          emptyLabel="selected staff"
-          onViewDetails={setDetailTarget}
-          onMarkPaid={(staff) => {
-            setPayError(null);
-            setPayTarget(staff);
-          }}
-        />
+        <>
+          <div className="rounded-card border border-gold/35 bg-gold/5 p-4">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gold">Payout summary</p>
+                <p className="mt-1 text-sm text-text-muted">Current unpaid amount across the commission categories shown below.</p>
+              </div>
+              <p className="tabular-nums text-2xl font-semibold text-gold">{formatAed(selectedStaffOutstanding + (showsDeveloperCommission ? devOutstanding : 0))}</p>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-text-muted">
+              <span>Staff commissions: <strong className="text-text">{formatAed(selectedStaffOutstanding)}</strong></span>
+              {showsDeveloperCommission && <span>Developer share: <strong className="text-text">{formatAed(devOutstanding)}</strong></span>}
+            </div>
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-text">Staff Commissions</h2>
+            <p className="mt-1 text-sm text-text-muted">Call Centre and Purchaser commissions paid individually.</p>
+          </div>
+          <StaffCommissionView
+            totalOutstanding={selectedStaffOutstanding}
+            staffList={selectedStaff}
+            emptyLabel="selected staff"
+            onViewDetails={setDetailTarget}
+          />
+        </>
       )}
 
       {!isStaffSelfViewer && showsDeveloperCommission && (
-        <DeveloperCommissionView
-          outstanding={devOutstanding}
-          paidToDate={devPaid}
-          quarters={quarters}
-          loading={loading}
-          onMarkPaid={(q) => {
-            setDevPayError(null);
-            setDevPayTarget(q);
-          }}
-        />
+        <>
+          <div>
+            <h2 className="text-lg font-semibold text-text">Developer Quarterly Share</h2>
+            <p className="mt-1 text-sm text-text-muted">Recorded monthly and settled every three months.</p>
+          </div>
+          <DeveloperCommissionView
+            outstanding={devOutstanding}
+            paidToDate={devPaid}
+            quarters={quarters}
+            loading={loading}
+            onMarkPaid={(q) => {
+              setDevPayError(null);
+              setDevPayTarget(q);
+            }}
+          />
+        </>
       )}
 
       {!isStaffSelfViewer && selectedScopes.length === 0 && (
@@ -453,6 +473,7 @@ export default function CommissionClient({
         <StaffDetailModal
           staff={detailTarget}
           canPay={!isStaffSelfViewer}
+          hideProfit={isAgentViewer}
           onClose={() => setDetailTarget(null)}
           onMarkPaid={() => {
             setPayError(null);
@@ -522,15 +543,15 @@ function StaffCommissionView({
   staffList,
   emptyLabel,
   isStaffSelf,
+  hideProfit = false,
   onViewDetails,
-  onMarkPaid,
 }: {
   totalOutstanding: number;
   staffList: StaffCommission[];
   emptyLabel: string;
   isStaffSelf?: boolean;
+  hideProfit?: boolean;
   onViewDetails: (staff: StaffCommission) => void;
-  onMarkPaid: (staff: StaffCommission) => void;
 }) {
   // A self-viewer's list is always exactly them — "Total Staff: 1" tells an
   // agent or purchaser nothing they didn't already know. What they actually
@@ -544,11 +565,11 @@ function StaffCommissionView({
     <>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Card className="border-gold/40 p-4">
-          <p className="text-fluid--1 text-text-faint">Total Outstanding</p>
+          <p className="text-fluid--1 text-text-faint">Staff Commission Outstanding</p>
           <p className="mt-1.5 tabular-nums text-fluid-1 text-gold">{formatAed(totalOutstanding)}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-fluid--1 text-text-faint">{isStaffSelf ? "Total Cars Sold" : "Total Staff"}</p>
+          <p className="text-fluid--1 text-text-faint">{isStaffSelf ? "Unpaid Sales" : "Staff Accounts"}</p>
           <p className="mt-1.5 tabular-nums text-fluid-1 text-text">
             {isStaffSelf ? totalCarsSold : staffList.length}
           </p>
@@ -573,12 +594,12 @@ function StaffCommissionView({
                 right next to it. Fixed widths give every column its own
                 share regardless of how short or long its content happens to
                 be, so the gaps between columns read as even. */}
-            <table className="w-full min-w-[820px] table-fixed text-left text-fluid--1">
+            <table className={`w-full table-fixed text-left text-fluid--1 ${hideProfit ? "min-w-[680px]" : "min-w-[820px]"}`}>
               <thead>
                 <tr className="border-b border-border text-text-faint">
                   <th className="w-[20%] py-2 pr-4 font-normal">Name</th>
-                  <th className="w-[11%] py-2 pr-4 text-right font-normal">Cars Sold</th>
-                  <th className="w-[15%] py-2 pr-4 text-right font-normal">Total Profit</th>
+                  <th className="w-[11%] py-2 pr-4 text-right font-normal">Unpaid Sales</th>
+                  {!hideProfit && <th className="w-[15%] py-2 pr-4 text-right font-normal">Total Profit</th>}
                   {/* Extra right padding (pr-8, not pr-4) on purpose: this
                       column is right-aligned and the next one is left-aligned,
                       so their content would otherwise sit directly against
@@ -602,10 +623,14 @@ function StaffCommissionView({
                       )}
                     </td>
                     <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{staff.totalCarsSold}</td>
-                    <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{formatAed(staff.totalProfit)}</td>
+                    {!hideProfit && <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{formatAed(staff.totalProfit)}</td>}
                     <td className="py-3 pr-8 text-right tabular-nums text-gold">{formatAed(staff.totalCommission)}</td>
                     <td className="py-3 pr-4">
-                      {staff.isPaidThisMonth ? (
+                      {staff.totalCarsSold === 0 && staff.paidAt === null ? (
+                        <span className="inline-flex whitespace-nowrap rounded-full bg-surface-2 px-2 py-0.5 text-[0.72rem] text-text-faint">
+                          No commission yet
+                        </span>
+                      ) : staff.isPaidThisMonth ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[0.72rem] text-success">
                           <CheckCircle2 className="h-3 w-3" /> Paid
                         </span>
@@ -620,17 +645,6 @@ function StaffCommissionView({
                         <Button size="sm" variant="outline" onClick={() => onViewDetails(staff)}>
                           <Eye className="h-3.5 w-3.5" /> Details
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => downloadStaffInvoicePdf(staff)}>
-                          <Download className="h-3.5 w-3.5" /> Invoice
-                        </Button>
-                        {/* Owner-only: an agent or purchaser can see and download
-                            their own statement, but only the owner decides money
-                            has actually left the business. */}
-                        {!isStaffSelf && !staff.isPaidThisMonth && staff.totalCommission > 0 && (
-                          <Button size="sm" onClick={() => onMarkPaid(staff)}>
-                            <CheckCircle2 className="h-3.5 w-3.5" /> Pay
-                          </Button>
-                        )}
                       </div>
                     </td>
                   </tr>
@@ -649,6 +663,7 @@ function StaffCommissionView({
 function StaffDetailModal({
   staff,
   canPay,
+  hideProfit = false,
   onClose,
   onMarkPaid,
 }: {
@@ -656,9 +671,29 @@ function StaffDetailModal({
   /** False for an agent or purchaser viewing their own detail — they can see
    *  and download this statement, but only the owner settles it. */
   canPay: boolean;
+  hideProfit?: boolean;
   onClose: () => void;
   onMarkPaid: () => void;
 }) {
+  const roleEntries = staff.entries.filter((entry) => entry.kind === "role_commission");
+  const referralEntries = staff.entries.filter((entry) => entry.kind === "referral_incentive");
+  const referralTotal = referralEntries.reduce((total, entry) => total + entry.commission, 0);
+  const [showReferralBreakdown, setShowReferralBreakdown] = useState(false);
+  const [referralSearch, setReferralSearch] = useState("");
+  const [visibleReferrals, setVisibleReferrals] = useState(10);
+  const filteredReferrals = useMemo(() => {
+    const query = referralSearch.trim().toLowerCase();
+    return query
+      ? referralEntries.filter((entry) => `${entry.leadName} ${entry.carDetails} ${entry.soldAt}`.toLowerCase().includes(query))
+      : referralEntries;
+  }, [referralEntries, referralSearch]);
+
+  function openReferralBreakdown() {
+    setReferralSearch("");
+    setVisibleReferrals(10);
+    setShowReferralBreakdown(true);
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
@@ -668,7 +703,7 @@ function StaffDetailModal({
     >
       <div className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-card border border-border bg-bg-elev shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-fluid-0 font-medium text-text">{staff.displayName}</h2>
@@ -676,7 +711,16 @@ function StaffDetailModal({
                 {ROLE_LABELS[staff.role]}
               </span>
             </div>
-            <p className="text-fluid--1 text-text-muted">Commission Details &amp; Closed Deals Statement</p>
+            <p className="text-fluid--1 text-text-muted">Commission Details & Closed Deals Statement</p>
+            {referralEntries.length > 0 && (
+              <button
+                type="button"
+                onClick={openReferralBreakdown}
+                className="mt-2 inline-flex min-h-8 items-center rounded-full border border-gold/35 bg-gold/5 px-2.5 text-xs font-medium text-gold transition-colors hover:border-gold/70 hover:bg-gold/10"
+              >
+                Referral incentive · {formatAed(referralTotal)} · {referralEntries.length}
+              </button>
+            )}
           </div>
           <button
             type="button"
@@ -689,46 +733,49 @@ function StaffDetailModal({
         </div>
 
         {/* Summary cards */}
-        <div className="grid grid-cols-3 gap-3 p-5">
+        <div className={`grid gap-3 p-5 ${hideProfit ? "grid-cols-2" : "grid-cols-3"}`}>
           <div className="rounded-card border border-border bg-surface-2 p-3 text-center">
-            <p className="text-[0.72rem] text-text-faint">Cars Sold</p>
+            <p className="text-[0.72rem] text-text-faint">Unpaid Sales</p>
             <p className="mt-1 tabular-nums text-fluid-0 text-text">{staff.totalCarsSold}</p>
           </div>
-          <div className="rounded-card border border-border bg-surface-2 p-3 text-center">
-            <p className="text-[0.72rem] text-text-faint">Total Profit</p>
-            <p className="mt-1 tabular-nums text-fluid-0 text-text">{formatAed(staff.totalProfit)}</p>
-          </div>
+          {!hideProfit && (
+            <div className="rounded-card border border-border bg-surface-2 p-3 text-center">
+              <p className="text-[0.72rem] text-text-faint">Total Profit</p>
+              <p className="mt-1 tabular-nums text-fluid-0 text-text">{formatAed(staff.totalProfit)}</p>
+            </div>
+          )}
           <div className="rounded-card border border-gold/40 bg-gold/5 p-3 text-center">
             <p className="text-[0.72rem] text-text-faint">Commission</p>
             <p className="mt-1 tabular-nums text-fluid-0 text-gold">{formatAed(staff.totalCommission)}</p>
           </div>
         </div>
 
-        {/* Entries table */}
-        {staff.entries.length > 0 && (
+        {/* Closed-sale commission table */}
+        {roleEntries.length > 0 && (
           <div className="px-5 pb-2">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-text-faint">Closed car sales</p>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-fluid--1">
                 <thead>
                   <tr className="border-b border-border text-text-faint">
                     <th className="py-2 pr-4 font-normal">Customer</th>
                     <th className="py-2 pr-4 font-normal">Car</th>
-                    <th className="py-2 pr-4 font-normal">Type</th>
                     <th className="py-2 pr-4 font-normal">Sold Date</th>
-                    <th className="py-2 pr-4 text-right font-normal">Profit</th>
+                    {!hideProfit && <th className="py-2 pr-4 text-right font-normal">Profit</th>}
                     <th className="py-2 pr-1 text-right font-normal">Commission</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {staff.entries.map((entry) => (
+                  {roleEntries.map((entry) => (
                     <tr key={entry.id} className="border-b border-border last:border-0">
                       <td className="py-2.5 pr-4 text-text">{entry.leadName}</td>
                       <td className="py-2.5 pr-4 text-text-muted">{entry.carDetails}</td>
-                      <td className="py-2.5 pr-4 text-text-muted">{entry.kind === "referral_incentive" ? "Referral incentive" : "Role commission"}</td>
                       <td className="py-2.5 pr-4 text-text-muted">{formatDate(entry.soldAt)}</td>
-                      <td className="py-2.5 pr-4 text-right tabular-nums text-text-muted">
-                        {entry.profit === null ? "—" : formatAed(entry.profit)}
-                      </td>
+                      {!hideProfit && (
+                        <td className="py-2.5 pr-4 text-right tabular-nums text-text-muted">
+                          {entry.profit === null ? "—" : formatAed(entry.profit)}
+                        </td>
+                      )}
                       <td className="py-2.5 pr-1 text-right tabular-nums text-gold">
                         {formatAed(entry.commission)}
                       </td>
@@ -746,9 +793,11 @@ function StaffDetailModal({
 
         {/* Footer */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-4">
-          <Button variant="outline" onClick={() => downloadStaffInvoicePdf(staff)} size="sm">
-            <Download className="h-4 w-4" /> Download Invoice (PDF)
-          </Button>
+          {staff.totalCommission > 0 ? (
+            <Button variant="outline" onClick={() => downloadStaffInvoicePdf(staff)} size="sm">
+              <Download className="h-4 w-4" /> Download Invoice (PDF)
+            </Button>
+          ) : <span />}
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={onClose} size="sm">
               Close
@@ -761,6 +810,41 @@ function StaffDetailModal({
           </div>
         </div>
       </div>
+
+      {showReferralBreakdown && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={`${staff.displayName} referral breakdown`}>
+          <div className="flex max-h-[75vh] w-full max-w-lg flex-col overflow-hidden rounded-card border border-border bg-bg-elev shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border px-5 py-4">
+              <div>
+                <h3 className="text-fluid-0 font-medium text-text">Referral incentives</h3>
+                <p className="mt-1 text-sm text-text-muted">{referralEntries.length} customer{referralEntries.length === 1 ? "" : "s"} referred · {formatAed(referralTotal)}</p>
+              </div>
+              <button type="button" onClick={() => setShowReferralBreakdown(false)} className="rounded p-1 text-text-muted hover:text-text" aria-label="Close referral breakdown">×</button>
+            </div>
+            {referralEntries.length > 10 && (
+              <div className="border-b border-border p-4">
+                <input value={referralSearch} onChange={(event) => { setReferralSearch(event.target.value); setVisibleReferrals(10); }} placeholder="Search customer, car, or date..." className="min-h-11 w-full rounded-card border border-border bg-bg px-3 text-sm text-text outline-none placeholder:text-text-faint focus:border-gold" />
+              </div>
+            )}
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              {filteredReferrals.slice(0, visibleReferrals).map((entry) => (
+                <div key={entry.id} className="border-b border-border py-3 first:pt-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-text">{entry.leadName}</p>
+                      <p className="mt-1 text-sm text-text-muted">{entry.carDetails}</p>
+                      <p className="mt-1 text-xs text-text-faint">Referred by {staff.displayName} · Sold {formatDate(entry.soldAt)}</p>
+                    </div>
+                    <span className="shrink-0 tabular-nums font-medium text-gold">{formatAed(entry.commission)}</span>
+                  </div>
+                </div>
+              ))}
+              {filteredReferrals.length === 0 && <p className="py-8 text-center text-sm text-text-muted">No referrals match that search.</p>}
+              {visibleReferrals < filteredReferrals.length && <Button variant="outline" className="mt-4 w-full" onClick={() => setVisibleReferrals((count) => count + 10)}>Load more referrals</Button>}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -798,11 +882,11 @@ function DeveloperCommissionView({
     <>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Card className="border-gold/40 p-4">
-          <p className="text-fluid--1 text-text-faint">Outstanding</p>
+          <p className="text-fluid--1 text-text-faint">Developer Share Outstanding</p>
           <p className="mt-1.5 tabular-nums text-fluid-1 text-gold">{formatAed(outstanding)}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-fluid--1 text-text-faint">Paid to Date</p>
+          <p className="text-fluid--1 text-text-faint">Developer Share Paid to Date</p>
           <p className="mt-1.5 tabular-nums text-fluid-1 text-text">{formatAed(paidToDate)}</p>
         </Card>
       </div>

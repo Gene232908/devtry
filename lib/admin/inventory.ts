@@ -70,6 +70,11 @@ export type InventoryItem = {
   fromUnverifiedLead: boolean;
   callCenterId: string | null;
   purchaserId: string | null;
+  /** Permanent origin inherited from the linked lead. */
+  inquiryType?: "valuation" | "scrap";
+  /** Frozen staff-ledger amounts; null means this sale did not credit that role. */
+  callCenterCommissionAed?: number | null;
+  purchaserCommissionAed?: number | null;
 };
 
 export const INVENTORY_STATUS_LABEL: Record<InventoryStatus, string> = {
@@ -154,10 +159,12 @@ export type DbInventory = {
     phone_verified?: boolean | null;
     call_center_id?: string | null;
     purchaser_id?: string | null;
+    inquiry_type?: "valuation" | "scrap" | null;
   } | Array<{
     phone_verified?: boolean | null;
     call_center_id?: string | null;
     purchaser_id?: string | null;
+    inquiry_type?: "valuation" | "scrap" | null;
   }> | null;
 };
 
@@ -207,6 +214,9 @@ export function mapDbInventory(r: DbInventory): InventoryItem {
     fromUnverifiedLead: leadPhoneVerified === false,
     callCenterId: leadRel?.call_center_id ?? null,
     purchaserId: leadRel?.purchaser_id ?? null,
+    inquiryType: leadRel?.inquiry_type === "scrap" ? "scrap" : "valuation",
+    callCenterCommissionAed: null,
+    purchaserCommissionAed: null,
   };
 }
 

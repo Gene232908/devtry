@@ -17,13 +17,19 @@ export type CatalogActivity = {
 export function CatalogActivityPanel({
   events,
   loading = false,
+  loadingMore = false,
+  hasMore = false,
   restoringId,
   onRestore,
+  onLoadMore,
 }: {
   events: CatalogActivity[];
   loading?: boolean;
+  loadingMore?: boolean;
+  hasMore?: boolean;
   restoringId: string | null;
   onRestore: (event: CatalogActivity) => void;
+  onLoadMore?: () => void;
 }) {
   return (
     <section className="rounded-card border border-border bg-surface p-4">
@@ -71,6 +77,13 @@ export function CatalogActivityPanel({
             </li>
           ))}
         </ul>
+      )}
+      {events.length > 0 && hasMore && onLoadMore && (
+        <div className="mt-4 flex justify-center">
+          <Button variant="outline" size="sm" disabled={loadingMore} onClick={onLoadMore}>
+            {loadingMore ? "Loading more…" : "See more"}
+          </Button>
+        </div>
       )}
     </section>
   );

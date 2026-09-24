@@ -5,6 +5,7 @@ import { ChevronRight } from "lucide-react";
 import { StatusPill } from "@/components/ui/Pill";
 import { Lead } from "@/config/mock-data";
 import { formatDate } from "@/lib/format";
+import { ScrapInquiryBadge } from "@/components/admin/ScrapInquiryBadge";
 
 type Props = {
   leads: Lead[];
@@ -60,6 +61,10 @@ export function MobileLeadsList({
                     <span>•</span>
                     <span className="shrink-0">{formatDate(lead.createdAt)}</span>
                   </div>
+
+                  {lead.inquiryType === "scrap" && (
+                    <ScrapInquiryBadge compact className="mt-1" />
+                  )}
 
                   {duplicateReview && lead.isDuplicate && (
                     <span className="text-[10px] font-medium text-warning mt-0.5">

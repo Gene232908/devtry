@@ -14,6 +14,8 @@ export type PartialDealState = {
   emirate: string;
   inspectionScheduledAt: string;
   markVerified: boolean;
+  scrapCondition: string;
+  scrapAskingPriceAed: string;
 };
 
 export type PartialDealErrors = {
@@ -27,6 +29,8 @@ export type PartialDealErrors = {
   year?: string;
   emirate?: string;
   inspectionScheduledAt?: string;
+  scrapCondition?: string;
+  scrapAskingPriceAed?: string;
 };
 
 type Props = {
@@ -40,6 +44,7 @@ type Props = {
   specificationOptions: { label: string; value: string }[];
   emirateOptions: { label: string; value: string }[];
   setDeal: React.Dispatch<React.SetStateAction<PartialDealState>>;
+  isScrap?: boolean;
 };
 
 export function PartialLeadConversionFields({
@@ -53,6 +58,7 @@ export function PartialLeadConversionFields({
   specificationOptions,
   emirateOptions,
   setDeal,
+  isScrap = false,
 }: Props) {
   return (
     <div className="flex flex-col gap-4 rounded-card border border-gold/40 bg-gold/5 p-4">
@@ -156,6 +162,29 @@ export function PartialLeadConversionFields({
           onChange={(specification) => setDeal((d) => ({ ...d, specification }))}
         />
       </div>
+
+      {isScrap && (
+        <div className="grid grid-cols-1 gap-3 border-t border-gold/20 pt-4 sm:grid-cols-2">
+          <Input
+            label="Scrap asking price (AED) *"
+            inputMode="decimal"
+            value={deal.scrapAskingPriceAed}
+            error={errors.scrapAskingPriceAed}
+            onChange={(event) => setDeal((current) => ({ ...current, scrapAskingPriceAed: event.target.value }))}
+          />
+          <div className="sm:col-span-2">
+            <label className="text-fluid--1 font-medium uppercase tracking-[0.14em] text-text-faint">Scrap condition *</label>
+            <textarea
+              rows={3}
+              value={deal.scrapCondition}
+              onChange={(event) => setDeal((current) => ({ ...current, scrapCondition: event.target.value }))}
+              placeholder="Confirm the vehicle condition from the customer."
+              className="mt-1.5 w-full resize-none rounded-card border border-border bg-surface-2 p-3 text-sm text-text outline-none focus:border-gold"
+            />
+            {errors.scrapCondition && <p className="mt-1 text-xs text-danger">{errors.scrapCondition}</p>}
+          </div>
+        </div>
+      )}
 
       <label className="flex cursor-pointer items-start gap-2.5 text-xs text-text-muted mt-1">
         <input

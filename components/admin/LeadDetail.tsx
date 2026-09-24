@@ -42,7 +42,7 @@ const FALLBACK_EVENTS = (createdAt: string): LeadEvent[] => [
 ];
 
 export function LeadDetail({ lead }: { lead: Lead }) {
-  const { updateLead } = useLeads();
+  const { updateLead, refresh } = useLeads();
   const { staffOptions, canAssign, loading: staffLoading } = useStaffOptions();
   const identity = useStaffIdentity();
   const canViewContact = !identity || hasCapability(identity, "viewLeadContact");
@@ -74,6 +74,25 @@ export function LeadDetail({ lead }: { lead: Lead }) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [events, setEvents] = useState<LeadEvent[]>(() => FALLBACK_EVENTS(lead.createdAt));
   const [views, setViews] = useState<LeadViewSummary>({ count: 0, lastAt: null });
+  const reconciliationAttemptedRef = useRef(false);
+
+  useEffect(() => {
+    if (!canStartInspection || reconciliationAttemptedRef.current || ADMIN_PREVIEW) return;
+    reconciliationAttemptedRef.current = true;
+    void (async () => {
+      try {
+        const response = await fetch(`/api/admin/leads/${encodeURIComponent(lead.id)}/inspection/reconcile`, { method: "POST" });
+        const body = await response.json().catch(() => null);
+        if (response.ok && body?.ok && body.data?.reconciled) {
+          await refresh();
+          router.refresh();
+        }
+      } catch {
+        // The normal inspection workflow remains available if this one-time
+        // legacy reconciliation request cannot reach the server.
+      }
+    })();
+  }, [canStartInspection, lead.id, refresh, router]);
 
   const dirty = useMemo(
     () =>
@@ -275,7 +294,7 @@ export function LeadDetail({ lead }: { lead: Lead }) {
           <p className="mt-1 text-sm text-text-muted">
             Submitted {formatDate(lead.createdAt)}
             {lead.location ? ` · ${lead.location}` : ""}
-            {" · Web Lead"}
+            {lead.inquiryType === "scrap" ? " · Scrap Inquiry" : " · Website Valuation"}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">

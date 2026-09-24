@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     return err("server_error", "Verification is not configured yet.", 503);
   }
 
-  let body: { phone?: unknown; honeypot?: unknown; startedAt?: unknown };
+  let body: { phone?: unknown; honeypot?: unknown; startedAt?: unknown; inquiryType?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -57,6 +57,11 @@ export async function POST(req: NextRequest) {
   if (!isAllowedWhatsappRecipient(phone)) {
     return err("not_allowed", "Unable to send the code. Please try again.", 400);
   }
+
+  if (body.inquiryType !== undefined && body.inquiryType !== "valuation" && body.inquiryType !== "scrap") {
+    return err("validation", "Invalid enquiry type.", 400);
+  }
+  const inquiryType = body.inquiryType === "scrap" ? "scrap" : "valuation";
 
   const ip = getClientIp(req);
 
@@ -112,7 +117,7 @@ export async function POST(req: NextRequest) {
     //
     // A lead is the opposite: it only exists once a code was delivered, entered
     // correctly, and the full form submitted. At that point the message is true.
-    if (await hasOpenLead(supabase, phone)) {
+    if (await hasOpenLead(supabase, phone, inquiryType)) {
       // Deliberately NOT logged as a failed attempt.
       //
       // `otp_attempts` feeds the "Hit a limit" table, which exists to surface
@@ -189,17 +194,36 @@ export async function POST(req: NextRequest) {
     .is("verified_at", null)
     .is("used_at", null);
 
-  const { data: inserted, error: insertError } = await supabase
+  const verificationInsert = {
+    phone_number: phone,
+    inquiry_type: inquiryType,
+    otp_hash: hashOtpCode(code),
+    expires_at: new Date(Date.now() + OTP_TTL_MS).toISOString(),
+    max_attempts: MAX_ATTEMPTS,
+    request_ip_hash: hashIp(ip),
+  };
+  let { data: inserted, error: insertError } = await supabase
     .from("whatsapp_otp_verifications")
-    .insert({
-      phone_number: phone,
-      otp_hash: hashOtpCode(code),
-      expires_at: new Date(Date.now() + OTP_TTL_MS).toISOString(),
-      max_attempts: MAX_ATTEMPTS,
-      request_ip_hash: hashIp(ip),
-    })
+    .insert(verificationInsert)
     .select("id")
     .single();
+
+  // Preserve ordinary valuation OTPs during the brief code-before-migration
+  // window. Scrap intentionally has no fallback: losing its type would break
+  // its permanent classification and its cross-flow proof protection.
+  if (insertError && inquiryType === "valuation" && /inquiry_type/i.test(insertError.message ?? "")) {
+    ({ data: inserted, error: insertError } = await supabase
+      .from("whatsapp_otp_verifications")
+      .insert({
+        phone_number: phone,
+        otp_hash: verificationInsert.otp_hash,
+        expires_at: verificationInsert.expires_at,
+        max_attempts: verificationInsert.max_attempts,
+        request_ip_hash: verificationInsert.request_ip_hash,
+      })
+      .select("id")
+      .single());
+  }
 
   if (insertError || !inserted) {
     return err("server_error", "Unable to send the code. Please try again.", 500);

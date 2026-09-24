@@ -9,12 +9,9 @@ import { SellCarDialog } from "@/components/admin/SellCarDialog";
 import { formatAed } from "@/lib/format";
 import { formatUaeMonth, uaeMonthKey } from "@/lib/uae-time";
 import {
-  AGENT_COMMISSION_RATE,
   COMMISSION_RATE,
   INVENTORY_FILTER_OPTIONS,
   INVENTORY_STATUS_LABEL,
-  PURCHASER_COMMISSION_RATE,
-  round2,
   type InventoryItem,
   type InventoryStatus,
 } from "@/lib/admin/inventory";
@@ -44,6 +41,11 @@ const ROLE_FILTER_OPTIONS: Array<{ value: InventoryRole; label: string }> = [
   { value: "developer", label: "Developer" },
 ];
 
+const ORIGIN_FILTER_OPTIONS = [
+  { value: "valuation", label: "Website Valuation" },
+  { value: "scrap", label: "Scrap Inquiry" },
+] as const;
+
 /**
  * `initialItems` is rendered by the server in `page.tsx`, so this screen paints
  * its real table on first frame instead of mounting empty and then fetching.
@@ -71,9 +73,11 @@ export default function InventoryClient({
   const error = initialError;
   const identity = useStaffIdentity();
   const isOwner = !identity || identity.role === "admin" || identity.role === "manager";
+  const isPurchaser = identity?.role === "purchaser";
   // Empty means "all" — same rule as the Leads filters. Unticking the last box
   // returns every car rather than emptying the table with no obvious way back.
   const [statusFilter, setStatusFilter] = useState<InventoryStatus[]>([]);
+  const [originFilter, setOriginFilter] = useState<Array<"valuation" | "scrap">>([]);
   const [vinSearch, setVinSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<InventoryRole[]>(() => ROLE_FILTER_OPTIONS.map((role) => role.value));
   /**
@@ -142,13 +146,14 @@ export default function InventoryClient({
       );
     }
     if (statusFilter.length > 0) result = result.filter((i) => statusFilter.includes(i.status));
+    if (originFilter.length > 0) result = result.filter((i) => originFilter.includes(i.inquiryType ?? "valuation"));
     if (monthFilter.length > 0 && !isAgingFilter) {
       result = result.filter((i) => monthFilter.includes(uaeMonthKey(new Date(i.purchasedAt))));
     }
     const vin = vinSearch.trim().toLowerCase();
     if (vin) result = result.filter((item) => item.chassisNumber.toLowerCase().includes(vin));
     return result;
-  }, [items, statusFilter, monthFilter, isAgingFilter, vinSearch]);
+  }, [items, statusFilter, originFilter, monthFilter, isAgingFilter, vinSearch]);
 
   /**
    * Headline figures — for whatever the filters are showing, not for everything.
@@ -168,18 +173,15 @@ export default function InventoryClient({
     // for sale) while `reserved` still counts as held.
     const held = visible.filter((i) => i.status === "in_stock" || i.status === "reserved");
 
-    // Developer's share is frozen per sale in the database (`i.commission`),
-    // so it is summed as-is. Agent and purchaser shares have no such record —
-    // the Commission page's per-staff totals aren't backed by a table yet —
-    // so they are computed the same way `previewCommission` does: the rate
-    // against each sale's own profit, rounded per car rather than once at the
-    // end, so this total agrees with what per-car figures would add up to.
+    // Every role total comes from its frozen database ledger entry. This keeps
+    // Inventory aligned with the Commission tab and avoids inventing a 2% or
+    // 10% payee for a sale that had no assigned staff member.
     const agentCommission = visible.reduce(
-      (sum, i) => sum + round2(Math.max(i.commission?.profitAed ?? 0, 0) * AGENT_COMMISSION_RATE),
+      (sum, i) => sum + (i.callCenterCommissionAed ?? 0),
       0,
     );
     const purchaserCommission = visible.reduce(
-      (sum, i) => sum + round2(Math.max(i.commission?.profitAed ?? 0, 0) * PURCHASER_COMMISSION_RATE),
+      (sum, i) => sum + (i.purchaserCommissionAed ?? 0),
       0,
     );
     const developerCommission = visible.reduce((sum, i) => sum + (i.commission?.commissionAed ?? 0), 0);
@@ -188,14 +190,14 @@ export default function InventoryClient({
       inStock: held.length,
       capital: held.reduce((sum, i) => sum + i.purchasePriceAed, 0),
       profit: visible.reduce((sum, i) => sum + (i.commission?.profitAed ?? 0), 0),
-      totalCommission: agentCommission + purchaserCommission + developerCommission,
+      totalCommission: isPurchaser ? purchaserCommission : agentCommission + purchaserCommission + developerCommission,
       roleProfit: {
         callCenter: agentCommission,
         purchaser: purchaserCommission,
         developer: developerCommission,
       },
     };
-  }, [visible]);
+  }, [visible, isPurchaser]);
 
   async function confirmSale(salePriceAed: number, soldAt: string) {
     if (!selling) return;
@@ -315,7 +317,7 @@ export default function InventoryClient({
         <Summary label="Capital tied up" value={formatAed(summary.capital)} />
         <Summary label="Profit from sales" value={formatAed(summary.profit)} />
         <Summary
-          label={`Total commission (${((AGENT_COMMISSION_RATE + PURCHASER_COMMISSION_RATE + COMMISSION_RATE) * 100).toFixed(0)}%)`}
+          label={isPurchaser ? "Outstanding purchaser commission (10%)" : "Total commission (14%)"}
           value={formatAed(summary.totalCommission)}
           accent
         />
@@ -339,6 +341,14 @@ export default function InventoryClient({
               onChange={(v) => setStatusFilter(v as InventoryStatus[])}
               allLabel="All statuses"
               noun="statuses"
+            />
+            <MultiSelect
+              className="w-full sm:w-52"
+              options={[...ORIGIN_FILTER_OPTIONS]}
+              selected={originFilter}
+              onChange={(values) => setOriginFilter(values as Array<"valuation" | "scrap">)}
+              allLabel="All origins"
+              noun="origins"
             />
             {isOwner && (
               <MultiSelect
@@ -436,7 +446,7 @@ export default function InventoryClient({
               <InventoryTable
                 items={visible}
                 roleFilter={roleFilter}
-                isOwner={isOwner}
+                viewerRole={isPurchaser ? "purchaser" : "owner"}
                 onSell={(item) => {
                   setSellError(null);
                   setSelling(item);

@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/Card";
 import {
   formatPartialDate,
+  partialInquiryType,
   partialCarSummary,
   PARTIAL_STEP_LABELS,
   PARTIAL_TRIGGER_LABELS,
@@ -13,6 +14,7 @@ type Props = {
 
 export function PartialLeadCapturedCard({ partial }: Props) {
   const carSummary = partialCarSummary(partial);
+  const isScrap = partialInquiryType(partial) === "scrap";
 
   return (
     <Card className="flex flex-col gap-4 p-5">
@@ -41,8 +43,18 @@ export function PartialLeadCapturedCard({ partial }: Props) {
           value={partial.mileage_km != null ? `${partial.mileage_km.toLocaleString()} km` : "—"}
         />
         <Detail label="Status" value={partial.status} />
-        <Detail label="Source" value="Abandoned Form" />
+        <Detail label="Source" value={isScrap ? "Incomplete Scrap Inquiry" : "Incomplete Valuation"} />
       </div>
+
+      {isScrap && (
+        <div className="grid grid-cols-1 gap-4 border-t border-border pt-4 sm:grid-cols-2">
+          <Detail label="Scrap condition" value={partial.scrap_condition || "—"} />
+          <Detail
+            label="Scrap asking price"
+            value={partial.scrap_asking_price_aed == null ? "—" : `AED ${Number(partial.scrap_asking_price_aed).toLocaleString("en-US")}`}
+          />
+        </div>
+      )}
 
       {partial.description ? (
         <div className="border-t border-border pt-4">

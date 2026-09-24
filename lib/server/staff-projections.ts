@@ -34,6 +34,9 @@ export type ProjectedLead = {
   id: string;
   createdAt: string;
   source: string;
+  inquiryType: "valuation" | "scrap";
+  scrapCondition?: string;
+  scrapAskingPriceAed?: number | null;
   make: string;
   model: string;
   trim: string;
@@ -72,6 +75,9 @@ export function projectLeadForOwner(lead: DbLead): ProjectedLead {
     id: lead.id,
     createdAt: lead.created_at,
     source: lead.source ?? "web",
+    inquiryType: lead.inquiry_type === "scrap" ? "scrap" : "valuation",
+    scrapCondition: lead.scrap_condition ?? undefined,
+    scrapAskingPriceAed: lead.scrap_asking_price_aed != null ? Number(lead.scrap_asking_price_aed) : null,
     fullName: lead.full_name,
     phoneE164: lead.phone_e164,
     email: lead.email ?? undefined,
@@ -106,6 +112,9 @@ export function projectLeadForCallCenter(lead: DbLead): ProjectedLead {
     id: lead.id,
     createdAt: lead.created_at,
     source: lead.source ?? "web",
+    inquiryType: lead.inquiry_type === "scrap" ? "scrap" : "valuation",
+    scrapCondition: lead.scrap_condition ?? undefined,
+    scrapAskingPriceAed: lead.scrap_asking_price_aed != null ? Number(lead.scrap_asking_price_aed) : null,
     fullName: lead.full_name,
     phoneE164: lead.phone_e164,
     email: lead.email ?? undefined,
@@ -141,6 +150,9 @@ export function projectLeadForPurchaser(lead: DbLead): ProjectedLead {
     id: lead.id,
     createdAt: lead.created_at,
     source: lead.source ?? "web",
+    inquiryType: lead.inquiry_type === "scrap" ? "scrap" : "valuation",
+    scrapCondition: lead.scrap_condition ?? undefined,
+    scrapAskingPriceAed: lead.scrap_asking_price_aed != null ? Number(lead.scrap_asking_price_aed) : null,
     fullName: lead.full_name,
     make: lead.make,
     model: lead.model,

@@ -6,9 +6,9 @@ export const brand = {
   callNumber: "+971564145781",
   notifyEmail: "demo@carvibedubai.com",
   goldHex: "#D4AF37",
-  address: "Dubai, UAE",
+  address: "Al Quoz, Dubai, UAE",
   branch: "CarVibeDubai Branch",
-  branchAddress: "(Specific address)",
+  branchAddress: "Al Quoz, Dubai, UAE",
   hours: "Sat-Thu, 9:00 AM - 9:00 PM",
   credit: "Developed by CREServices Beyond Strategy",
   socials: {

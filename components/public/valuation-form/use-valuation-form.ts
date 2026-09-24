@@ -11,6 +11,7 @@ import {
   PhoneVerification,
   ValuationFormValues,
 } from "./form.types";
+import type { ValuationModalMode } from "../open-valuation-modal";
 
 const RESEND_COOLDOWN_MS = 60 * 1000;
 const DEMO_OTP_CODE = "123456";
@@ -70,7 +71,7 @@ async function fetchWithTimeout(input: string, init: RequestInit): Promise<Respo
 // verify -> the lead is submitted automatically right after verification
 // succeeds. The phone field itself lives in Step 1, but nothing there
 // triggers an OTP send on its own — only the final step's submit button does.
-export function useValuationForm() {
+export function useValuationForm(mode: ValuationModalMode = "valuation") {
   const [values, setValues] = useState<ValuationFormValues>(emptyValues);
   const [errors, setErrors] = useState<FormErrors>({});
   const [state, setState] = useState<FormState>("filling");
@@ -108,18 +109,24 @@ export function useValuationForm() {
 
   const validate = useCallback(() => {
     const result = leadSchema.safeParse(values);
-    if (result.success) {
+    if (result.success && (mode !== "scrap" || (values.scrapCondition.trim() && Number(values.scrapAskingPriceAed) >= 0))) {
       setErrors({});
       return true;
     }
     const fieldErrors: FormErrors = {};
-    for (const issue of result.error.issues) {
+    for (const issue of result.error?.issues ?? []) {
       const key = issue.path[0] as keyof ValuationFormValues;
       if (!fieldErrors[key]) fieldErrors[key] = issue.message;
     }
+    if (mode === "scrap") {
+      if (!values.scrapCondition.trim()) fieldErrors.scrapCondition = "Describe the vehicle condition";
+      if (!values.scrapAskingPriceAed || !Number.isFinite(Number(values.scrapAskingPriceAed)) || Number(values.scrapAskingPriceAed) < 0) {
+        fieldErrors.scrapAskingPriceAed = "Enter a valid asking price";
+      }
+    }
     setErrors(fieldErrors);
     return false;
-  }, [values]);
+  }, [mode, values]);
 
   const validateStep = useCallback(
     (fields: Array<keyof ValuationFormValues>) => {
@@ -168,7 +175,7 @@ export function useValuationForm() {
       const res = await fetchWithTimeout("/api/otp/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, honeypot: values.honeypot, startedAt: startedAtRef.current }),
+        body: JSON.stringify({ phone, honeypot: values.honeypot, startedAt: startedAtRef.current, inquiryType: mode }),
       });
       const body = await res.json();
 
@@ -228,7 +235,7 @@ export function useValuationForm() {
       setPhoneVerification((pv) => ({ ...pv, status: "error", errorMessage: OTP_MESSAGES.sendFailed }));
       return { ok: false as const };
     }
-  }, [values.whatsapp, values.honeypot]);
+  }, [mode, values.whatsapp, values.honeypot]);
 
   /** Submits the lead once a proof (or demo verification) is in hand. */
   const submitLead = useCallback(
@@ -249,7 +256,7 @@ export function useValuationForm() {
         const res = await fetchWithTimeout("/api/leads", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...values, proof }),
+          body: JSON.stringify({ ...values, inquiryType: mode, proof }),
         });
         const body = await res.json();
         if (!res.ok || !body.ok) {
@@ -264,7 +271,7 @@ export function useValuationForm() {
         setSubmitError("Something went wrong. Please try again.");
       }
     },
-    [values],
+    [mode, values],
   );
 
   const verifyPhoneOtp = useCallback(
@@ -394,6 +401,9 @@ export function useValuationForm() {
         mileageKm: values.mileageKm,
         specification: values.specification,
         description: values.description,
+        inquiryType: mode,
+        scrapCondition: values.scrapCondition,
+        scrapAskingPriceAed: values.scrapAskingPriceAed,
       };
 
       // Trigger is excluded from the signature on purpose: the same details
@@ -416,7 +426,7 @@ export function useValuationForm() {
         // Ignored — see above.
       }
     },
-    [state, values],
+    [mode, state, values],
   );
 
   const reset = useCallback(() => {

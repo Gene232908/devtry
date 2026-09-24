@@ -5,6 +5,7 @@ import { Select } from "@/components/ui/Select";
 import { EMIRATES, OPTION_LEVELS } from "@/config/vehicles";
 import { type CatalogMake, trimsFor } from "@/lib/use-vehicle-catalog";
 import { ValuationFormValues, FormErrors } from "./form.types";
+import type { ValuationModalMode } from "../open-valuation-modal";
 
 type Props = {
   values: ValuationFormValues;
@@ -12,9 +13,10 @@ type Props = {
   /** Live catalog from the admin's Catalog page, falling back to the bundled list. */
   makes: CatalogMake[];
   setField: <K extends keyof ValuationFormValues>(key: K, value: ValuationFormValues[K]) => void;
+  mode?: ValuationModalMode;
 };
 
-export function StepTrimLocation({ values, errors, makes, setField }: Props) {
+export function StepTrimLocation({ values, errors, makes, setField, mode = "valuation" }: Props) {
   // Trims come from the admin catalog, narrowed to the selected make + model.
   const trimOptions = trimsFor(makes, values.make, values.model).map((t) => ({ label: t, value: t }));
 
@@ -55,6 +57,24 @@ export function StepTrimLocation({ values, errors, makes, setField }: Props) {
         error={errors.optionLevel}
         options={OPTION_LEVELS.map((level) => ({ label: level, value: level }))}
       />
+      {mode === "scrap" && (
+        <div className="max-w-sm">
+          <label htmlFor="scrap-asking-price" className="text-fluid--1 font-medium uppercase tracking-[0.14em] text-text-faint">
+            Asking price (AED)
+          </label>
+          <input
+            id="scrap-asking-price"
+            type="number"
+            min="0"
+            inputMode="decimal"
+            value={values.scrapAskingPriceAed}
+            onChange={(event) => setField("scrapAskingPriceAed", event.target.value)}
+            placeholder="Enter the amount you expect"
+            className="mt-1.5 min-h-11 w-full rounded-card border border-border-gold/45 bg-bg/45 px-4 text-fluid-0 text-text placeholder:text-text-faint outline-none focus:border-gold focus:bg-surface-2/80 focus:shadow-[0_0_0_3px_rgba(212,175,55,.16)]"
+          />
+          {errors.scrapAskingPriceAed && <span className="mt-1 block text-fluid--1 text-danger" role="alert">{errors.scrapAskingPriceAed}</span>}
+        </div>
+      )}
     </div>
   );
 }

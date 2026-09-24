@@ -5,6 +5,9 @@ export type DbLead = {
   id: string;
   created_at: string;
   source?: string | null;
+  inquiry_type?: "valuation" | "scrap" | null;
+  scrap_condition?: string | null;
+  scrap_asking_price_aed?: number | string | null;
   full_name: string;
   phone_e164: string;
   email: string | null;
@@ -55,6 +58,9 @@ export function mapDbLead(r: DbLead): Lead {
     notes: r.notes ?? "",
     createdAt: r.created_at,
     source: r.source ?? "web",
+    inquiryType: r.inquiry_type === "scrap" ? "scrap" : "valuation",
+    scrapCondition: r.scrap_condition ?? undefined,
+    scrapAskingPriceAed: r.scrap_asking_price_aed != null ? Number(r.scrap_asking_price_aed) : null,
     isDuplicate: r.is_duplicate ?? undefined,
     isSpam: r.is_spam ?? undefined,
     callCenterId: r.call_center_id ?? null,

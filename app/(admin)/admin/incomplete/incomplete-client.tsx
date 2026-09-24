@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Ban, Trash2, UsersRound, X } from "lucide-react";
@@ -9,9 +9,10 @@ import { Card } from "@/components/ui/Card";
 import { StatusPill } from "@/components/ui/Pill";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useFreshServerData, useServerState } from "@/lib/admin/use-fresh-server-data";
-import { type PartialLead } from "@/lib/admin/partial-lead";
+import { partialInquiryType, type PartialLead } from "@/lib/admin/partial-lead";
 import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 import { LeadStatus } from "@/config/mock-data";
+import { ScrapInquiryBadge } from "@/components/admin/ScrapInquiryBadge";
 
 // Valuation forms that were started but never submitted. These are UNVERIFIED:
 // nobody proved the number belongs to them, which is exactly why they are kept
@@ -50,6 +51,7 @@ export default function IncompleteValuationsClient({
   const isAttention = attention === "incomplete";
 
   const [rows, setRows] = useServerState<PartialLead[]>(initialRows);
+  const [inquiryFilter, setInquiryFilter] = useState<"all" | "valuation" | "scrap">("all");
   const [error, setError] = useState<string | null>(initialError);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -59,6 +61,10 @@ export default function IncompleteValuationsClient({
   // ~160ms, which read as a second, different warning appearing.
   const [pending, setPending] = useState<PendingAction | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const visibleRows = useMemo(
+    () => inquiryFilter === "all" ? rows : rows.filter((row) => partialInquiryType(row) === inquiryFilter),
+    [inquiryFilter, rows],
+  );
 
   function ask(action: PendingAction) {
     setPending(action);
@@ -117,9 +123,9 @@ export default function IncompleteValuationsClient({
     // Directory — these are sibling pages in the same dashboard.
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-fluid-3 text-text">Incomplete Valuation Form</h1>
+        <h1 className="font-display text-fluid-3 text-text">Incomplete Forms</h1>
         <p className="mt-1 text-fluid--1 text-text-muted">
-          Visitors who started a valuation and left before submitting. Numbers here are not verified.
+          Visitors who started a valuation or Scrap inquiry and left before submitting. Numbers here are not verified.
         </p>
       </div>
 
@@ -166,20 +172,39 @@ export default function IncompleteValuationsClient({
         <Card className="p-8 text-center">
           <p className="text-fluid-0 text-text">No incomplete forms right now.</p>
           <p className="mt-1 text-fluid--1 text-text-muted">
-            Anyone who abandons the valuation form after entering their number will appear here.
+            Anyone who abandons a valuation or Scrap form after entering their number will appear here.
           </p>
         </Card>
       ) : (
         <Card className="p-5">
           <div className="flex items-center justify-between gap-3">
             <p className="text-fluid--1 text-text-muted">
-              {rows.length} incomplete {rows.length === 1 ? "form" : "forms"}
+              {visibleRows.length} incomplete {visibleRows.length === 1 ? "form" : "forms"}
             </p>
             {/* The Refresh button is gone. This list re-reads itself on arrival,
                 whenever the tab regains focus, and every 20 seconds while it is
                 on screen — so the button could only ever repeat work that had
                 just happened, while teaching people not to trust the list
                 without pressing it first. */}
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Filter incomplete forms">
+            {([
+              ["all", "All"],
+              ["valuation", "Valuations"],
+              ["scrap", "Scrap Inquiries"],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setInquiryFilter(value)}
+                className={`min-h-10 rounded-btn border px-3 text-xs font-medium transition-colors ${
+                  inquiryFilter === value ? "border-gold bg-gold/10 text-gold" : "border-border text-text-muted hover:border-gold/60 hover:text-text"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
 
           <div className="mt-5 overflow-x-auto">
@@ -192,12 +217,15 @@ export default function IncompleteValuationsClient({
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
+                {visibleRows.map((row) => (
                   <tr key={row.id} className="border-b border-border last:border-0 hover:bg-surface-2/50">
                     <td className="py-3 pr-4">
                       <Link href={`/admin/incomplete/${row.id}`} className="text-text hover:text-gold">
                         {row.full_name || "Unnamed contact"}
                       </Link>
+                      {partialInquiryType(row) === "scrap" && (
+                        <ScrapInquiryBadge compact className="mt-1" />
+                      )}
                     </td>
                     <td className="py-3 pr-4">
                       <StatusPill status={row.status as LeadStatus} />
@@ -228,6 +256,9 @@ export default function IncompleteValuationsClient({
                 ))}
               </tbody>
             </table>
+            {visibleRows.length === 0 && (
+              <p className="py-8 text-center text-sm text-text-muted">No incomplete forms match this filter.</p>
+            )}
           </div>
         </Card>
       )}

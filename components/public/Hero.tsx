@@ -1,8 +1,8 @@
 "use client";
 
-import { ArrowRight, Sparkles } from "lucide-react";
+import { CarFront, Sparkles } from "lucide-react";
 import { landingImages } from "@/config/homepage";
-import { openValuationModal } from "./open-valuation-modal";
+import { openScrapModal, openValuationModal } from "./open-valuation-modal";
 
 export function Hero() {
   return (
@@ -45,21 +45,40 @@ export function Hero() {
           </p>
 
           <div className="mt-9 [animation-delay:.75s]">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-nowrap sm:items-center">
             <button
               type="button"
               onClick={openValuationModal}
-              className="group relative inline-flex h-14 w-full items-center justify-center overflow-hidden whitespace-nowrap rounded-full btn-gold px-5 text-[0.72rem] font-bold uppercase tracking-[0.06em] shadow-[0_22px_50px_-20px_rgba(244,227,168,.95)] animate-cta-pulse transition-transform duration-200 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 sm:h-16 sm:w-auto sm:px-11 sm:text-[1rem] sm:tracking-[0.12em]"
+              className="group relative inline-flex h-14 w-full items-center justify-center overflow-hidden whitespace-nowrap rounded-full btn-gold px-5 text-[0.72rem] font-extrabold uppercase tracking-[0.07em] text-[#1a1508] shadow-[0_22px_50px_-20px_rgba(244,227,168,.95)] animate-cta-pulse transition-transform duration-200 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 sm:h-16 sm:w-auto sm:px-7 sm:text-[0.84rem] sm:tracking-[0.09em]"
             >
               <span className="relative z-10 flex items-center gap-1.5 sm:gap-2.5">
-                <Sparkles className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" aria-hidden="true" />
-                Click For Free Valuation
-                <ArrowRight className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:translate-x-1 sm:h-5 sm:w-5" aria-hidden="true" />
+                <Sparkles className="h-4 w-4 shrink-0 text-[#1a1508] transition-transform duration-200 group-hover:rotate-12 sm:h-5 sm:w-5" aria-hidden="true" />
+                <span className="font-extrabold text-[#1a1508] [text-shadow:0_1px_1px_rgba(255,255,255,0.4)]">
+                  Click For Free Valuation
+                </span>
               </span>
               <span
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-y-0 left-0 z-0 w-1/2 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent)] animate-shine motion-reduce:hidden"
               />
             </button>
+            <button
+              type="button"
+              onClick={openScrapModal}
+              className="group relative inline-flex h-14 w-full items-center justify-center overflow-hidden whitespace-nowrap rounded-full border border-gold bg-black/40 px-5 text-[0.72rem] font-bold uppercase tracking-[0.07em] text-gold shadow-[0_22px_50px_-20px_rgba(212,175,78,.75)] animate-cta-pulse backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-gold hover:text-black hover:shadow-[0_22px_50px_-15px_rgba(212,175,78,1)] active:translate-y-0 sm:h-16 sm:w-auto sm:px-7 sm:text-[0.84rem] sm:tracking-[0.09em]"
+            >
+              <span className="relative z-10 flex items-center gap-2 sm:gap-2.5">
+                <CarFront className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:scale-110 sm:h-5 sm:w-5" aria-hidden="true" />
+                <span>
+                  I Want to Scrap My Car
+                </span>
+              </span>
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 left-0 z-0 w-1/2 bg-[linear-gradient(90deg,transparent,rgba(212,175,78,.35),transparent)] animate-shine motion-reduce:hidden"
+              />
+            </button>
+            </div>
 
             <p className="mt-4 text-[0.72rem] font-light text-white/50">
               Free request / WhatsApp follow-up / Fair, transparent negotiation

@@ -28,11 +28,18 @@ export const REOPENABLE_STATUSES = new Set(["deal", "closed"]);
  * Returns false when the lookup fails: neither caller should punish a customer
  * for a database hiccup.
  */
-export async function hasOpenLead(supabase: SupabaseClient, phone: string): Promise<boolean> {
+export type InquiryType = "valuation" | "scrap";
+
+export async function hasOpenLead(
+  supabase: SupabaseClient,
+  phone: string,
+  inquiryType: InquiryType = "valuation",
+): Promise<boolean> {
   const { data, error } = await supabase
     .from("leads")
     .select("status")
     .eq("phone_e164", phone)
+    .eq("inquiry_type", inquiryType)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

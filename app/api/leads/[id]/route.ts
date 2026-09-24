@@ -5,6 +5,7 @@ import { requireStaff } from "@/lib/server/require-staff";
 import { hasCapability } from "@/lib/auth/permissions";
 import { pickNextAssignee } from "@/lib/server/lead-assignment";
 import { canRoleSetStatus, canSeeLead } from "@/lib/auth/lead-visibility";
+import { createInspectionScheduleNotifications } from "@/lib/server/inspection-schedule-notifications";
 
 // "deal" = the customer agreed to sell; "closed" = met but no agreement.
 // "valuation_sent" stays accepted so historical rows can still be written back,
@@ -75,14 +76,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const loadCurrent = (fields: string) => supabase.from("leads").select(fields).eq("id", id).single();
 
   let { data: currentRow, error: loadError } = await loadCurrent(
-    "id, status, estimated_value_aed, notes, is_spam, call_center_id, purchaser_id, inspection_scheduled_at, arrival_status",
+    "id, full_name, status, inquiry_type, estimated_value_aed, notes, is_spam, call_center_id, purchaser_id, inspection_scheduled_at, arrival_status",
   );
 
   // Same fallback as GET /api/admin/leads: a live database that has not run
   // migration 0024 yet must still be able to save a lead.
   if (loadError && /inspection_scheduled_at|arrival_status/.test(loadError.message ?? "")) {
     ({ data: currentRow, error: loadError } = await loadCurrent(
-      "id, status, estimated_value_aed, notes, is_spam, call_center_id, purchaser_id",
+      "id, full_name, status, estimated_value_aed, notes, is_spam, call_center_id, purchaser_id",
     ));
   }
 
@@ -92,12 +93,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const current = currentRow as unknown as {
     id: string;
+    full_name: string;
     status: string;
     estimated_value_aed: number | string | null;
     notes: string | null;
     is_spam: boolean | null;
     call_center_id: string | null;
     purchaser_id: string | null;
+    inquiry_type?: "valuation" | "scrap" | null;
     inspection_scheduled_at?: string | null;
     arrival_status?: "not_arrived" | "arrived" | null;
   };
@@ -121,6 +124,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const update: Record<string, unknown> = {};
   const events: LeadEventInsert[] = [];
+  let inspectionReschedule: { previous: string; next: string } | null = null;
   const eventMeta = (meta: Record<string, unknown>) => ({
     ...meta,
     actor_name: auth.identity.displayName,
@@ -136,6 +140,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         { status: 403 },
       );
     }
+  }
+
+  // A Scrap inquiry is permanently classified as Scrap, but the Super Admin
+  // makes the commercial decision to buy it. Purchasers may inspect and add
+  // their recommendation through the normal inspection workflow; only an
+  // owner may turn a Scrap Inquiry into a Deal/Inventory item.
+  if (current.inquiry_type === "scrap" && body.status === "deal" && role !== "admin" && role !== "manager") {
+    return NextResponse.json(
+      { ok: false, error: { message: "Only Super Admin can approve a Scrap Inquiry as a Deal." } },
+      { status: 403 },
+    );
   }
 
   // "Deal" means the car was bought, so it is the one status that carries money
@@ -253,7 +268,26 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       );
     }
 
-    update.inspection_scheduled_at = value;
+    const previous = current.inspection_scheduled_at ?? null;
+    const changed = previous !== value &&
+      (previous === null || value === null || new Date(previous).getTime() !== new Date(value).getTime());
+    if (changed) {
+      update.inspection_scheduled_at = value;
+      if (previous && value) {
+        inspectionReschedule = { previous, next: value };
+        events.push({
+          lead_id: id,
+          type: "inspection_rescheduled",
+          meta: eventMeta({ previous_scheduled_at: previous, scheduled_at: value }),
+        });
+      } else if (value) {
+        events.push({
+          lead_id: id,
+          type: "inspection_scheduled",
+          meta: eventMeta({ scheduled_at: value }),
+        });
+      }
+    }
   }
 
   if ("estimated_value_aed" in body) {
@@ -371,14 +405,36 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   if (events.length > 0) {
-    const { error: eventError } = await supabase
+    const { data: savedEvents, error: eventError } = await supabase
       .from("lead_events")
-      .insert(events.map((event) => ({ ...event, actor: userId })));
+      .insert(events.map((event) => ({ ...event, actor: userId })))
+      .select("id, type");
     if (eventError) {
       // The lead update has already succeeded. Keep that success truthful for
       // the person saving, but make an audit-write failure visible to operators
       // instead of silently dropping the history entry.
       console.error("[PATCH /api/leads/[id]] Activity record failed:", eventError);
+    } else if (inspectionReschedule) {
+      const eventId = (savedEvents ?? []).find((event: { id: string; type: string }) => event.type === "inspection_rescheduled")?.id;
+      const purchaserId = typeof update.purchaser_id === "string" ? update.purchaser_id : current.purchaser_id;
+      if (eventId) {
+        try {
+          await createInspectionScheduleNotifications({
+            eventId,
+            leadId: id,
+            leadName: current.full_name,
+            purchaserId,
+            previousScheduledAt: inspectionReschedule.previous,
+            scheduledAt: inspectionReschedule.next,
+            changedByName: auth.identity.displayName,
+          });
+        } catch (notificationError) {
+          // The date change and its audit event already succeeded. A missing
+          // notification migration must not make the appointment impossible to
+          // save, but the server log keeps the deployment gap observable.
+          console.error("[PATCH /api/leads/[id]] Inspection notification failed:", notificationError);
+        }
+      }
     }
   }
 

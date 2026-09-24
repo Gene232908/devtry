@@ -4,7 +4,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Camera, Check, ChevronLeft, ChevronRight, Download, Eye, FolderOpen, Save, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -23,9 +23,11 @@ import {
 } from "@/lib/inspection/report-schema";
 import { inspectionReportFilename } from "@/lib/inspection/report-filename";
 import { InspectionActivityDrawer } from "@/components/admin/InspectionActivityDrawer";
+import { useLeads } from "@/lib/admin/leads-store";
 
 type Photo = { angle: string; url: string | null; note: string };
 type Loaded = { lead: { full_name: string; make: string; model: string; trim: string | null; year: number; mileage_km: number | null; specification: string | null; arrival_status?: "not_arrived" | "arrived" }; report: { data: InspectionReportData; status: "draft" | "completed" }; photos: Photo[] };
+type UploadPhotoResponse = { ok?: boolean; data?: { note: string; url: string }; error?: { message?: string } };
 type Choice = "yes" | "no" | "unknown";
 
 const BASIC_FIELDS: Array<[keyof InspectionReportData, string, "text" | "number"]> = [
@@ -42,6 +44,8 @@ const BASIC_FIELDS: Array<[keyof InspectionReportData, string, "text" | "number"
 function choiceOptions() { return ["yes", "no", "unknown"] as const; }
 
 export function InspectionWorkspace({ leadId }: { leadId: string }) {
+  const router = useRouter();
+  const { refresh: refreshLeads } = useLeads();
   const { makes, specifications } = useVehicleCatalog();
   const [data, setData] = useState<InspectionReportData>(EMPTY_INSPECTION_REPORT);
   const [arrivalStatus, setArrivalStatus] = useState<"not_arrived" | "arrived" | undefined>(undefined);
@@ -49,6 +53,8 @@ export function InspectionWorkspace({ leadId }: { leadId: string }) {
   const [ready, setReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadStage, setUploadStage] = useState<"uploading" | "saving" | null>(null);
   const [completed, setCompleted] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
@@ -204,21 +210,52 @@ export function InspectionWorkspace({ leadId }: { leadId: string }) {
     setUploading(angle); setError(null);
     try {
       if (!photoNote.trim()) throw new Error("Add a note describing this photo before uploading it.");
+      if (!/^(image\/jpeg|image\/png)$/.test(file.type)) throw new Error("Use a JPG or PNG photo.");
+      if (file.size > 8 * 1024 * 1024) throw new Error("Use a photo up to 8 MB.");
       const form = new FormData(); form.set("angle", angle); form.set("note", photoNote.trim()); form.set("file", file);
-      const response = await fetch(`/api/admin/leads/${encodeURIComponent(leadId)}/inspection/photos`, { method: "POST", body: form });
-      const body = await response.json().catch(() => null);
-      if (!response.ok || !body?.ok) throw new Error(body?.error?.message ?? "Couldn't upload the photo.");
+      setUploadProgress(0);
+      setUploadStage("uploading");
+      const body = await new Promise<{ ok: true; data: { note: string; url: string } }>((resolve, reject) => {
+        const request = new XMLHttpRequest();
+        request.open("POST", `/api/admin/leads/${encodeURIComponent(leadId)}/inspection/photos`);
+        request.withCredentials = true;
+        request.upload.addEventListener("progress", (progressEvent) => {
+          if (!progressEvent.lengthComputable) return;
+          // Keep a small final portion for the server-side storage and RPC save.
+          setUploadProgress(Math.min(95, Math.round((progressEvent.loaded / progressEvent.total) * 95)));
+        });
+        request.addEventListener("load", () => {
+          let parsed: UploadPhotoResponse | null = null;
+          try { parsed = JSON.parse(request.responseText) as UploadPhotoResponse; } catch { parsed = null; }
+          if (request.status >= 200 && request.status < 300 && parsed?.ok && parsed.data) {
+            setUploadStage("saving");
+            setUploadProgress(100);
+            resolve({ ok: true, data: parsed.data });
+          } else {
+            reject(new Error(parsed?.error?.message ?? `Couldn't upload the photo (${request.status || "network"}).`));
+          }
+        });
+        request.addEventListener("error", () => reject(new Error("The photo upload was interrupted. Check the connection and try again.")));
+        request.addEventListener("abort", () => reject(new Error("The photo upload was cancelled.")));
+        request.send(form);
+      });
       setPhotos((current) => [...current.filter((photo) => photo.angle !== angle), { angle, note: body.data.note, url: body.data.url }]);
       setActivityRefreshKey((current) => current + 1);
       return true;
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Couldn't upload the photo."); return false; }
-    finally { setUploading(null); }
+    finally { setUploading(null); setUploadProgress(null); setUploadStage(null); }
   }
 
   async function uploadChosenPhoto(event: ChangeEvent<HTMLInputElement>) {
     const target = photoTarget;
     if (!target) return;
     if (await upload(target.angle, event)) { setPhotoTarget(null); setPhotoNote(""); }
+  }
+
+  async function returnToLead() {
+    await refreshLeads();
+    router.push(`/admin/leads/${encodeURIComponent(leadId)}`);
+    router.refresh();
   }
 
   async function downloadPdf() {
@@ -278,7 +315,7 @@ export function InspectionWorkspace({ leadId }: { leadId: string }) {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
-      <Link href={`/admin/leads/${leadId}`} className="inline-flex items-center gap-2 self-start text-sm text-text-muted hover:text-gold"><ArrowLeft className="h-4 w-4" /> Back to customer record</Link>
+      <button type="button" onClick={() => void returnToLead()} className="inline-flex items-center gap-2 self-start text-sm text-text-muted hover:text-gold"><ArrowLeft className="h-4 w-4" /> Back to customer record</button>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-3">
@@ -336,8 +373,8 @@ export function InspectionWorkspace({ leadId }: { leadId: string }) {
         <input ref={uploadInputRef} className="sr-only" type="file" accept="image/jpeg,image/png" disabled={!photoTarget || !photoNote.trim()} onChange={(event) => void uploadChosenPhoto(event)} />
       </Card>
       <div className="flex flex-wrap justify-end gap-3 pb-8"><Button variant="outline" onClick={() => void save(false)} disabled={saving} loading={saving}><Save className="h-4 w-4" /> {completed ? "Save changes" : "Save draft"}</Button>{completed ? <Button variant="outline" disabled={downloading} loading={downloading} onClick={() => void downloadPdf()}><Download className="h-4 w-4" />{downloading ? "Preparing PDF" : "Download PDF"}</Button> : <><Button variant="outline" disabled title="Save the inspection first to enable the PDF download"><Download className="h-4 w-4" /> Download PDF</Button><Button onClick={() => void save(true)} disabled={saving} loading={saving}><Check className="h-4 w-4" /> Save inspection</Button></>}</div>
-      <Dialog open={photoTarget !== null} onClose={() => setPhotoTarget(null)} title={photoTarget ? `Add photo: ${photoTarget.title}` : "Add photo"}>
-        {photoTarget && <div className="space-y-4"><p className="rounded-card border border-gold/30 bg-gold/5 p-3 text-sm leading-6 text-text-muted"><span className="font-medium text-text">How to take it:</span> {photoTarget.guide}</p><label className="block text-xs font-medium uppercase tracking-wide text-text-muted">Required photo note<textarea value={photoNote} onChange={(event) => setPhotoNote(event.target.value)} maxLength={600} rows={3} placeholder="Example: Front bumper has a small scratch on the lower-left side." className="mt-2 w-full resize-y rounded-card border border-border bg-bg p-3 text-sm normal-case tracking-normal text-text outline-none focus:border-gold" /></label><p className="text-xs text-text-muted">Use a clear JPG or PNG image up to 8 MB. Camera/upload becomes available after adding a note.</p><div className="grid gap-3 sm:grid-cols-2"><Button disabled={!photoNote.trim()} onClick={() => cameraInputRef.current?.click()}><Camera className="h-4 w-4" /> Use phone camera</Button><Button variant="outline" disabled={!photoNote.trim()} onClick={() => uploadInputRef.current?.click()}><Upload className="h-4 w-4" /> Upload file</Button></div></div>}
+      <Dialog open={photoTarget !== null} onClose={() => { if (!uploading) setPhotoTarget(null); }} title={photoTarget ? `Add photo: ${photoTarget.title}` : "Add photo"}>
+        {photoTarget && <div className="space-y-4"><p className="rounded-card border border-gold/30 bg-gold/5 p-3 text-sm leading-6 text-text-muted"><span className="font-medium text-text">How to take it:</span> {photoTarget.guide}</p><label className="block text-xs font-medium uppercase tracking-wide text-text-muted">Required photo note<textarea value={photoNote} onChange={(event) => setPhotoNote(event.target.value)} maxLength={600} rows={3} disabled={Boolean(uploading)} placeholder="Example: Front bumper has a small scratch on the lower-left side." className="mt-2 w-full resize-y rounded-card border border-border bg-bg p-3 text-sm normal-case tracking-normal text-text outline-none focus:border-gold disabled:opacity-60" /></label><p className="text-xs text-text-muted">Use a clear JPG or PNG image up to 8 MB. Camera/upload becomes available after adding a note.</p>{uploading && <div className="rounded-card border border-gold/35 bg-gold/5 p-3" role="status" aria-live="polite"><div className="flex items-center justify-between gap-3 text-xs"><span className="text-text">{uploadStage === "saving" ? "Saving photo securely..." : "Uploading photo..."}</span><span className="tabular-nums text-gold">{uploadProgress ?? 0}%</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-bg" aria-hidden="true"><div className="h-full rounded-full bg-gold transition-[width] duration-200" style={{ width: `${uploadProgress ?? 0}%` }} /></div><p className="mt-2 text-xs text-text-muted">Please keep this window open until the photo is saved.</p></div>}<div className="grid gap-3 sm:grid-cols-2"><Button disabled={!photoNote.trim() || Boolean(uploading)} onClick={() => cameraInputRef.current?.click()}><Camera className="h-4 w-4" /> Use phone camera</Button><Button variant="outline" disabled={!photoNote.trim() || Boolean(uploading)} onClick={() => uploadInputRef.current?.click()}><Upload className="h-4 w-4" /> Upload file</Button></div></div>}
       </Dialog>
       <Dialog open={galleryOpen} onClose={() => setGalleryOpen(false)} title="Photo folder" className="max-w-5xl">
         <p className="mb-4 text-sm text-text-muted">All saved inspection photos are together here. Select a photo to open the full-size image.</p>

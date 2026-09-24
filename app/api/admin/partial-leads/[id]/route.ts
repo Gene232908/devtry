@@ -91,6 +91,21 @@ async function convertPartialToLead(
     return fail("This form has already been converted into a lead.", 409);
   }
 
+  const inquiryType = partial.inquiry_type === "scrap" ? "scrap" : "valuation";
+  const scrapCondition = inquiryType === "scrap" ? (str(body.scrap_condition) ?? str(partial.scrap_condition)) : null;
+  const rawScrapAskingPrice = inquiryType === "scrap"
+    ? (body.scrap_asking_price_aed ?? partial.scrap_asking_price_aed)
+    : null;
+  const scrapAskingPrice = rawScrapAskingPrice === null || rawScrapAskingPrice === undefined || rawScrapAskingPrice === ""
+    ? null
+    : Number(rawScrapAskingPrice);
+  if (
+    inquiryType === "scrap" &&
+    (!scrapCondition || scrapCondition.length > 400 || !Number.isFinite(scrapAskingPrice) || (scrapAskingPrice ?? 0) < 0)
+  ) {
+    return fail("Confirm the Scrap vehicle condition and asking price before scheduling.", 400);
+  }
+
   const fullName = str(body.full_name) ?? str(partial.full_name);
   const make = str(body.make) ?? str(partial.make);
   const model = str(body.model) ?? str(partial.model);
@@ -164,6 +179,9 @@ async function convertPartialToLead(
       notes,
       phone_verified: body.phone_verified === true,
       source: "recovered",
+      inquiry_type: inquiryType,
+      scrap_condition: scrapCondition,
+      scrap_asking_price_aed: scrapAskingPrice,
       marketing_consent: partial.consent === true,
       call_center_id: callCenterId,
       purchaser_id: purchaserId,
@@ -173,7 +191,10 @@ async function convertPartialToLead(
     .select("id")
     .single();
 
-  if (insertError) return fail(insertError.message, 500);
+  if (insertError) {
+    const migrationMissing = /inquiry_type|scrap_condition|scrap_asking_price_aed/i.test(insertError.message ?? "");
+    return fail(migrationMissing ? "Scrap setup is incomplete. Apply the latest database migration first." : insertError.message, 500);
+  }
 
   const { data: linkedPartial, error: linkError } = await supabase
     .from("partial_leads")
@@ -210,7 +231,7 @@ async function convertPartialToLead(
       {
         lead_id: lead.id,
         type: "lead_created",
-        meta: { source: "recovered", from_partial_lead: partialId },
+        meta: { source: "recovered", inquiry_type: inquiryType, from_partial_lead: partialId },
       },
       { lead_id: lead.id, type: "status_change", meta: { from: "new", to: target } },
     ];

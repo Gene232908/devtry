@@ -4,6 +4,7 @@ import { Select } from "@/components/ui/Select";
 import { YEARS, MILEAGE_BRACKETS } from "@/config/vehicles";
 import { type CatalogMake, type CatalogSpecification, modelsFor } from "@/lib/use-vehicle-catalog";
 import { ValuationFormValues, FormErrors } from "./form.types";
+import type { ValuationModalMode } from "../open-valuation-modal";
 
 type Props = {
   values: ValuationFormValues;
@@ -12,9 +13,10 @@ type Props = {
   makes: CatalogMake[];
   specifications: CatalogSpecification[];
   setField: <K extends keyof ValuationFormValues>(key: K, value: ValuationFormValues[K]) => void;
+  mode?: ValuationModalMode;
 };
 
-export function StepCarDetails({ values, errors, makes, specifications, setField }: Props) {
+export function StepCarDetails({ values, errors, makes, specifications, setField, mode = "valuation" }: Props) {
   const modelOptions = modelsFor(makes, values.make).map((model) => ({
     label: model.name,
     value: model.name,
@@ -88,6 +90,22 @@ export function StepCarDetails({ values, errors, makes, specifications, setField
           </span>
         )}
       </div>
+      {mode === "scrap" && (
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="scrap-condition" className="text-fluid--1 font-medium uppercase tracking-[0.14em] text-text-faint">
+            Vehicle condition
+          </label>
+          <textarea
+            id="scrap-condition"
+            rows={3}
+            placeholder="For example: accident damage, not running, missing parts, or general condition."
+            value={values.scrapCondition}
+            onChange={(event) => setField("scrapCondition", event.target.value)}
+            className="w-full resize-none rounded-card border border-border-gold/45 bg-bg/45 px-4 py-3 text-fluid-0 text-text placeholder:text-text-faint outline-none transition-all duration-150 focus:border-gold focus:bg-surface-2/80 focus:shadow-[0_0_0_3px_rgba(212,175,55,.16)]"
+          />
+          {errors.scrapCondition && <span className="text-fluid--1 text-danger" role="alert">{errors.scrapCondition}</span>}
+        </div>
+      )}
     </div>
   );
 }

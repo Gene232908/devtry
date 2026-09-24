@@ -79,6 +79,7 @@ export function LeadsTable() {
   const searchParams = useSearchParams();
   const attention = searchParams.get("attention");
   const status = searchParams.get("status");
+  const origin = searchParams.get("origin");
   const from = searchParams.get("from");
   const to = searchParams.get("to");
   const activeAttention = attention ? ATTENTION_CONFIG[attention] : null;
@@ -86,7 +87,11 @@ export function LeadsTable() {
 
   const { leads, isLive, isLoading, isRefreshing, refresh } = useLeads();
   const identity = useStaffIdentity();
-  const filter = useLeadsFilter(leads, identity?.role, attention, status, from, to);
+  const isScrapView = origin === "scrap";
+  const scopedLeads = isScrapView
+    ? leads.filter((lead) => lead.inquiryType === "scrap")
+    : leads.filter((lead) => lead.inquiryType !== "scrap");
+  const filter = useLeadsFilter(scopedLeads, identity?.role, attention, status, from, to);
 
   if (isLoading) {
     return (
@@ -98,6 +103,12 @@ export function LeadsTable() {
 
   return (
     <Card className="p-5">
+      {isScrapView && (
+        <div className="mb-5 rounded-xl border border-gold/30 bg-gold/5 p-4">
+          <h2 className="text-base font-semibold text-text">Scrap Inquiries</h2>
+          <p className="mt-1 text-sm text-text-muted">Scrap stays permanently classified as Scrap. Use the normal follow-up, optional inspection, Deal, and Closed workflow.</p>
+        </div>
+      )}
       {/* Active Attention Focus Banner - Displays ONLY when redirected from dashboard alerts */}
       {activeAttention && (
         <div

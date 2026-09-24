@@ -4,10 +4,8 @@ import Link from "next/link";
 import { BadgeDollarSign, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { formatAed, formatDate } from "@/lib/format";
+import { ScrapInquiryBadge } from "@/components/admin/ScrapInquiryBadge";
 import {
-  AGENT_COMMISSION_RATE,
-  PURCHASER_COMMISSION_RATE,
-  round2,
   INVENTORY_STATUS_LABEL,
   type InventoryItem,
   type InventoryStatus,
@@ -34,11 +32,15 @@ export function StatusChip({ status }: { status: InventoryStatus }) {
 type Props = {
   items: InventoryItem[];
   roleFilter: InventoryRole[];
-  isOwner: boolean;
+  viewerRole: "owner" | "purchaser";
   onSell: (item: InventoryItem) => void;
 };
 
-export function InventoryTable({ items, roleFilter, isOwner, onSell }: Props) {
+export function InventoryTable({ items, roleFilter, viewerRole, onSell }: Props) {
+  const isOwner = viewerRole === "owner";
+  const showCallCenter = isOwner && roleFilter.includes("call_center");
+  const showPurchaser = viewerRole === "purchaser" || (isOwner && roleFilter.includes("purchaser"));
+  const showDeveloper = isOwner && roleFilter.includes("developer");
   return (
     <div className="mt-5 overflow-x-auto">
       <table className="w-full min-w-[980px] text-left text-fluid--1">
@@ -50,13 +52,13 @@ export function InventoryTable({ items, roleFilter, isOwner, onSell }: Props) {
             <th className="py-2 pr-4 text-right font-normal">Paid</th>
             <th className="py-2 pr-4 text-right font-normal">Sold for</th>
             <th className="py-2 pr-4 text-right font-normal">Profit</th>
-            {(!isOwner || roleFilter.includes("call_center")) && (
+            {showCallCenter && (
               <th className="py-2 pr-4 text-right font-normal">Call Centre 2%</th>
             )}
-            {(!isOwner || roleFilter.includes("purchaser")) && (
+            {showPurchaser && (
               <th className="py-2 pr-4 text-right font-normal">Purchaser 10%</th>
             )}
-            {(!isOwner || roleFilter.includes("developer")) && (
+            {showDeveloper && (
               <th className="py-2 pr-4 text-right font-normal">Developer 2%</th>
             )}
             <th className="py-2 pr-4 font-normal">Status</th>
@@ -71,6 +73,9 @@ export function InventoryTable({ items, roleFilter, isOwner, onSell }: Props) {
                   {item.year} {item.make} {item.model}
                 </Link>
                 {item.trim && <span className="block text-text-faint">{item.trim}</span>}
+                {item.inquiryType === "scrap" && (
+                  <ScrapInquiryBadge compact className="mt-1" />
+                )}
                 {item.fromUnverifiedLead && (
                   <span className="mt-0.5 inline-flex items-center gap-1 text-fluid--1 text-warning">
                     <ShieldAlert className="h-3.5 w-3.5" /> Unverified number
@@ -94,17 +99,17 @@ export function InventoryTable({ items, roleFilter, isOwner, onSell }: Props) {
               >
                 {item.commission ? formatAed(item.commission.profitAed) : "—"}
               </td>
-              {(!isOwner || roleFilter.includes("call_center")) && (
+              {showCallCenter && (
                 <td className="py-3 pr-4 text-right tabular-nums text-gold whitespace-nowrap">
-                  {item.commission ? formatAed(round2(Math.max(item.commission.profitAed, 0) * AGENT_COMMISSION_RATE)) : "—"}
+                  {item.callCenterCommissionAed === null ? "—" : formatAed(item.callCenterCommissionAed)}
                 </td>
               )}
-              {(!isOwner || roleFilter.includes("purchaser")) && (
+              {showPurchaser && (
                 <td className="py-3 pr-4 text-right tabular-nums text-gold whitespace-nowrap">
-                  {item.commission ? formatAed(round2(Math.max(item.commission.profitAed, 0) * PURCHASER_COMMISSION_RATE)) : "—"}
+                  {item.purchaserCommissionAed === null ? "—" : formatAed(item.purchaserCommissionAed)}
                 </td>
               )}
-              {(!isOwner || roleFilter.includes("developer")) && (
+              {showDeveloper && (
                 <td className="py-3 pr-4 text-right tabular-nums text-gold whitespace-nowrap">
                   {item.commission ? formatAed(item.commission.commissionAed) : "—"}
                 </td>

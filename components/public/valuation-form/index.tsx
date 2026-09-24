@@ -12,6 +12,7 @@ import { StepContact } from "./step-contact";
 import { OtpModal } from "./otp-modal";
 import { ThankYouModal } from "./thank-you-modal";
 import { ValuationFormValues } from "./form.types";
+import type { ValuationModalMode } from "../open-valuation-modal";
 
 const STEPS: Array<{
   n: 1 | 2 | 3;
@@ -23,8 +24,8 @@ const STEPS: Array<{
   { n: 3, label: "Trim & Location", fields: ["trim", "optionLevel", "location"] },
 ];
 
-export function ValuationForm({ registerCapture }: { registerCapture?: (capture: () => void) => void } = {}) {
-  const form = useValuationForm();
+export function ValuationForm({ registerCapture, mode = "valuation" }: { registerCapture?: (capture: () => void) => void; mode?: ValuationModalMode } = {}) {
+  const form = useValuationForm(mode);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   // Make / model / trim options come from the admin's Catalog page, so what the
   // client adds there is what a customer actually sees here.
@@ -66,6 +67,14 @@ export function ValuationForm({ registerCapture }: { registerCapture?: (capture:
     const timer = window.setTimeout(() => capturePartial("input", step), 700);
     return () => window.clearTimeout(timer);
   }, [fullName, whatsapp, capturePartial, step]);
+
+  const scrapCondition = form.values.scrapCondition;
+  const scrapAskingPriceAed = form.values.scrapAskingPriceAed;
+  useEffect(() => {
+    if (mode !== "scrap" || !fullName.trim() || !whatsapp.trim()) return;
+    const timer = window.setTimeout(() => capturePartial("input", step), 700);
+    return () => window.clearTimeout(timer);
+  }, [mode, fullName, whatsapp, scrapCondition, scrapAskingPriceAed, capturePartial, step]);
 
   function goNext() {
     // Captured before validation so a visitor who filled in their name and
@@ -133,10 +142,11 @@ export function ValuationForm({ registerCapture }: { registerCapture?: (capture:
               makes={makes}
               specifications={specifications}
               setField={form.setField}
+              mode={mode}
             />
           )}
           {step === 3 && (
-            <StepTrimLocation values={form.values} errors={form.errors} makes={makes} setField={form.setField} />
+            <StepTrimLocation values={form.values} errors={form.errors} makes={makes} setField={form.setField} mode={mode} />
           )}
         </div>
 
@@ -161,7 +171,7 @@ export function ValuationForm({ registerCapture }: { registerCapture?: (capture:
             </Button>
           ) : (
             <Button type="submit" className="flex-1 uppercase" loading={isBusy} disabled={isLocked}>
-              {isBusy ? "Submitting" : "Get Your Free Valuation"}
+              {isBusy ? "Submitting" : mode === "scrap" ? "Send Scrap Inquiry" : "Get Your Free Valuation"}
             </Button>
           )}
         </div>

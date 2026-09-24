@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BadgeDollarSign, ChevronRight, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { formatAed, formatDate } from "@/lib/format";
+import { ScrapInquiryBadge } from "@/components/admin/ScrapInquiryBadge";
 import {
   INVENTORY_STATUS_LABEL,
   type InventoryItem,
@@ -71,6 +72,9 @@ export function MobileInventoryList({
                       {item.trim}
                     </span>
                   )}
+                {item.inquiryType === "scrap" && (
+                    <ScrapInquiryBadge compact className="mt-1" />
+                )}
                 </Link>
 
                 <div className="flex items-center gap-2 shrink-0">

@@ -15,6 +15,8 @@ export type ValuationFormValues = {
   email: string;
   consent: boolean;
   honeypot: string;
+  scrapCondition: string;
+  scrapAskingPriceAed: string;
 };
 
 export type FormErrors = Partial<Record<keyof ValuationFormValues, string>>;
@@ -74,4 +76,6 @@ export const emptyValues: ValuationFormValues = {
   email: "",
   consent: false,
   honeypot: "",
+  scrapCondition: "",
+  scrapAskingPriceAed: "",
 };

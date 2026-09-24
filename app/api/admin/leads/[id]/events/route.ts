@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
-import { STATUS_LABEL } from "@/lib/format";
+import { formatScheduledInspection, STATUS_LABEL } from "@/lib/format";
 import { ROLE_LABELS, type StaffRole } from "@/lib/auth/permissions";
 import { canSeeLead } from "@/lib/auth/lead-visibility";
 import { requireStaff } from "@/lib/server/require-staff";
@@ -66,6 +66,15 @@ function messageFor(event: DbLeadEvent, actor?: ActorSnapshot): string {
     case "marked_spam": return meta.is_spam === false ? `Unmarked as spam${actionBy(meta, actor)}.` : `Marked as spam${actionBy(meta, actor)}.`;
     case "assigned": return `Lead assignment updated${actionBy(meta, actor)}.`;
     case "arrival_confirmed": return `Customer arrival confirmed${actionBy(meta, actor)}.`;
+    case "inspection_scheduled": {
+      const scheduledAt = typeof meta.scheduled_at === "string" ? formatScheduledInspection(meta.scheduled_at) : "the selected date and time";
+      return `Inspection scheduled${actionBy(meta, actor)} for ${scheduledAt}.`;
+    }
+    case "inspection_rescheduled": {
+      const previous = typeof meta.previous_scheduled_at === "string" ? formatScheduledInspection(meta.previous_scheduled_at) : "the previous appointment";
+      const next = typeof meta.scheduled_at === "string" ? formatScheduledInspection(meta.scheduled_at) : "the new appointment";
+      return `Inspection rescheduled${actionBy(meta, actor)}: ${previous} → ${next}.`;
+    }
     case "inspection_completed": return `Inspection report completed${actionBy(meta, actor)}.`;
     case "inspection_card_updated": {
       const card = typeof meta.card === "string" ? meta.card : "Inspection section";

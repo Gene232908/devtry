@@ -13,6 +13,7 @@ import { useUnsavedGuard } from "@/lib/admin/use-unsaved-guard";
 import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 import {
   formatPartialDate,
+  partialInquiryType,
   partialCarSummary,
   PARTIAL_STATUSES,
   type PartialLead,
@@ -59,6 +60,7 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
   const router = useRouter();
   const { staffOptions, loading: staffLoading } = useStaffOptions();
   const { makes, specifications } = useVehicleCatalog();
+  const isScrap = partialInquiryType(partial) === "scrap";
 
   const initialStatus = partial.status;
   const [draft, setDraft] = useState<Draft>({ status: initialStatus, notes: partial.notes ?? "" });
@@ -82,6 +84,8 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
     emirate: "",
     inspectionScheduledAt: nextDayDateTimeInput(),
     markVerified: false,
+    scrapCondition: partial.scrap_condition ?? "",
+    scrapAskingPriceAed: partial.scrap_asking_price_aed != null ? String(partial.scrap_asking_price_aed) : "",
   });
 
   const [saving, setSaving] = useState(false);
@@ -158,6 +162,11 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
         next.specification = "Select a specification from Vehicle Catalog.";
       }
       if (!Object.prototype.hasOwnProperty.call(AREAS_BY_EMIRATE, deal.emirate)) next.emirate = "Select an inspection emirate.";
+      if (isScrap) {
+        const askingPrice = Number(deal.scrapAskingPriceAed);
+        if (!deal.scrapCondition.trim()) next.scrapCondition = "Confirm the vehicle condition.";
+        if (!deal.scrapAskingPriceAed.trim() || !Number.isFinite(askingPrice) || askingPrice < 0) next.scrapAskingPriceAed = "Enter a valid asking price.";
+      }
 
       if (isInspectionScheduled) {
         const scheduledAt = new Date(deal.inspectionScheduledAt);
@@ -210,6 +219,8 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
                 specification: deal.specification,
                 emirate: deal.emirate,
                 phone_verified: deal.markVerified,
+                scrap_condition: isScrap ? deal.scrapCondition : undefined,
+                scrap_asking_price_aed: isScrap ? Number(deal.scrapAskingPriceAed) : undefined,
                 ...(isDeal
                   ? {
                       purchase_price_aed: Number(deal.purchasePrice),
@@ -302,7 +313,7 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
             {displayName}
           </h1>
           <p className="mt-1 text-sm text-text-muted">
-            Captured {formatPartialDate(partial.created_at)} · Incomplete Valuation
+            Captured {formatPartialDate(partial.created_at)} · {isScrap ? "Incomplete Scrap Inquiry" : "Incomplete Valuation"}
           </p>
         </div>
         <div>
@@ -388,6 +399,7 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
                 specificationOptions={specificationOptions}
                 emirateOptions={emirateOptions}
                 setDeal={setDeal}
+                isScrap={isScrap}
               />
             )}
 

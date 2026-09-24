@@ -26,6 +26,7 @@ import { pickNextAssignee } from "@/lib/server/lead-assignment";
 // number, so repeats cost one cheap statement and can never create duplicates.
 const MAX_CAPTURES_PER_IP = 30;
 const CAPTURE_WINDOW_MS = 10 * 60 * 1000;
+const CAPTURE_TRIGGERS = new Set(["close", "consent", "next", "input"]);
 
 /** Always 200 — the client treats this endpoint as fire-and-forget. */
 function ok(captured: boolean) {
@@ -83,21 +84,31 @@ export async function POST(req: NextRequest) {
   // conversations, so the same person starting a second valuation is a genuinely
   // new enquiry and must still be recorded if they abandon it — the same rule
   // the OTP gate applies, from the same shared helper.
-  if (await hasOpenLead(getSupabaseAdmin(), phone)) return ok(false);
-
   const step = int(body.furthestStep) ?? 1;
+  if (typeof body.trigger !== "string" || !CAPTURE_TRIGGERS.has(body.trigger)) return ok(false);
+  if (body.inquiryType !== undefined && body.inquiryType !== "valuation" && body.inquiryType !== "scrap") return ok(false);
+  const inquiryType = body.inquiryType === "scrap" ? "scrap" : "valuation";
+  if (await hasOpenLead(getSupabaseAdmin(), phone, inquiryType)) return ok(false);
+  const scrapCondition = str(body.scrapCondition);
+  const scrapAskingPrice = body.scrapAskingPriceAed === undefined || body.scrapAskingPriceAed === ""
+    ? null
+    : Number(body.scrapAskingPriceAed);
+  if (
+    (scrapCondition !== null && scrapCondition.length > 400) ||
+    (scrapAskingPrice !== null && (!Number.isFinite(scrapAskingPrice) || scrapAskingPrice < 0))
+  ) return ok(false);
   // An incomplete form is a CSR recovery task first. It is intentionally not
   // handed to Purchasers until a CSR has confirmed the person and booked an
   // inspection, at which point it becomes a real lead.
   const callCenterId = await pickNextAssignee("call_center", "partial_leads");
 
   try {
-    const { error } = await getSupabaseAdmin().rpc("capture_partial_lead", {
+    const basePayload = {
       p_phone: phone,
       p_full_name: str(body.fullName),
       p_furthest_step: Math.min(Math.max(step, 1), 3),
       p_consent: body.consent === true,
-      p_trigger: str(body.trigger),
+      p_trigger: body.trigger,
       p_ip_hash: hashIp(ip),
       p_make: str(body.make),
       p_model: str(body.model),
@@ -106,8 +117,22 @@ export async function POST(req: NextRequest) {
       p_specification: str(body.specification),
       p_description: str(body.description),
       p_call_center_id: callCenterId,
+    };
+    const { error } = await getSupabaseAdmin().rpc("capture_partial_lead", {
+      ...basePayload,
+      p_inquiry_type: inquiryType,
+      p_scrap_condition: inquiryType === "scrap" ? scrapCondition : null,
+      p_scrap_asking_price_aed: inquiryType === "scrap" ? scrapAskingPrice : null,
     });
-    if (error) return ok(false);
+    if (error) {
+      // Preserve existing valuation recovery during the short window between a
+      // code deployment and migration 0035. Scrap deliberately has no fallback:
+      // saving it as a valuation would violate its permanent classification.
+      const missingNewSignature = /p_inquiry_type|p_scrap_condition|p_scrap_asking_price_aed|capture_partial_lead/i.test(error.message ?? "");
+      if (inquiryType !== "valuation" || !missingNewSignature) return ok(false);
+      const { error: legacyError } = await getSupabaseAdmin().rpc("capture_partial_lead", basePayload);
+      if (legacyError) return ok(false);
+    }
   } catch {
     // Swallowed on purpose: an abandoned-form capture must never turn into a
     // visible failure for someone who is simply closing the modal.

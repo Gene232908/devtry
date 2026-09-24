@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Input } from "@/components/ui/Input";
 import { formatAed } from "@/lib/format";
-import { COMMISSION_RATE, previewCommission, type InventoryItem } from "@/lib/admin/inventory";
+import { previewCommission, type InventoryItem } from "@/lib/admin/inventory";
 
 /** `yyyy-mm-dd` in local time, for a native date input. */
 function todayInputValue(): string {
@@ -16,8 +16,8 @@ function todayInputValue(): string {
 /**
  * Records a completed sale.
  *
- * The profit and the developer's share are shown live as the price is typed,
- * before anything is saved. Once confirmed these figures are frozen and cannot
+ * The profit is shown live as the price is typed before anything is saved.
+ * Once confirmed these figures are frozen and cannot
  * be edited, so the owner should never meet them for the first time afterwards.
  */
 export function SellCarDialog({
@@ -93,15 +93,9 @@ export function SellCarDialog({
                 tone={atALoss ? "text-danger" : "text-text"}
               />
             </div>
-            <Row
-              label={`Developer share (${(COMMISSION_RATE * 100).toFixed(0)}%)`}
-              value={formatAed(preview.commissionAed)}
-              tone="text-gold"
-            />
             {atALoss && (
               <p className="text-text-faint">
-                Sold below what it cost, so no developer share is due on this car. The loss is not taken off any
-                other sale.
+                Sold below what it cost. The loss is not taken off any other sale.
               </p>
             )}
           </div>

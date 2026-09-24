@@ -7,7 +7,7 @@ import { buttonClasses } from "@/components/ui/Button";
 import { Section } from "./Section";
 import { SectionHeader } from "./SectionHeader";
 import { Reveal } from "./Reveal";
-import { openValuationModal } from "./open-valuation-modal";
+import { openScrapModal } from "./open-valuation-modal";
 
 export function ScrapCars() {
   return (
@@ -70,10 +70,10 @@ export function ScrapCars() {
       <Reveal delay={150} className="mt-8 flex justify-center">
         <button
           type="button"
-          onClick={openValuationModal}
+          onClick={openScrapModal}
           className={buttonClasses({ size: "lg" })}
         >
-          Get Your Cash Offer
+          I Want to Scrap My Car
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </button>
       </Reveal>

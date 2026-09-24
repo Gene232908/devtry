@@ -31,10 +31,18 @@ export async function POST(req: NextRequest) {
   }
 
   const proofToken = typeof body.proof === "string" ? body.proof : "";
+  const inquiryType = body.inquiryType === "scrap" ? "scrap" : "valuation";
+  const scrapCondition = typeof body.scrapCondition === "string" ? body.scrapCondition.trim().slice(0, 400) : "";
+  const scrapAskingPrice = body.scrapAskingPriceAed === undefined || body.scrapAskingPriceAed === ""
+    ? null
+    : Number(body.scrapAskingPriceAed);
   const phone = typeof body.whatsapp === "string" ? normalizeWhatsappPhone(body.whatsapp) : null;
 
   if (!phone) {
     return err("validation", "Enter a valid mobile number.", 400);
+  }
+  if (inquiryType === "scrap" && (!scrapCondition || !Number.isFinite(scrapAskingPrice) || (scrapAskingPrice ?? 0) < 0)) {
+    return err("validation", "Add the vehicle condition and asking price for this scrap inquiry.", 400);
   }
 
   // The proof must be signed, unexpired, and bound to this exact phone.
@@ -45,17 +53,33 @@ export async function POST(req: NextRequest) {
 
   const supabase = getSupabaseAdmin();
 
-  const { data: verification, error: verificationError } = await supabase
+  let { data: verification, error: verificationError } = await supabase
     .from("whatsapp_otp_verifications")
-    .select("id, phone_number, verification_session_id, verified_at, used_at, valuation_submission_id")
+    .select("id, phone_number, inquiry_type, verification_session_id, verified_at, used_at, valuation_submission_id")
     .eq("id", proofPayload.verificationId)
     .maybeSingle();
+
+  // A valuation can still finish safely during the short period before
+  // migration 0035. Scrap never falls back because its proof must remain bound
+  // to Scrap. The already-required 0034 lead migration is still required for
+  // any Scrap submission.
+  const missingOtpInquiryType = /inquiry_type/i.test(verificationError?.message ?? "");
+  if (verificationError && inquiryType === "valuation" && missingOtpInquiryType) {
+    ({ data: verification, error: verificationError } = await supabase
+      .from("whatsapp_otp_verifications")
+      .select("id, phone_number, verification_session_id, verified_at, used_at, valuation_submission_id")
+      .eq("id", proofPayload.verificationId)
+      .maybeSingle());
+  }
 
   if (verificationError || !verification) {
     return err("otp_expired", "Your verification expired. Please verify your number again.", 401);
   }
   if (verification.phone_number !== phone || verification.verification_session_id !== proofPayload.sessionId) {
     return err("otp_expired", "Your verification expired. Please verify your number again.", 401);
+  }
+  if (!missingOtpInquiryType && verification.inquiry_type !== inquiryType) {
+    return err("otp_expired", "Please verify your number for this enquiry before submitting.", 401);
   }
   if (!verification.verified_at) {
     return err("otp_expired", "Please verify your WhatsApp number before submitting.", 401);
@@ -147,6 +171,9 @@ export async function POST(req: NextRequest) {
     emirate: v.location,
     status: "new" as const,
     source: "web",
+    inquiry_type: inquiryType,
+    scrap_condition: inquiryType === "scrap" ? scrapCondition : null,
+    scrap_asking_price_aed: inquiryType === "scrap" ? scrapAskingPrice : null,
     marketing_consent: v.consent === true,
     consent_at: v.consent === true ? new Date().toISOString() : null,
     is_duplicate: isDuplicate,
@@ -172,7 +199,7 @@ export async function POST(req: NextRequest) {
   // update a converted row, so a capture request still in flight when this runs
   // cannot put them back on the incomplete list.
   try {
-    await supabase.rpc("mark_partial_lead_converted", { p_phone: phone, p_lead_id: data.id });
+    await supabase.rpc("mark_partial_lead_converted", { p_phone: phone, p_lead_id: data.id, p_inquiry_type: inquiryType });
   } catch {
     // non-fatal — the lead itself is already saved
   }
@@ -182,7 +209,7 @@ export async function POST(req: NextRequest) {
     await supabase.from("lead_events").insert({
       lead_id: data.id,
       type: "lead_created",
-      meta: { source: "web", is_duplicate: isDuplicate },
+      meta: { source: "web", inquiry_type: inquiryType, is_duplicate: isDuplicate },
     });
   } catch {
     // non-fatal

@@ -37,6 +37,10 @@ export type Lead = {
   notes: string;
   createdAt: string;
   source?: string;
+  /** Permanent origin. Scrap inquiries use the same workflow, never conversion. */
+  inquiryType?: "valuation" | "scrap";
+  scrapCondition?: string;
+  scrapAskingPriceAed?: number | null;
   isDuplicate?: boolean;
   isSpam?: boolean;
   callCenterId?: string | null;

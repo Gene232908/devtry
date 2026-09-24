@@ -1,16 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { History, Plus, Trash2, X } from "lucide-react";
+import { History, Plus, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useRefreshOnFocus } from "@/lib/admin/use-fresh-server-data";
 import { CatalogSpecificationsCard } from "@/components/admin/CatalogSpecificationsCard";
-import {
-  CatalogActivityPanel,
-  type CatalogActivity,
-} from "@/components/admin/CatalogActivityPanel";
+import { CatalogActivityDrawer } from "@/components/admin/CatalogActivityDrawer";
 import { CatalogModelList } from "@/components/admin/CatalogModelList";
 import { CatalogMakeSidebar } from "@/components/admin/CatalogMakeSidebar";
 import { CATALOG_MODELS_PER_PAGE } from "@/components/admin/CatalogPagination";
@@ -50,9 +47,8 @@ export default function AdminCatalogPage() {
   const [trimDrafts, setTrimDrafts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<CatalogToastState | null>(null);
-  const [activity, setActivity] = useState<CatalogActivity[]>([]);
   const [activityOpen, setActivityOpen] = useState(false);
-  const [activityLoading, setActivityLoading] = useState(false);
+  const [activityRefreshKey, setActivityRefreshKey] = useState(0);
   const [restoringId, setRestoringId] = useState<string | null>(null);
 
   // `pending` outlives the dialog's exit animation so a closing dialog cannot
@@ -81,21 +77,6 @@ export default function AdminCatalogPage() {
   useEffect(() => {
     void loadCatalog();
   }, [loadCatalog]);
-
-  const loadActivity = useCallback(async () => {
-    setActivityLoading(true);
-    try {
-      const response = await fetch("/api/admin/catalog/activity", { cache: "no-store" });
-      const json = await response.json().catch(() => null);
-      if (response.ok && json?.ok) setActivity(json.data.events as CatalogActivity[]);
-    } finally {
-      setActivityLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (activityOpen) void loadActivity();
-  }, [activityOpen, loadActivity]);
 
   // Keeps the catalog current without a manual reload. It used to fetch once on
   // mount and never again — not on focus, not on any timer — so a make added
@@ -170,7 +151,7 @@ export default function AdminCatalogPage() {
     setError(null);
     const result = await postCatalog<T>(endpoint, body, failure);
     if (!result.ok) setError(result.message);
-    else if (activityOpen) void loadActivity();
+    else if (activityOpen) setActivityRefreshKey((key) => key + 1);
     return result.ok ? result.data : null;
   }
 
@@ -312,7 +293,7 @@ export default function AdminCatalogPage() {
       if (pending.kind === "make" && pending.id === selectedMakeId)
         setSelectedMakeId("");
       await loadCatalog();
-      await loadActivity();
+      if (activityOpen) setActivityRefreshKey((key) => key + 1);
       showToast(
         `${pending.name} is now hidden from the valuation form.`,
         "Undo",
@@ -345,7 +326,8 @@ export default function AdminCatalogPage() {
         setError(json?.error?.message ?? "Couldn't restore that entry.");
         return;
       }
-      await Promise.all([loadCatalog(), loadActivity()]);
+      await loadCatalog();
+      if (activityOpen) setActivityRefreshKey((key) => key + 1);
       showToast(`${name} has been restored.`);
     } catch {
       setError("Network error while restoring that entry.");
@@ -518,28 +500,13 @@ export default function AdminCatalogPage() {
         )}
       </div>
 
-      {activityOpen && (
-        <div className="fixed inset-0 z-40" role="dialog" aria-modal="true" aria-label="Catalog activity history">
-          <button type="button" aria-label="Close activity history" className="absolute inset-0 bg-black/55" onClick={() => setActivityOpen(false)} />
-          <aside className="absolute right-0 top-0 flex h-full w-full max-w-xl flex-col overflow-y-auto border-l border-border bg-bg p-4 shadow-2xl sm:p-6">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.16em] text-text-faint">Vehicle Catalog</p>
-                <h2 className="mt-1 font-display text-fluid-1 text-text">Activity history</h2>
-              </div>
-              <Button variant="ghost" size="sm" aria-label="Close activity history" onClick={() => setActivityOpen(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <CatalogActivityPanel
-              events={activity}
-              loading={activityLoading}
-              restoringId={restoringId}
-              onRestore={(event) => void restoreEntry(event.entity_type, event.entity_id, event.entity_name)}
-            />
-          </aside>
-        </div>
-      )}
+      <CatalogActivityDrawer
+        open={activityOpen}
+        refreshKey={activityRefreshKey}
+        restoringId={restoringId}
+        onClose={() => setActivityOpen(false)}
+        onRestore={(event) => void restoreEntry(event.entity_type, event.entity_id, event.entity_name)}
+      />
 
       <ConfirmDialog
         open={dialogOpen}
