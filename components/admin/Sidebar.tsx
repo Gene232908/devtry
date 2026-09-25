@@ -34,7 +34,7 @@ type SidebarItem = {
 const ALL_ITEMS: SidebarItem[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, gate: "viewDashboard" },
   { href: "/admin/leads", label: "Leads", icon: ListChecks },
-  { href: "/admin/leads?origin=scrap", label: "Scrap Inquiries", icon: Car, gate: "viewAllLeads" },
+  { href: "/admin/leads?origin=scrap", label: "Scrap Inquiries", icon: Car, gate: "viewScrapInquiries" },
   { href: "/admin/inventory", label: "Inventory", icon: Car, gate: "viewInventory" },
   { href: "/admin/commission", label: "Commission", icon: Percent, gate: "viewCommissions" },
   { href: "/admin/incomplete", label: "Incomplete Forms", icon: FileClock, gate: "viewIncompleteForms" },

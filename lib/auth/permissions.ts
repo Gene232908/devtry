@@ -34,6 +34,7 @@ export type Capability =
   | "manageStaff"       // create / rename / enable / disable staff accounts
   | "viewDashboard"     // see the Overview / Dashboard page
   | "viewAllLeads"      // see leads not assigned to self
+  | "viewScrapInquiries" // see Scrap inquiries within the viewer's lead scope
   | "createLeads"       // create an internal lead from a walk-in, call, or message
   | "viewLeadContact"   // see phone numbers and email addresses on leads
   | "viewPrices"        // see purchase price, estimated value, profit
@@ -60,6 +61,7 @@ export const ROLE_CAPABILITIES: Record<StaffRole, Capability[]> = {
     "manageStaff",
     "viewDashboard",
     "viewAllLeads",
+    "viewScrapInquiries",
     "createLeads",
     "viewLeadContact",
     "viewPrices",
@@ -80,6 +82,7 @@ export const ROLE_CAPABILITIES: Record<StaffRole, Capability[]> = {
     "manageStaff",
     "viewDashboard",
     "viewAllLeads",
+    "viewScrapInquiries",
     "viewLeadContact",
     "viewPrices",
     "viewCommissions",
@@ -95,6 +98,7 @@ export const ROLE_CAPABILITIES: Record<StaffRole, Capability[]> = {
   ],
   call_center: [
     // Agent: see assigned leads, contact info, own commission, incomplete forms, and blocked numbers.
+    "viewScrapInquiries",
     "viewLeadContact",
     "viewCommissions",
     "viewIncompleteForms",
@@ -103,6 +107,7 @@ export const ROLE_CAPABILITIES: Record<StaffRole, Capability[]> = {
   ],
   purchaser: [
     // Purchaser: see assigned leads, prices, inventory, and own commission.
+    "viewScrapInquiries",
     "viewPrices",
     "viewInventory",
     "viewCommissions",
