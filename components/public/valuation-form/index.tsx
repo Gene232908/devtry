@@ -14,6 +14,7 @@ import { ThankYouModal } from "./thank-you-modal";
 import { ValuationFormValues } from "./form.types";
 import type { ValuationModalMode } from "../open-valuation-modal";
 import type { PublicLeadVerificationMode } from "@/lib/server/public-lead-verification";
+import { trackMetaEvent } from "@/lib/track-click";
 
 const STEPS: Array<{
   n: 1 | 2 | 3;
@@ -94,6 +95,9 @@ export function ValuationForm({ registerCapture, mode = "valuation", verificatio
     e.preventDefault();
     if (!form.validateStep(current.fields)) return;
     const result = await form.submit();
+    if (result.ok) {
+      trackMetaEvent("Lead", mode === "scrap" ? "Scrap inquiry submitted" : "Valuation submitted");
+    }
     // If the phone number turned out invalid at final-submit time, jump back
     // to Step 1 so the error (attached to that field) is actually visible.
     if (!result.ok && "invalidPhone" in result && result.invalidPhone) {

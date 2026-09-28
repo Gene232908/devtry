@@ -3,6 +3,7 @@
 import { CarFront, Sparkles } from "lucide-react";
 import { landingImages } from "@/config/homepage";
 import { openScrapModal, openValuationModal } from "./open-valuation-modal";
+import { trackMetaEvent } from "@/lib/track-click";
 
 export function Hero() {
   return (
@@ -48,7 +49,10 @@ export function Hero() {
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-nowrap sm:items-center">
             <button
               type="button"
-              onClick={openValuationModal}
+              onClick={() => {
+                trackMetaEvent("Lead", "Free valuation button");
+                openValuationModal();
+              }}
               className="group relative inline-flex h-14 w-full items-center justify-center overflow-hidden whitespace-nowrap rounded-full btn-gold px-5 text-[0.72rem] font-extrabold uppercase tracking-[0.07em] text-[#1a1508] shadow-[0_22px_50px_-20px_rgba(244,227,168,.95)] animate-cta-pulse transition-transform duration-200 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 sm:h-16 sm:w-auto sm:px-7 sm:text-[0.84rem] sm:tracking-[0.09em]"
             >
               <span className="relative z-10 flex items-center gap-1.5 sm:gap-2.5">
@@ -64,7 +68,10 @@ export function Hero() {
             </button>
             <button
               type="button"
-              onClick={openScrapModal}
+              onClick={() => {
+                trackMetaEvent("Lead", "Scrap car button");
+                openScrapModal();
+              }}
               className="group relative inline-flex h-14 w-full items-center justify-center overflow-hidden whitespace-nowrap rounded-full border border-gold bg-black/40 px-5 text-[0.72rem] font-bold uppercase tracking-[0.07em] text-gold shadow-[0_22px_50px_-20px_rgba(212,175,78,.75)] animate-cta-pulse backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-gold hover:text-black hover:shadow-[0_22px_50px_-15px_rgba(212,175,78,1)] active:translate-y-0 sm:h-16 sm:w-auto sm:px-7 sm:text-[0.84rem] sm:tracking-[0.09em]"
             >
               <span className="relative z-10 flex items-center gap-2 sm:gap-2.5">

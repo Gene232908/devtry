@@ -6,7 +6,7 @@ import { Menu, MessageCircle, Phone, X } from "lucide-react";
 import { Logo } from "./Logo";
 import { cn } from "@/lib/utils";
 import { openValuationModal } from "./open-valuation-modal";
-import { trackContactClick } from "@/lib/track-click";
+import { trackContactClick, trackMetaEvent } from "@/lib/track-click";
 
 const COMING_SOON_LABELS = ["Buy"];
 
@@ -131,6 +131,7 @@ export function Navbar() {
             type="button"
             onClick={() => {
               trackContactClick("call_click");
+              trackMetaEvent("Contact", "Call Now button");
               openValuationModal();
             }}
             className="inline-flex h-10 items-center gap-2 rounded-full border border-gold bg-black/35 px-4 text-[0.8rem] font-medium text-gold transition-colors hover:bg-gold hover:text-black"
@@ -142,6 +143,7 @@ export function Navbar() {
             type="button"
             onClick={() => {
               trackContactClick("whatsapp_click");
+              trackMetaEvent("Contact", "Message Us button");
               openValuationModal();
             }}
             className="inline-flex h-10 items-center gap-2 rounded-full bg-gold px-4 text-[0.8rem] font-semibold text-black transition-colors hover:bg-gold-hi"
@@ -209,6 +211,8 @@ export function Navbar() {
               type="button"
               onClick={() => {
                 setOpen(false);
+                trackContactClick("call_click");
+                trackMetaEvent("Contact", "Call Now button");
                 openValuationModal();
               }}
               className="inline-flex h-11 items-center justify-center rounded-full border border-gold text-fluid--1 font-medium text-gold"
@@ -219,6 +223,8 @@ export function Navbar() {
               type="button"
               onClick={() => {
                 setOpen(false);
+                trackContactClick("whatsapp_click");
+                trackMetaEvent("Contact", "Message Us button");
                 openValuationModal();
               }}
               className="inline-flex h-11 items-center justify-center rounded-full bg-gold text-fluid--1 font-semibold text-black"

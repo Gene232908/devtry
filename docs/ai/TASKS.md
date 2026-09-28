@@ -2,6 +2,8 @@
 
 ## Current objective
 
+- [x] 2026-09-28 Added Meta standard browser events for public CTA interactions: `Lead` for valuation/scrap actions and successful submissions, and `Contact` for Call Now/Message Us actions. Events are best-effort, carry only a button/content label, and never block the user flow. Verify on the `almostdone` Preview in Meta Test Events after deployment.
+
 - [x] 2026-09-28 Added the new CarVibe Dubai Web Meta Pixel (`2123934174864799`) as an environment-controlled base `PageView` integration. No personal form data, advanced matching, or Conversions API is enabled yet.
 
 - [x] 2026-09-27 Inspection rescheduling now resets a previously confirmed customer arrival for both Regular and Scrap leads. The server clears the arrival actor/timestamp only when the appointment time genuinely changes, records the reschedule and reset in Activity, and keeps inspection locked until Call Centre confirms arrival for the new UAE appointment.

@@ -3,8 +3,8 @@ import Script from "next/script";
 
 /**
  * Loads Meta's browser pixel only when a public Pixel ID is configured.
- * This intentionally sends PageView only; customer contact fields are never
- * passed to Meta, and advanced matching/CAPI remain separate opt-in work.
+ * It sends PageView plus standard interaction events from the public UI.
+ * Customer contact fields are never passed to Meta.
  */
 export function MetaPixel() {
   const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;

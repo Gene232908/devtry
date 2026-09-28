@@ -13,6 +13,19 @@
  */
 export type ContactClick = "whatsapp_click" | "call_click";
 
+type MetaEvent = "Lead" | "Contact";
+
+/** Send a standard Meta browser event without ever blocking the user flow. */
+export function trackMetaEvent(event: MetaEvent, contentName: string) {
+  try {
+    const fbq = (window as Window & { fbq?: (...args: unknown[]) => void }).fbq;
+    if (typeof fbq !== "function") return;
+    fbq("track", event, { content_name: contentName });
+  } catch {
+    // Analytics must never break the public website.
+  }
+}
+
 export function trackContactClick(type: ContactClick) {
   try {
     fetch("/api/events", {
