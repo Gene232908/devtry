@@ -13,7 +13,7 @@ const isDev = process.env.NODE_ENV !== "production";
 // 'unsafe-eval' is dev-only: React Fast Refresh needs it, production does not.
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline' https://connect.facebook.net${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   // data: and blob: are what next/image uses for placeholders and optimisation.
   // Meta Pixel is intentionally limited to PageView in MetaPixel.tsx. Its
@@ -24,7 +24,6 @@ const csp = [
   // Supabase is the only host the browser talks to directly. Twilio and the
   // WhatsApp Graph API are called from server routes, never from the page.
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.facebook.com https://connect.facebook.net",
-  "script-src-elem 'self' https://connect.facebook.net",
   "media-src 'self'",
   "frame-ancestors 'none'",
   "base-uri 'self'",
