@@ -9,7 +9,6 @@ import { SellCarDialog } from "@/components/admin/SellCarDialog";
 import { formatAed } from "@/lib/format";
 import { formatUaeMonth, uaeMonthKey } from "@/lib/uae-time";
 import {
-  COMMISSION_RATE,
   INVENTORY_FILTER_OPTIONS,
   INVENTORY_STATUS_LABEL,
   type InventoryItem,
@@ -207,7 +206,6 @@ export default function InventoryClient({
     // Preview mode updates the list so the flow can be demonstrated end to end,
     // but nothing is written and the figures are discarded on reload.
     if (ADMIN_PREVIEW) {
-      const profitAed = salePriceAed - selling.purchasePriceAed;
       setItems((current) =>
         current.map((i) =>
           i.id === selling.id
@@ -216,12 +214,10 @@ export default function InventoryClient({
                 status: "sold" as const,
                 salePriceAed,
                 soldAt,
-                commission: {
-                  profitAed,
-                  rate: COMMISSION_RATE,
-                  commissionAed: Math.max(profitAed, 0) * COMMISSION_RATE,
-                  soldAt,
-                },
+                netProfitAed: null,
+                financialStatus: "awaiting_confirmation",
+                financialReviewVersion: i.financialReviewVersion + 1,
+                commission: null,
               }
             : i,
         ),

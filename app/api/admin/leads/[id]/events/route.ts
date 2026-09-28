@@ -63,9 +63,13 @@ function messageFor(event: DbLeadEvent, actor?: ActorSnapshot): string {
       return note ? `Note saved${actionBy(meta, actor)}: ${note}` : `Note cleared${actionBy(meta, actor)}.`;
     }
     case "car_purchased": return meta.purchase_price_aed != null ? `Car bought${actionBy(meta, actor)} for AED ${Number(meta.purchase_price_aed).toLocaleString()} and added to Inventory.` : `Car added to Inventory${actionBy(meta, actor)}.`;
+    case "financial_review_reopened": return `Financial review reopened${actionBy(meta, actor)}. Reason: ${String(meta.reason ?? "No reason provided")}`;
+    case "expense_added": return `Expense ${meta.action === "updated" ? "updated" : "added"}${actionBy(meta, actor)}: ${String(meta.description ?? "Expense")} — AED ${Number(meta.amount_aed ?? 0).toLocaleString()}.`;
+    case "expense_deleted": return `Expense deleted${actionBy(meta, actor)}: ${String(meta.description ?? "Expense")} — AED ${Number(meta.amount_aed ?? 0).toLocaleString()}.`;
     case "marked_spam": return meta.is_spam === false ? `Unmarked as spam${actionBy(meta, actor)}.` : `Marked as spam${actionBy(meta, actor)}.`;
     case "assigned": return `Lead assignment updated${actionBy(meta, actor)}.`;
     case "arrival_confirmed": return `Customer arrival confirmed${actionBy(meta, actor)}.`;
+    case "arrival_reset_due_to_reschedule": return `Previous arrival confirmation cleared because the inspection was rescheduled${actionBy(meta, actor)}. Awaiting customer arrival for the new appointment.`;
     case "inspection_scheduled": {
       const scheduledAt = typeof meta.scheduled_at === "string" ? formatScheduledInspection(meta.scheduled_at) : "the selected date and time";
       return `Inspection scheduled${actionBy(meta, actor)} for ${scheduledAt}.`;

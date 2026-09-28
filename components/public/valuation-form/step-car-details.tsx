@@ -1,7 +1,8 @@
 "use client";
 
 import { Select } from "@/components/ui/Select";
-import { YEARS, MILEAGE_BRACKETS } from "@/config/vehicles";
+import { Input } from "@/components/ui/Input";
+import { YEARS } from "@/config/vehicles";
 import { type CatalogMake, type CatalogSpecification, modelsFor } from "@/lib/use-vehicle-catalog";
 import { ValuationFormValues, FormErrors } from "./form.types";
 import type { ValuationModalMode } from "../open-valuation-modal";
@@ -52,14 +53,27 @@ export function StepCarDetails({ values, errors, makes, specifications, setField
         />
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Select
-          label="Mileage"
-          placeholder="Select mileage range"
-          options={MILEAGE_BRACKETS.map((b) => ({ label: b.label, value: String(b.value) }))}
-          value={values.mileageKm}
-          onChange={(v) => setField("mileageKm", v)}
-          error={errors.mileageKm}
-        />
+        <div className="grid grid-cols-[minmax(0,1fr)_8.5rem] gap-3">
+          <Input
+            id="mileage"
+            label="Mileage"
+            type="number"
+            inputMode="numeric"
+            min="0"
+            max="1000000"
+            step="1"
+            placeholder="Enter whole number"
+            value={values.mileageKm}
+            onChange={(event) => setField("mileageKm", event.target.value)}
+            error={errors.mileageKm}
+          />
+          <Select
+            label="Unit"
+            options={[{ label: "KM", value: "km" }, { label: "Miles", value: "miles" }]}
+            value={values.mileageUnit}
+            onChange={(value) => setField("mileageUnit", value as "km" | "miles")}
+          />
+        </div>
         <Select
           label="Specification"
           placeholder="Select specification"

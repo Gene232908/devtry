@@ -30,6 +30,8 @@ export type StaffCommission = {
   paidAt: string | null;
   /** The unpaid entries making up the totals above. */
   entries: StaffCommissionEntry[];
+  /** Immutable payouts already recorded for this staff member. */
+  paymentHistory: StaffCommissionPayment[];
 };
 
 export type StaffCommissionEntry = {
@@ -40,6 +42,22 @@ export type StaffCommissionEntry = {
   soldAt: string;
   profit: number | null;
   commission: number;
+  financialReview?: {
+    salePrice: number | null;
+    expenses: number;
+    netProfit: number | null;
+    margin: number | null;
+    corrections: { reason: string; actorName: string; at: string }[];
+  };
+};
+
+export type StaffCommissionPayment = {
+  id: string;
+  totalAmount: number;
+  entryCount: number;
+  paidAt: string;
+  paidByName: string;
+  entries: StaffCommissionEntry[];
 };
 
 /** Shape of a row from the Supabase `staff_commission_entries` table. */
@@ -51,6 +69,7 @@ export type DbStaffCommissionEntry = {
   commission_aed: number | string;
   sold_at: string;
   paid_at: string | null;
+  payment_id: string | null;
   inventory_id: string;
 };
 
@@ -60,7 +79,17 @@ export type DbStaffReferralIncentive = {
   incentive_aed: number | string;
   sold_at: string;
   paid_at: string | null;
+  payment_id: string | null;
   inventory_id: string;
+};
+
+export type DbStaffCommissionPayment = {
+  id: string;
+  staff_id: string;
+  total_aed: number | string;
+  entry_count: number;
+  paid_at: string;
+  paid_by_name: string | null;
 };
 
 export type CommissionStatement = {
@@ -209,6 +238,11 @@ export function groupIntoQuarters(statements: CommissionStatement[]): Quarter[] 
   // Newest quarter first — the one being worked on is the one wanted on screen.
   quarters.sort((a, b) => b.year - a.year || b.quarter - a.quarter);
   return quarters;
+}
+
+/** Statements a Super Admin may settle now, without waiting for a quarter to end. */
+export function unpaidDeveloperStatements(statements: CommissionStatement[]): CommissionStatement[] {
+  return statements.filter((statement) => statement.status !== "paid");
 }
 
 /** Shape of a row from the Supabase `commission_statements` table. */

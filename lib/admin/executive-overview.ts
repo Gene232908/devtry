@@ -45,6 +45,12 @@ export type ExecutiveOverview = {
   };
   alerts: Array<{ key: string; title: string; detail: string; count: number; tone: "warning" | "danger" | "neutral"; href: string }>;
   dataQuality: { score: number; issues: Array<{ label: string; count: number; href: string }> };
+  scrap: {
+    sold: number;
+    revenue: number;
+    expenses: number;
+    netProfit: number;
+  };
 };
 
 type DbLead = {
@@ -67,6 +73,9 @@ type DbInventory = {
   purchased_at: string;
   sale_price_aed: number | string | null;
   sold_at: string | null;
+  net_profit_aed?: number | string | null;
+  financial_status?: string | null;
+  expense_total_aed?: number | string | null;
 };
 
 type DbEvent = { lead_id: string; type: string; meta: { to?: string } | null; created_at: string };
@@ -98,6 +107,14 @@ function percentage(previous: number, current: number): number | null {
   return ((current - previous) / previous) * 100;
 }
 
+function netProfit(item: DbInventory) {
+  if (item.net_profit_aed !== null && item.net_profit_aed !== undefined) return Number(item.net_profit_aed);
+  // Historical sales retain their already-frozen gross calculation; new sales
+  // awaiting expense confirmation must not inflate profit before finalization.
+  if (item.financial_status === "awaiting_confirmation") return 0;
+  return Number(item.sale_price_aed ?? 0) - Number(item.purchase_price_aed);
+}
+
 function previousPeriod(range: OverviewRange): OverviewRange {
   const from = uaeDayStringToUtc(range.from);
   const to = endOfUaeDayUtc(range.to);
@@ -116,10 +133,7 @@ function metricSummary(inventory: DbInventory[], staffEntries: DbStaffEntry[], r
   const sales = inventory.filter((item) => item.status === "sold" && inRange(item.sold_at, range));
   return {
     revenue: sales.reduce((total, item) => total + Number(item.sale_price_aed ?? 0), 0),
-    grossProfit: sales.reduce(
-      (total, item) => total + Math.max(Number(item.sale_price_aed ?? 0) - Number(item.purchase_price_aed), 0),
-      0,
-    ),
+    grossProfit: sales.reduce((total, item) => total + Math.max(netProfit(item), 0), 0),
     carsSold: sales.length,
     staffCommissionOwed: staffEntries
       .filter((entry) => entry.paid_at === null && inRange(entry.sold_at, range))
@@ -147,7 +161,7 @@ export async function fetchExecutiveOverview(
       .gte("created_at", bounds.from)
       .lte("created_at", bounds.to)
       .limit(MAX_ROWS),
-    supabase.from("inventory").select("id, lead_id, status, purchase_price_aed, purchased_at, sale_price_aed, sold_at").limit(MAX_ROWS),
+    supabase.from("inventory").select("id, lead_id, status, purchase_price_aed, purchased_at, sale_price_aed, sold_at, expense_total_aed, net_profit_aed, financial_status").limit(MAX_ROWS),
     supabase
       .from("lead_events")
       .select("lead_id, type, meta, created_at")
@@ -180,6 +194,20 @@ export async function fetchExecutiveOverview(
   const events = (eventsRes.data ?? []) as DbEvent[];
   const staffEntries = (staffEntriesRes.data ?? []) as DbStaffEntry[];
   const current = metricSummary(inventory, staffEntries, range);
+  const periodSales = inventory.filter((item) => item.status === "sold" && inRange(item.sold_at, range));
+  const saleLeadIds = Array.from(new Set(periodSales.map((item) => item.lead_id)));
+  const scrapSources = saleLeadIds.length
+    ? await supabase.from("leads").select("id").eq("inquiry_type", "scrap").in("id", saleLeadIds)
+    : { data: [] as { id: string }[], error: null };
+  if (scrapSources.error) return fail(scrapSources.error.message);
+  const scrapLeadIds = new Set((scrapSources.data ?? []).map((lead) => lead.id));
+  const scrapSold = periodSales.filter((item) => scrapLeadIds.has(item.lead_id));
+  const scrap = {
+    sold: scrapSold.length,
+    revenue: scrapSold.reduce((total, item) => total + Number(item.sale_price_aed ?? 0), 0),
+    expenses: scrapSold.reduce((total, item) => total + Number(item.expense_total_aed ?? 0), 0),
+    netProfit: scrapSold.reduce((total, item) => total + (item.financial_status === "awaiting_confirmation" ? 0 : netProfit(item)), 0),
+  };
   const compare = comparisonRange ? metricSummary(inventory, staffEntries, comparisonRange) : undefined;
 
   const stock = inventory.filter((item) => item.status !== "sold");
@@ -207,7 +235,7 @@ export async function fetchExecutiveOverview(
     if (bucket) {
       bucket.sold += 1;
       bucket.revenue += Number(sale.sale_price_aed ?? 0);
-      bucket.profit += Math.max(Number(sale.sale_price_aed ?? 0) - Number(sale.purchase_price_aed), 0);
+      bucket.profit += Math.max(netProfit(sale), 0);
     }
   }
   let trend = Array.from(byDay.values()).map((point) => ({ ...point, visitors: point.visitors.size }));
@@ -337,6 +365,7 @@ export async function fetchExecutiveOverview(
         { key: "aging", title: "Cars waiting too long", detail: "Cars still for sale after 90 days.", count: inventoryAging[3].count, tone: inventoryAging[3].count > 0 ? "danger" : "neutral", href: "/admin/inventory?attention=aging" },
       ],
       dataQuality: { score: Math.max(0, 100 - Math.min(100, issueCount * 4)), issues: qualityIssues },
+      scrap,
     },
   };
   } catch (err) {

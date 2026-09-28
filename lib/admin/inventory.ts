@@ -11,6 +11,7 @@ import { STATUS_LABEL } from "@/lib/format";
  */
 
 export type InventoryStatus = "in_stock" | "reserved" | "sold" | "withdrawn";
+export type FinancialStatus = "not_required" | "awaiting_confirmation" | "confirmed" | "paid_locked";
 
 /** The developer's share of the profit on each completed sale. */
 export const COMMISSION_RATE = 0.02;
@@ -50,6 +51,10 @@ export type InventoryItem = {
   status: InventoryStatus;
   salePriceAed: number | null;
   soldAt: string | null;
+  expenseTotalAed: number;
+  netProfitAed: number | null;
+  financialStatus: FinancialStatus;
+  financialReviewVersion: number;
   notes: string;
   /** Present only once the car has been sold. */
   commission: CommissionEntry | null;
@@ -125,8 +130,8 @@ export function round2(n: number): number {
  * not, per the milestone agreement. A loss produces no commission and is not
  * carried against other sales.
  */
-export function previewCommission(purchasePriceAed: number, salePriceAed: number) {
-  const profitAed = round2(salePriceAed - purchasePriceAed);
+export function previewCommission(purchasePriceAed: number, salePriceAed: number, expenseTotalAed = 0) {
+  const profitAed = round2(salePriceAed - purchasePriceAed - expenseTotalAed);
   return {
     profitAed,
     rate: COMMISSION_RATE,
@@ -149,6 +154,10 @@ export type DbInventory = {
   status: InventoryStatus;
   sale_price_aed: number | string | null;
   sold_at: string | null;
+  expense_total_aed?: number | string | null;
+  net_profit_aed?: number | string | null;
+  financial_status?: FinancialStatus | null;
+  financial_review_version?: number | null;
   notes: string | null;
   // Supabase returns an embedded one-to-one relation as an object, but an
   // array when it cannot prove uniqueness. Both are accepted so a schema-cache
@@ -202,6 +211,10 @@ export function mapDbInventory(r: DbInventory): InventoryItem {
     status: r.status,
     salePriceAed: num(r.sale_price_aed),
     soldAt: r.sold_at,
+    expenseTotalAed: num(r.expense_total_aed) ?? 0,
+    netProfitAed: num(r.net_profit_aed),
+    financialStatus: r.financial_status ?? "not_required",
+    financialReviewVersion: r.financial_review_version ?? 0,
     notes: r.notes ?? "",
     commission: entry
       ? {

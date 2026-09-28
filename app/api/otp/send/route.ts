@@ -10,6 +10,7 @@ import { isDevOtpBypass, DEV_OTP_CODE } from "@/lib/otp-dev";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { hasOpenLead } from "@/lib/server/enquiry";
 import { isWhatsappOtpSendingEnabled } from "@/lib/server/otp-sending";
+import { getPublicLeadVerificationMode } from "@/lib/server/public-lead-verification";
 
 const OTP_TTL_MS = 5 * 60 * 1000;
 const RESEND_COOLDOWN_SEC = 60;
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
   // Emergency circuit breaker. It intentionally runs before request parsing,
   // database writes, or the Meta API call, so turning it off immediately stops
   // both OTP charges and new verification records.
-  if (!isWhatsappOtpSendingEnabled()) {
+  if (getPublicLeadVerificationMode() === "unverified" || !isWhatsappOtpSendingEnabled()) {
     console.warn("[otp/send] WhatsApp OTP sending disabled by emergency switch");
     return err("otp_sending_disabled", "WhatsApp verification is temporarily unavailable. Please try again later.", 503);
   }

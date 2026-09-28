@@ -28,6 +28,7 @@ import { LeadScheduledInspectionCard } from "@/components/admin/LeadScheduledIns
 import { LeadPurchaseFields } from "@/components/admin/LeadPurchaseFields";
 import { LeadStartInspectionButton } from "@/components/admin/LeadStartInspectionButton";
 import { LeadReferralCard } from "@/components/admin/LeadReferralCard";
+import { InventoryExpensesCard } from "@/components/admin/InventoryExpensesCard";
 import { useStaffIdentity } from "@/lib/admin/staff-identity-context";
 import { hasCapability } from "@/lib/auth/permissions";
 import { statusChoicesForRole } from "@/lib/auth/lead-visibility";
@@ -186,6 +187,7 @@ export function LeadDetail({ lead }: { lead: Lead }) {
     canConfirmArrival &&
     ["inspection_scheduled", "inspected", "negotiating", "deal"].includes(lead.status) &&
     Boolean(lead.purchaserId);
+  const csrStatusLockedAfterArrival = identity?.role === "call_center" && lead.arrivalStatus === "arrived";
   const priceRequired = requiresPurchasePrice(draft.status);
   const priceLocked = car?.status === "sold";
   const dealLocked = lead.status === "deal" && Boolean(car);
@@ -331,6 +333,17 @@ export function LeadDetail({ lead }: { lead: Lead }) {
 
           <LeadReferralCard leadId={lead.id} />
 
+          {car && (
+            <InventoryExpensesCard
+              car={car}
+              onChanged={() => {
+                void loadCar();
+                void fetchTimeline();
+                router.refresh();
+              }}
+            />
+          )}
+
           {/* Customer Contact */}
           {canViewContact && (
             <LeadContactCard
@@ -380,6 +393,17 @@ export function LeadDetail({ lead }: { lead: Lead }) {
                   <span className="text-xs font-medium uppercase tracking-wider text-text-faint">Status *</span>
                   <LeadStartInspectionButton leadId={lead.id} visible />
                   <span className="text-xs text-text-muted">Save the inspection first. The status will then become Inspected and the next workflow statuses will be available.</span>
+                </div>
+              ) : csrStatusLockedAfterArrival ? (
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium uppercase tracking-wider text-text-faint">Status</span>
+                  <div className="flex h-11 items-center justify-between gap-3 rounded-card border border-border/60 bg-surface-2 px-4">
+                    <span className="text-sm font-medium text-text">{STATUS_LABEL[lead.status]}</span>
+                    <Lock className="h-4 w-4 shrink-0 text-text-muted" />
+                  </div>
+                  <span className="text-xs text-text-muted">
+                    Status is locked after Customer Service confirms customer arrival. The Purchaser now manages the next status.
+                  </span>
                 </div>
               ) : (
                 <Select

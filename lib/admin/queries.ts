@@ -27,8 +27,10 @@ import {
   type CommissionStatement,
   type DbStatement,
   type DbStaffCommissionEntry,
+  type DbStaffCommissionPayment,
   type DbStaffReferralIncentive,
   type StaffCommission,
+  type StaffCommissionEntry,
 } from "@/lib/admin/commission";
 
 /**
@@ -287,6 +289,7 @@ export async function fetchAdminCharts(
 const INVENTORY_SELECT = `
   id, lead_id, make, model, trim, year, mileage_km, chassis_number,
   purchase_price_aed, purchased_at, status, sale_price_aed, sold_at, notes,
+  expense_total_aed, net_profit_aed, financial_status, financial_review_version,
   commission_entries ( profit_aed, rate, commission_aed, sold_at ),
   leads ( phone_verified, call_center_id, purchaser_id, inquiry_type )
 `;
@@ -310,7 +313,7 @@ export async function fetchInventory(
   const primaryResult = await query;
   let data = primaryResult.data as unknown[] | null;
   let error = primaryResult.error;
-  if (error && /chassis_number|inquiry_type/i.test(error.message ?? "")) {
+  if (error && /chassis_number|inquiry_type|expense_total_aed|net_profit_aed|financial_status|financial_review_version/i.test(error.message ?? "")) {
     let fallback = getSupabaseAdmin().from("inventory").select(INVENTORY_SELECT_LEGACY).order("purchased_at", { ascending: false });
     if (leadId) fallback = fallback.eq("lead_id", leadId);
     const legacyResult = await fallback;
@@ -363,6 +366,19 @@ export async function fetchInventory(
         commission: next.commission ? { ...next.commission, rate: 0, commissionAed: 0 } : null,
       };
     }
+    // Call Centre receives the financial vehicle summary for its assigned lead
+    // through the record, but never another role's ledger amount or the
+    // developer's commission through this server payload.
+    if (identity?.role === "call_center") {
+      return {
+        ...next,
+        callCenterId: null,
+        purchaserId: null,
+        callCenterCommissionAed: item.callCenterId === identity.userId ? next.callCenterCommissionAed : null,
+        purchaserCommissionAed: null,
+        commission: next.commission ? { ...next.commission, rate: 0, commissionAed: 0 } : null,
+      };
+    }
     return next;
   });
 
@@ -390,7 +406,7 @@ export async function fetchPartialLeads(identity?: { role: string; userId: strin
   };
 
   let { data, error } = await createQuery(PARTIAL_LEAD_COLUMNS);
-  if (error && /inquiry_type|scrap_condition|scrap_asking_price_aed/i.test(error.message ?? "")) {
+  if (error && /inquiry_type|scrap_condition|scrap_asking_price_aed|mileage_value|mileage_unit/i.test(error.message ?? "")) {
     ({ data, error } = await createQuery(PARTIAL_LEAD_COLUMNS_LEGACY));
   }
 
@@ -419,7 +435,7 @@ export async function fetchPartialLead(
   };
 
   let { data, error } = await createQuery(PARTIAL_LEAD_COLUMNS);
-  if (error && /inquiry_type|scrap_condition|scrap_asking_price_aed/i.test(error.message ?? "")) {
+  if (error && /inquiry_type|scrap_condition|scrap_asking_price_aed|mileage_value|mileage_unit/i.test(error.message ?? "")) {
     ({ data, error } = await createQuery(PARTIAL_LEAD_COLUMNS_LEGACY));
   }
 
@@ -780,7 +796,7 @@ export async function fetchStaffCommission(
 
   const { data: entryRows, error: entryError } = await supabase
     .from("staff_commission_entries")
-    .select("id, staff_id, role, profit_aed, commission_aed, sold_at, paid_at, inventory_id")
+    .select("id, staff_id, role, profit_aed, commission_aed, sold_at, paid_at, payment_id, inventory_id")
     .in("staff_id", staffIds)
     .order("sold_at", { ascending: false });
 
@@ -791,7 +807,7 @@ export async function fetchStaffCommission(
   let referralRows: DbStaffReferralIncentive[] = [];
   let referralsQuery = supabase
     .from("staff_referral_incentives")
-    .select("id, staff_id, incentive_aed, sold_at, paid_at, inventory_id")
+    .select("id, staff_id, incentive_aed, sold_at, paid_at, payment_id, inventory_id")
     .gt("incentive_aed", 0);
   if (!isOwner) referralsQuery = referralsQuery.eq("staff_id", identity.userId);
   const referralsResult = await referralsQuery;
@@ -813,18 +829,29 @@ export async function fetchStaffCommission(
   }
 
   const entries = (entryRows ?? []) as unknown as DbStaffCommissionEntry[];
+  const allStaffIds = staff.map((member) => member.id);
+  const { data: paymentRows, error: paymentError } = allStaffIds.length > 0
+    ? await supabase
+      .from("staff_commission_payments")
+      .select("id, staff_id, total_aed, entry_count, paid_at, paid_by_name")
+      .in("staff_id", allStaffIds)
+      .order("paid_at", { ascending: false })
+      .limit(250)
+    : { data: [] as DbStaffCommissionPayment[], error: null };
+  if (paymentError) return { ok: false, message: paymentError.message, status: 500 };
 
   // Car and customer names for the entries list, fetched separately rather
   // than nested-embedded — same reasoning as mapDbInventory's one-or-array
   // handling: a schema-cache quirk on either relation degrades to "name
   // blank" instead of losing the commission row entirely.
   const inventoryIds = Array.from(new Set([...entries.map((e) => e.inventory_id), ...referralRows.map((e) => e.inventory_id)]));
+  type CommissionInventory = { id: string; lead_id: string; make: string; model: string; year: number; sale_price_aed: number | string | null; expense_total_aed: number | string | null; net_profit_aed: number | string | null };
   const { data: invRows } = inventoryIds.length
-    ? await supabase.from("inventory").select("id, lead_id, make, model, year").in("id", inventoryIds)
-    : { data: [] as { id: string; lead_id: string; make: string; model: string; year: number }[] };
+    ? await supabase.from("inventory").select("id, lead_id, make, model, year, sale_price_aed, expense_total_aed, net_profit_aed").in("id", inventoryIds)
+    : { data: [] as CommissionInventory[] };
 
   const invById = new Map(
-    ((invRows ?? []) as { id: string; lead_id: string; make: string; model: string; year: number }[]).map((r) => [
+    ((invRows ?? []) as CommissionInventory[]).map((r) => [
       r.id,
       r,
     ]),
@@ -835,6 +862,37 @@ export async function fetchStaffCommission(
     ? await supabase.from("leads").select("id, full_name").in("id", leadIds)
     : { data: [] as { id: string; full_name: string }[] };
   const leadNameById = new Map(((leadRows ?? []) as { id: string; full_name: string }[]).map((r) => [r.id, r.full_name]));
+
+  const financialReviewByInventory = new Map<string, StaffCommissionEntry["financialReview"]>();
+  if (isOwner && inventoryIds.length > 0) {
+    const { data: financialEvents } = await supabase
+      .from("inventory_financial_events")
+      .select("inventory_id, action, reason, actor_id, created_at")
+      .in("inventory_id", inventoryIds)
+      .order("created_at", { ascending: false });
+    const eventActorIds = Array.from(new Set((financialEvents ?? []).map((event) => event.actor_id).filter(Boolean)));
+    const { data: eventActors } = eventActorIds.length
+      ? await supabase.from("profiles").select("id, display_name").in("id", eventActorIds)
+      : { data: [] as { id: string; display_name: string | null }[] };
+    const actorNames = new Map((eventActors ?? []).map((profile) => [profile.id, profile.display_name ?? "Staff member"]));
+    const expensesResult = await supabase.from("inventory_expenses").select("inventory_id, amount_aed").in("inventory_id", inventoryIds);
+    const expensesByInventory = new Map<string, number>();
+    for (const expense of expensesResult.data ?? []) expensesByInventory.set(expense.inventory_id, (expensesByInventory.get(expense.inventory_id) ?? 0) + Number(expense.amount_aed));
+    for (const inventoryId of inventoryIds) {
+      const inventory = invById.get(inventoryId);
+      financialReviewByInventory.set(inventoryId, {
+        salePrice: inventory?.sale_price_aed == null ? null : Number(inventory.sale_price_aed),
+        expenses: inventory ? Number(inventory.expense_total_aed ?? 0) : expensesByInventory.get(inventoryId) ?? 0,
+        netProfit: inventory?.net_profit_aed == null ? null : Number(inventory.net_profit_aed),
+        margin: inventory?.sale_price_aed && inventory?.net_profit_aed != null
+          ? (Number(inventory.net_profit_aed) / Number(inventory.sale_price_aed)) * 100
+          : null,
+        corrections: (financialEvents ?? [])
+          .filter((event) => event.inventory_id === inventoryId && event.action === "financial_review_reopened")
+          .map((event) => ({ reason: event.reason ?? "No reason provided", actorName: actorNames.get(event.actor_id) ?? "Staff member", at: event.created_at })),
+      });
+    }
+  }
 
   type CombinedEntry = (DbStaffCommissionEntry & { kind: "role_commission" }) | (DbStaffReferralIncentive & { kind: "referral_incentive" });
   const entriesByStaff = new Map<string, CombinedEntry[]>();
@@ -851,6 +909,13 @@ export async function fetchStaffCommission(
     else entriesByStaff.set(entry.staff_id, [entry]);
   }
 
+  const paymentsByStaff = new Map<string, DbStaffCommissionPayment[]>();
+  for (const payment of (paymentRows ?? []) as unknown as DbStaffCommissionPayment[]) {
+    const list = paymentsByStaff.get(payment.staff_id);
+    if (list) list.push(payment);
+    else paymentsByStaff.set(payment.staff_id, [payment]);
+  }
+
   const agents: StaffCommission[] = [];
   const purchasers: StaffCommission[] = [];
   const referralRecipients: StaffCommission[] = [];
@@ -859,6 +924,28 @@ export async function fetchStaffCommission(
   for (const s of staff) {
     const own = entriesByStaff.get(s.id) ?? [];
     const unpaid = own.filter((e) => e.paid_at === null);
+
+    const mapEntry = (entry: CombinedEntry): StaffCommissionEntry => {
+      const inv = invById.get(entry.inventory_id);
+      return {
+        id: entry.id,
+        leadName: (inv ? leadNameById.get(inv.lead_id) : null) ?? "—",
+        carDetails: inv ? `${inv.year} ${inv.make} ${inv.model}`.trim() : "—",
+        soldAt: entry.sold_at,
+        kind: entry.kind,
+        profit: redactAgentProfit || entry.kind !== "role_commission" ? null : Number(entry.profit_aed),
+        commission: entry.kind === "role_commission" ? Number(entry.commission_aed) : Number(entry.incentive_aed),
+        ...(isOwner && entry.kind === "role_commission" ? { financialReview: financialReviewByInventory.get(entry.inventory_id) } : {}),
+      };
+    };
+    const paymentHistory = (paymentsByStaff.get(s.id) ?? []).map((payment) => ({
+      id: payment.id,
+      totalAmount: Number(payment.total_aed),
+      entryCount: Number(payment.entry_count),
+      paidAt: payment.paid_at,
+      paidByName: payment.paid_by_name ?? "Recorded before payment history",
+      entries: own.filter((entry) => entry.payment_id === payment.id).map(mapEntry),
+    }));
 
     const paidTimestamps = own.map((e) => e.paid_at).filter((t): t is string => t !== null);
     const latestPaidAt = paidTimestamps.length > 0 ? paidTimestamps.sort()[paidTimestamps.length - 1] : null;
@@ -872,18 +959,8 @@ export async function fetchStaffCommission(
       totalCommission: unpaid.reduce((n, e) => n + (e.kind === "role_commission" ? Number(e.commission_aed) : Number(e.incentive_aed)), 0),
       isPaidThisMonth: unpaid.length === 0,
       paidAt: latestPaidAt,
-      entries: unpaid.map((e) => {
-        const inv = invById.get(e.inventory_id);
-        return {
-          id: e.id,
-          leadName: (inv ? leadNameById.get(inv.lead_id) : null) ?? "—",
-          carDetails: inv ? `${inv.year} ${inv.make} ${inv.model}`.trim() : "—",
-          soldAt: e.sold_at,
-          kind: e.kind,
-          profit: redactAgentProfit || e.kind !== "role_commission" ? null : Number(e.profit_aed),
-          commission: e.kind === "role_commission" ? Number(e.commission_aed) : Number(e.incentive_aed),
-        };
-      }),
+      entries: unpaid.map(mapEntry),
+      paymentHistory,
     };
 
     if (s.role === "call_center") agents.push(result);

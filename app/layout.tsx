@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { fontDisplay, fontSans } from "./fonts";
 import "./globals.css";
+import { MetaPixel } from "@/components/public/MetaPixel";
 
 export const metadata: Metadata = {
   title: "CarVibeDubai - Get Your Free Valuation",
@@ -15,7 +16,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${fontSans.variable} ${fontDisplay.variable} antialiased`}>{children}</body>
+      <body className={`${fontSans.variable} ${fontDisplay.variable} antialiased`}>
+        {children}
+        <MetaPixel />
+      </body>
     </html>
   );
 }

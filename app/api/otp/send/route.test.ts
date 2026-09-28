@@ -43,4 +43,12 @@ describe("POST /api/otp/send emergency switch", () => {
     });
     expect(mocks.sendWhatsappOtp).not.toHaveBeenCalled();
   });
+
+  it("does not send in unverified mode even if the legacy sender switch is on", async () => {
+    process.env.PUBLIC_LEAD_VERIFICATION_MODE = "unverified";
+    process.env.WHATSAPP_OTP_SENDING_ENABLED = "true";
+    const response = await POST(new NextRequest("http://localhost/api/otp/send", { method: "POST", body: "{}" }));
+    expect(response.status).toBe(503);
+    expect(mocks.sendWhatsappOtp).not.toHaveBeenCalled();
+  });
 });

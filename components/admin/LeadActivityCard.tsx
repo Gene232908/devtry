@@ -164,27 +164,20 @@ export function LeadActivityCard({ events, views }: Props) {
                       : "border-border/60 bg-surface-2/60 hover:border-border",
                   )}
                 >
-                  {/* Clear Audit Header: Revision Label + Author + Timestamp */}
+                  {/* Clear Audit Header: Creator + Timestamp */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/50 pb-2.5 mb-3">
                     <div className="flex flex-wrap items-center gap-2 min-w-0">
-                      {isLatest ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-xs font-semibold text-emerald-400 shrink-0">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Latest Note
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-white/10 border border-white/15 px-2 py-0.5 text-xs font-medium text-text-muted shrink-0">
-                          <History className="h-3 w-3" />
-                          Revision #{notes.length - idx}
-                        </span>
-                      )}
-
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="text-xs text-text-muted">by</span>
-                        <span className="text-sm font-semibold text-text">
-                          {item.actorLabel ?? "Staff member"}
-                        </span>
-                      </div>
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium shrink-0",
+                          isLatest
+                            ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
+                            : "bg-white/10 border-white/15 text-text-muted",
+                        )}
+                      >
+                        {isLatest ? <CheckCircle2 className="h-3 w-3" /> : <History className="h-3 w-3" />}
+                        Created by {item.actorLabel ?? "Staff member"}
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-1.5 text-xs text-text-muted shrink-0">

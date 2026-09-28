@@ -1,0 +1,27 @@
+-- CarVibeDubai — the two pipeline stages named in the client's Milestone 3 brief
+-- Run in Supabase -> SQL Editor AFTER 0001-0014. Safe to re-run.
+--
+-- The brief lists seven stages: New Lead, Contacted, Inspection Scheduled,
+-- Inspected, Under Negotiation, Completed Sale, Not Purchased. Two of them had
+-- no equivalent in the enum:
+--
+--   inspection_scheduled — a viewing is booked but has not happened yet. The
+--                          gap this fills is real: "Contacted" covered both
+--                          "left a message" and "meeting them Thursday", which
+--                          are very different for anyone chasing the day's work.
+--   negotiating          — the car has been seen and the two sides are still
+--                          apart on price. Previously this looked identical to
+--                          "Inspected", so a lead could sit in limbo with
+--                          nothing recording that a number was on the table.
+--
+-- Mapping to the brief's wording, for anyone comparing the two documents:
+--   Completed Sale -> 'deal'    (the car was bought)
+--   Not Purchased  -> 'closed'  (met, no agreement)
+-- Those two already existed and are unchanged; only the labels differ, and the
+-- UI shows the brief's meaning in the hint text under each option.
+--
+-- ALTER TYPE ... ADD VALUE IF NOT EXISTS is idempotent. Each runs as its own
+-- statement because a new enum value cannot be used in the transaction that
+-- creates it.
+alter type lead_status add value if not exists 'inspection_scheduled';
+alter type lead_status add value if not exists 'negotiating';

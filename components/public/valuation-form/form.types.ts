@@ -7,6 +7,7 @@ export type ValuationFormValues = {
   make: string;
   model: string;
   mileageKm: string;
+  mileageUnit: "km" | "miles";
   specification: string;
   description: string;
   trim: string;
@@ -68,6 +69,7 @@ export const emptyValues: ValuationFormValues = {
   make: "",
   model: "",
   mileageKm: "",
+  mileageUnit: "km",
   specification: "",
   description: "",
   trim: "",

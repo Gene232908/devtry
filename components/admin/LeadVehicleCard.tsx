@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/Card";
 import { Lead } from "@/config/mock-data";
+import { formatMileage } from "@/lib/format";
 
 type Props = {
   lead: Lead;
@@ -24,7 +25,7 @@ export function LeadVehicleCard({ lead }: Props) {
         <Detail label="Model" value={lead.model} />
         <Detail label="Trim" value={lead.trim || "—"} />
         <Detail label="Year" value={String(lead.year)} />
-        <Detail label="Mileage" value={`${lead.mileageKm.toLocaleString()} km`} />
+        <Detail label="Mileage" value={formatMileage(lead.mileageValue ?? lead.mileageKm, lead.mileageUnit)} />
         <Detail label="Specification" value={lead.specification || "—"} />
         <Detail label="Option Level" value={optionDisplay} />
         <Detail label="Location" value={lead.location || "—"} />

@@ -40,6 +40,21 @@ export function formatUaeDate(date: Date = new Date()): string {
   }).format(date);
 }
 
+/** Formats an audit timestamp in the business timezone, e.g. "27 Sep 2026, 14:35 UAE". */
+export function formatUaeDateTime(date: Date | string): string {
+  const value = typeof date === "string" ? new Date(date) : date;
+  if (Number.isNaN(value.getTime())) return typeof date === "string" ? date : "—";
+  return `${new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Dubai",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(value)} UAE`;
+}
+
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 

@@ -5,6 +5,9 @@ export function formatAed(value: number | null | undefined) {
 export function formatNumber(value: number) {
   return value.toLocaleString("en-US");
 }
+export function formatMileage(value: number, unit: "km" | "miles" = "km") {
+  return `${value.toLocaleString("en-US")} ${unit === "miles" ? "miles" : "km"}`;
+}
 
 export function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", {

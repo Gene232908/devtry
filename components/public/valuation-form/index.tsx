@@ -13,6 +13,7 @@ import { OtpModal } from "./otp-modal";
 import { ThankYouModal } from "./thank-you-modal";
 import { ValuationFormValues } from "./form.types";
 import type { ValuationModalMode } from "../open-valuation-modal";
+import type { PublicLeadVerificationMode } from "@/lib/server/public-lead-verification";
 
 const STEPS: Array<{
   n: 1 | 2 | 3;
@@ -20,12 +21,12 @@ const STEPS: Array<{
   fields: Array<keyof ValuationFormValues>;
 }> = [
   { n: 1, label: "Contact Info", fields: ["fullName", "whatsapp", "consent"] },
-  { n: 2, label: "Car Details", fields: ["year", "make", "model", "mileageKm", "specification", "description"] },
+  { n: 2, label: "Car Details", fields: ["year", "make", "model", "mileageKm", "mileageUnit", "specification", "description"] },
   { n: 3, label: "Trim & Location", fields: ["trim", "optionLevel", "location"] },
 ];
 
-export function ValuationForm({ registerCapture, mode = "valuation" }: { registerCapture?: (capture: () => void) => void; mode?: ValuationModalMode } = {}) {
-  const form = useValuationForm(mode);
+export function ValuationForm({ registerCapture, mode = "valuation", verificationMode }: { registerCapture?: (capture: () => void) => void; mode?: ValuationModalMode; verificationMode: PublicLeadVerificationMode }) {
+  const form = useValuationForm(mode, verificationMode);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   // Make / model / trim options come from the admin's Catalog page, so what the
   // client adds there is what a customer actually sees here.
@@ -177,14 +178,14 @@ export function ValuationForm({ registerCapture, mode = "valuation" }: { registe
         </div>
       </form>
 
-      <OtpModal
+      {verificationMode === "otp" && <OtpModal
         phone={form.values.whatsapp}
         phoneVerification={form.phoneVerification}
         submitting={form.state === "submitting"}
         onVerify={form.verifyPhoneOtp}
         onResend={form.resendOtp}
         onClose={form.cancelOtp}
-      />
+      />}
 
       <ThankYouModal
         open={form.state === "success"}

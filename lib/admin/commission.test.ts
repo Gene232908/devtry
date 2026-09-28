@@ -6,6 +6,7 @@ import {
   monthsToBuild,
   nextMonth,
   quarterOf,
+  unpaidDeveloperStatements,
   type CommissionStatement,
 } from "./commission";
 
@@ -145,6 +146,21 @@ describe("nextMonth", () => {
 
   it("always lands on the first of the month", () => {
     expect(nextMonth("2026-01-31T12:00:00Z")).toBe("2026-02-01");
+  });
+});
+
+describe("unpaidDeveloperStatements", () => {
+  it("allows a Super Admin to settle every outstanding month now, without waiting for a quarter to end", () => {
+    const statements = [
+      stmt("2026-09-01", { status: "paid" }),
+      stmt("2026-10-01", { status: "issued" }),
+      stmt("2026-11-01", { status: "draft" }),
+    ];
+
+    expect(unpaidDeveloperStatements(statements).map((statement) => statement.periodMonth)).toEqual([
+      "2026-10-01",
+      "2026-11-01",
+    ]);
   });
 });
 

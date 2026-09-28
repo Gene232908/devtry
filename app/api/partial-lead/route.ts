@@ -27,6 +27,7 @@ import { pickNextAssignee } from "@/lib/server/lead-assignment";
 const MAX_CAPTURES_PER_IP = 30;
 const CAPTURE_WINDOW_MS = 10 * 60 * 1000;
 const CAPTURE_TRIGGERS = new Set(["close", "consent", "next", "input"]);
+const MILES_TO_KM = 1.609344;
 
 /** Always 200 — the client treats this endpoint as fire-and-forget. */
 function ok(captured: boolean) {
@@ -40,11 +41,18 @@ function str(value: unknown): string | null {
 /** Parses a positive integer, returning null for anything unusable. */
 function int(value: unknown): number | null {
   if (typeof value === "number" && Number.isInteger(value) && value >= 0) return value;
-  if (typeof value === "string" && value.trim() !== "") {
-    const parsed = Number.parseInt(value, 10);
+  if (typeof value === "string" && /^\d+$/.test(value.trim())) {
+    const parsed = Number(value);
     if (Number.isFinite(parsed) && parsed >= 0) return parsed;
   }
   return null;
+}
+
+function mileageFromBody(body: Record<string, unknown>) {
+  const value = int(body.mileageKm);
+  const unit = body.mileageUnit === "miles" ? "miles" : "km";
+  if (value === null || value > 1_000_000) return null;
+  return { value, unit, km: unit === "miles" ? Math.round(value * MILES_TO_KM) : value } as const;
 }
 
 export async function POST(req: NextRequest) {
@@ -85,6 +93,7 @@ export async function POST(req: NextRequest) {
   // new enquiry and must still be recorded if they abandon it — the same rule
   // the OTP gate applies, from the same shared helper.
   const step = int(body.furthestStep) ?? 1;
+  const mileage = mileageFromBody(body);
   if (typeof body.trigger !== "string" || !CAPTURE_TRIGGERS.has(body.trigger)) return ok(false);
   if (body.inquiryType !== undefined && body.inquiryType !== "valuation" && body.inquiryType !== "scrap") return ok(false);
   const inquiryType = body.inquiryType === "scrap" ? "scrap" : "valuation";
@@ -103,7 +112,7 @@ export async function POST(req: NextRequest) {
   const callCenterId = await pickNextAssignee("call_center", "partial_leads");
 
   try {
-    const basePayload = {
+    const legacyPayload = {
       p_phone: phone,
       p_full_name: str(body.fullName),
       p_furthest_step: Math.min(Math.max(step, 1), 3),
@@ -113,13 +122,15 @@ export async function POST(req: NextRequest) {
       p_make: str(body.make),
       p_model: str(body.model),
       p_year: int(body.year),
-      p_mileage_km: int(body.mileageKm),
+      p_mileage_km: mileage?.km ?? null,
       p_specification: str(body.specification),
       p_description: str(body.description),
       p_call_center_id: callCenterId,
     };
     const { error } = await getSupabaseAdmin().rpc("capture_partial_lead", {
-      ...basePayload,
+      ...legacyPayload,
+      p_mileage_value: mileage?.value ?? null,
+      p_mileage_unit: mileage?.unit ?? "km",
       p_inquiry_type: inquiryType,
       p_scrap_condition: inquiryType === "scrap" ? scrapCondition : null,
       p_scrap_asking_price_aed: inquiryType === "scrap" ? scrapAskingPrice : null,
@@ -128,9 +139,9 @@ export async function POST(req: NextRequest) {
       // Preserve existing valuation recovery during the short window between a
       // code deployment and migration 0035. Scrap deliberately has no fallback:
       // saving it as a valuation would violate its permanent classification.
-      const missingNewSignature = /p_inquiry_type|p_scrap_condition|p_scrap_asking_price_aed|capture_partial_lead/i.test(error.message ?? "");
+      const missingNewSignature = /p_inquiry_type|p_scrap_condition|p_scrap_asking_price_aed|p_mileage_value|p_mileage_unit|capture_partial_lead/i.test(error.message ?? "");
       if (inquiryType !== "valuation" || !missingNewSignature) return ok(false);
-      const { error: legacyError } = await getSupabaseAdmin().rpc("capture_partial_lead", basePayload);
+      const { error: legacyError } = await getSupabaseAdmin().rpc("capture_partial_lead", legacyPayload);
       if (legacyError) return ok(false);
     }
   } catch {

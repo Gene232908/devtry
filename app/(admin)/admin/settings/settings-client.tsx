@@ -258,19 +258,9 @@ export default function SettingsClient({ initialSettings, initialError, canEdit 
         </Card>
 
         <Card className="flex flex-col gap-4 p-5">
-          <h3 className="text-fluid-0 text-text">Referral incentive</h3>
-          <Input
-            label="Incentive amount (AED)"
-            name="referralIncentiveAed"
-            type="number"
-            min="0"
-            step="0.01"
-            value={String(draft.referralIncentiveAed)}
-            error={errors.referralIncentiveAed}
-            disabled={!canEdit || saving}
-            onChange={(e) => update("referralIncentiveAed", Number(e.target.value))}
-          />
-          <p className="text-fluid--1 text-text-faint">This amount is frozen when a referred vehicle is marked Sold. Changing it affects future sales only.</p>
+          <h3 className="text-fluid-0 text-text">Referral policy</h3>
+          <p className="text-fluid--1 text-text-muted">Referral proof can be recorded, but a vehicle sale does not create an automatic referral payment.</p>
+          <p className="text-fluid--1 text-text-faint">The company will decide any future referral award separately. The previous default amount is intentionally not used for new sales.</p>
         </Card>
 
 

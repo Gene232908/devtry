@@ -10,6 +10,8 @@ type NewLeadNotification = {
   trim: string | null;
   year: number;
   mileageKm: number;
+  mileageValue?: number;
+  mileageUnit?: "km" | "miles";
   emirate: string;
   createdAt: string;
 };
@@ -60,7 +62,7 @@ export function formatNewLeadText(lead: NewLeadNotification): string {
     `Customer: ${lead.fullName}`,
     `Phone: ${lead.phoneE164}`,
     `Vehicle: ${formatVehicle(lead)}`,
-    `Mileage: ${lead.mileageKm.toLocaleString()} km`,
+    `Mileage: ${(lead.mileageValue ?? lead.mileageKm).toLocaleString()} ${lead.mileageUnit === "miles" ? "miles" : "km"}`,
     `Emirate: ${lead.emirate}`,
     `Received: ${new Date(lead.createdAt).toLocaleString("en-GB")}`,
     "",

@@ -7,6 +7,7 @@ import {
   PARTIAL_TRIGGER_LABELS,
   type PartialLead,
 } from "@/lib/admin/partial-lead";
+import { formatMileage } from "@/lib/format";
 
 type Props = {
   partial: PartialLead;
@@ -40,7 +41,7 @@ export function PartialLeadCapturedCard({ partial }: Props) {
         <Detail label="Specification" value={partial.specification || "—"} />
         <Detail
           label="Mileage"
-          value={partial.mileage_km != null ? `${partial.mileage_km.toLocaleString()} km` : "—"}
+          value={partial.mileage_km != null ? formatMileage(partial.mileage_value ?? partial.mileage_km, partial.mileage_unit === "miles" ? "miles" : "km") : "—"}
         />
         <Detail label="Status" value={partial.status} />
         <Detail label="Source" value={isScrap ? "Incomplete Scrap Inquiry" : "Incomplete Valuation"} />

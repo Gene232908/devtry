@@ -12,9 +12,9 @@ import {
   ValuationFormValues,
 } from "./form.types";
 import type { ValuationModalMode } from "../open-valuation-modal";
+import type { PublicLeadVerificationMode } from "@/lib/server/public-lead-verification";
 
 const RESEND_COOLDOWN_MS = 60 * 1000;
-const DEMO_OTP_CODE = "123456";
 const FETCH_TIMEOUT_MS = 15 * 1000;
 
 const OTP_MESSAGES = {
@@ -71,7 +71,7 @@ async function fetchWithTimeout(input: string, init: RequestInit): Promise<Respo
 // verify -> the lead is submitted automatically right after verification
 // succeeds. The phone field itself lives in Step 1, but nothing there
 // triggers an OTP send on its own — only the final step's submit button does.
-export function useValuationForm(mode: ValuationModalMode = "valuation") {
+export function useValuationForm(mode: ValuationModalMode, verificationMode: PublicLeadVerificationMode) {
   const [values, setValues] = useState<ValuationFormValues>(emptyValues);
   const [errors, setErrors] = useState<FormErrors>({});
   const [state, setState] = useState<FormState>("filling");
@@ -84,8 +84,10 @@ export function useValuationForm(mode: ValuationModalMode = "valuation") {
   // Set the moment a real lead is created. Read synchronously by
   // capturePartial, which cannot wait for the `state` re-render.
   const submittedRef = useRef(false);
+  const submissionIdRef = useRef<string | null>(null);
 
   const setField = useCallback(<K extends keyof ValuationFormValues>(key: K, value: ValuationFormValues[K]) => {
+    submissionIdRef.current = null;
     setValues((v) => {
       // Trim is connected to make + model, so reset it when either changes.
       if (key === "make") return { ...v, make: value as string, model: "", trim: "" };
@@ -192,10 +194,6 @@ export function useValuationForm(mode: ValuationModalMode = "valuation") {
         return { ok: true as const };
       }
 
-      // Backend unreachable/not configured: fall back to a client-only demo
-      // so the flow is still fully testable without live WhatsApp credentials.
-      // An intentional server-side OTP shutdown is NOT a backend outage and
-      // must never become a client-side verification bypass.
       if (body?.error?.kind === "otp_sending_disabled") {
         setState("filling");
         setPhoneVerification((pv) => ({ ...pv, status: "error", errorMessage: OTP_MESSAGES.temporarilyUnavailable }));
@@ -204,15 +202,8 @@ export function useValuationForm(mode: ValuationModalMode = "valuation") {
 
       if (res.status === 503) {
         setState("filling");
-        setPhoneVerification({
-          status: "code_sent",
-          verifiedPhone: null,
-          proof: null,
-          devBypass: true,
-          resendAvailableAt: Date.now() + RESEND_COOLDOWN_MS,
-          errorMessage: null,
-        });
-        return { ok: true as const };
+        setPhoneVerification((pv) => ({ ...pv, status: "error", errorMessage: OTP_MESSAGES.temporarilyUnavailable }));
+        return { ok: false as const };
       }
 
       // Already on file: an answer, not a failure. The modal shows the message
@@ -237,29 +228,20 @@ export function useValuationForm(mode: ValuationModalMode = "valuation") {
     }
   }, [mode, values.whatsapp, values.honeypot]);
 
-  /** Submits the lead once a proof (or demo verification) is in hand. */
+  /** Only a persisted API response can complete either submission mode. */
   const submitLead = useCallback(
     async (proof: string | null) => {
       setState("submitting");
-
-      // Demo-mode verification (no server proof) — the backend was never
-      // reachable at all, so there's nothing real to submit; just complete
-      // the demo flow client-side.
-      if (!proof) {
-        await new Promise((resolve) => setTimeout(resolve, 700));
-        submittedRef.current = true;
-        setState("success");
-        return;
-      }
+      if (!submissionIdRef.current) submissionIdRef.current = crypto.randomUUID();
 
       try {
         const res = await fetchWithTimeout("/api/leads", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...values, inquiryType: mode, proof }),
+          body: JSON.stringify({ ...values, inquiryType: mode, proof, submissionId: submissionIdRef.current }),
         });
         const body = await res.json();
-        if (!res.ok || !body.ok) {
+        if (!res.ok || !body.ok || typeof body.data?.id !== "string") {
           setState("filling");
           setSubmitError(body?.error?.message || "Couldn't submit your details. Please try again.");
           return;
@@ -288,23 +270,6 @@ export function useValuationForm(mode: ValuationModalMode = "valuation") {
           body: JSON.stringify({ phone, code }),
         });
 
-        if (res.status === 503) {
-          // Backend unreachable — accept the demo code client-side only.
-          if (code === DEMO_OTP_CODE) {
-            setPhoneVerification((pv) => ({
-              ...pv,
-              status: "verified",
-              verifiedPhone: values.whatsapp,
-              proof: null,
-              errorMessage: null,
-            }));
-            await submitLead(null);
-            return { ok: true as const };
-          }
-          setPhoneVerification((pv) => ({ ...pv, status: "code_sent", errorMessage: OTP_MESSAGES.incorrect }));
-          return { ok: false as const };
-        }
-
         const body = await res.json();
         if (!res.ok || !body.ok) {
           const kind = body?.error?.kind;
@@ -324,6 +289,10 @@ export function useValuationForm(mode: ValuationModalMode = "valuation") {
           resendAvailableAt: null,
           errorMessage: null,
         }));
+        if (typeof body.data?.proof !== "string") {
+          setPhoneVerification((pv) => ({ ...pv, status: "error", errorMessage: OTP_MESSAGES.temporarilyUnavailable }));
+          return { ok: false as const };
+        }
         await submitLead(body.data.proof);
         return { ok: true as const };
       } catch {
@@ -360,13 +329,18 @@ export function useValuationForm(mode: ValuationModalMode = "valuation") {
       return { ok: false as const };
     }
 
+    if (verificationMode === "unverified") {
+      await submitLead(null);
+      return { ok: true as const };
+    }
+
     if (phoneVerification.status === "verified" && phoneVerification.verifiedPhone === values.whatsapp) {
       await submitLead(phoneVerification.proof);
       return { ok: true as const };
     }
 
     return sendOtp();
-  }, [validate, values.honeypot, values.whatsapp, phoneVerification, submitLead, sendOtp]);
+  }, [validate, values.honeypot, values.whatsapp, verificationMode, phoneVerification, submitLead, sendOtp]);
 
   /**
    * Records a half-finished form so a visitor who types their name and number
@@ -399,6 +373,7 @@ export function useValuationForm(mode: ValuationModalMode = "valuation") {
         model: values.model,
         year: values.year,
         mileageKm: values.mileageKm,
+        mileageUnit: values.mileageUnit,
         specification: values.specification,
         description: values.description,
         inquiryType: mode,
@@ -437,6 +412,7 @@ export function useValuationForm(mode: ValuationModalMode = "valuation") {
     startedAtRef.current = Date.now();
     capturedSignatureRef.current = null;
     submittedRef.current = false;
+    submissionIdRef.current = null;
     setState("filling");
   }, []);
 

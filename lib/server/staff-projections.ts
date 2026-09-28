@@ -42,6 +42,8 @@ export type ProjectedLead = {
   trim: string;
   year: number;
   mileageKm: number;
+  mileageValue: number;
+  mileageUnit: "km" | "miles";
   specification: string;
   condition: string;
   optionLevel: string | undefined;
@@ -86,6 +88,8 @@ export function projectLeadForOwner(lead: DbLead): ProjectedLead {
     trim: lead.trim ?? "",
     year: lead.year,
     mileageKm: lead.mileage_km ?? 0,
+    mileageValue: lead.mileage_value ?? lead.mileage_km ?? 0,
+    mileageUnit: lead.mileage_unit === "miles" ? "miles" : "km",
     specification: lead.specification ?? "",
     condition: lead.condition ?? "good",
     optionLevel: lead.option_level ?? undefined,
@@ -123,6 +127,8 @@ export function projectLeadForCallCenter(lead: DbLead): ProjectedLead {
     trim: lead.trim ?? "",
     year: lead.year,
     mileageKm: lead.mileage_km ?? 0,
+    mileageValue: lead.mileage_value ?? lead.mileage_km ?? 0,
+    mileageUnit: lead.mileage_unit === "miles" ? "miles" : "km",
     specification: lead.specification ?? "",
     condition: lead.condition ?? "good",
     optionLevel: lead.option_level ?? undefined,
@@ -159,6 +165,8 @@ export function projectLeadForPurchaser(lead: DbLead): ProjectedLead {
     trim: lead.trim ?? "",
     year: lead.year,
     mileageKm: lead.mileage_km ?? 0,
+    mileageValue: lead.mileage_value ?? lead.mileage_km ?? 0,
+    mileageUnit: lead.mileage_unit === "miles" ? "miles" : "km",
     specification: lead.specification ?? "",
     condition: lead.condition ?? "good",
     optionLevel: lead.option_level ?? undefined,

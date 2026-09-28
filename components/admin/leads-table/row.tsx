@@ -4,7 +4,7 @@ import { memo } from "react";
 import Link from "next/link";
 import { StatusPill } from "@/components/ui/Pill";
 import { Lead } from "@/config/mock-data";
-import { formatAed, formatDate } from "@/lib/format";
+import { formatAed, formatDate, formatMileage } from "@/lib/format";
 
 type Props = { lead: Lead; duplicateReview?: boolean; showArrivalStatus?: boolean };
 
@@ -39,7 +39,7 @@ export const LeadRow = memo(function LeadRow({ lead, duplicateReview = false, sh
         {lead.inquiryType === "scrap" ? "Scrap inquiry" : SOURCE_LABELS[lead.source ?? "web"] ?? "Other"}
       </td>
       <td className="py-3.5 pr-3 min-w-[105px] text-text-muted whitespace-nowrap tabular-nums text-xs">
-        {lead.mileageKm.toLocaleString()} km
+        {formatMileage(lead.mileageValue ?? lead.mileageKm, lead.mileageUnit)}
       </td>
       <td className="py-3.5 pr-3 min-w-[100px] text-text-muted whitespace-nowrap text-xs">
         {lead.location || "—"}

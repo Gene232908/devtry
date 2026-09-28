@@ -11,10 +11,9 @@ import { useFreshServerData, useServerState } from "@/lib/admin/use-fresh-server
 import { COMMISSION_RATE } from "@/lib/admin/inventory";
 import {
   formatMonth,
-  groupIntoQuarters,
   type CommissionStatement,
-  type Quarter,
   type StaffCommission,
+  unpaidDeveloperStatements,
 } from "@/lib/admin/commission";
 import { downloadStaffInvoicePdf } from "@/lib/admin/pdf-invoice";
 import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
@@ -27,6 +26,7 @@ import {
   CommissionScopeFilter,
   type CommissionScope,
 } from "@/components/admin/CommissionScopeFilter";
+import { RecentStaffPayments, StaffPaymentHistory } from "@/components/admin/StaffPaymentHistory";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -47,6 +47,7 @@ const DEMO_AGENTS: StaffCommission[] = [
       { id: "e2", kind: "role_commission", leadName: "Sara Ali", carDetails: "2023 Mercedes GLC", soldAt: "2026-09-05", profit: 22000, commission: 440 },
       { id: "e3", kind: "role_commission", leadName: "Omar Khalid", carDetails: "2021 Range Rover Sport", soldAt: "2026-08-28", profit: 15000, commission: 300 },
     ],
+    paymentHistory: [],
   },
   {
     id: "agent-2",
@@ -61,6 +62,7 @@ const DEMO_AGENTS: StaffCommission[] = [
       { id: "e4", kind: "role_commission", leadName: "Khalid Noor", carDetails: "2022 Toyota Land Cruiser", soldAt: "2026-09-01", profit: 25000, commission: 500 },
       { id: "e5", kind: "role_commission", leadName: "Layla Mohammed", carDetails: "2023 Audi Q7", soldAt: "2026-09-04", profit: 20000, commission: 400 },
     ],
+    paymentHistory: [],
   },
 ];
 
@@ -78,6 +80,7 @@ const DEMO_PURCHASERS: StaffCommission[] = [
       { id: "e6", kind: "role_commission", leadName: "Rashed Abdullah", carDetails: "2023 Porsche Cayenne", soldAt: "2026-09-03", profit: 32000, commission: 3200 },
       { id: "e7", kind: "role_commission", leadName: "Nadia Yusuf", carDetails: "2022 Lexus RX", soldAt: "2026-08-30", profit: 16000, commission: 1600 },
     ],
+    paymentHistory: [],
   },
 ];
 
@@ -119,7 +122,7 @@ export default function CommissionClient({
   );
   const [referralRecipients, setReferralRecipients] = useServerState<StaffCommission[]>(initialReferralRecipients ?? []);
 
-  // Developer commission (existing quarterly system)
+  // Developer commission (monthly records, payable anytime)
   const [statements, setStatements] = useServerState<CommissionStatement[]>(initialStatements);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(initialError);
@@ -138,7 +141,7 @@ export default function CommissionClient({
   const [payError, setPayError] = useState<string | null>(null);
 
   // Developer pay confirmation
-  const [devPayTarget, setDevPayTarget] = useState<Quarter | null>(null);
+  const [devPayTarget, setDevPayTarget] = useState<{ ids: string[]; total: number; monthCount: number; carCount: number } | null>(null);
   const [devPayBusy, setDevPayBusy] = useState(false);
   const [devPayError, setDevPayError] = useState<string | null>(null);
 
@@ -233,14 +236,12 @@ export default function CommissionClient({
     }
   }
 
-  async function handlePayDeveloperQuarter() {
+  async function handlePayDeveloperNow() {
     if (!devPayTarget) return;
     setDevPayBusy(true);
     setDevPayError(null);
 
-    const ids = devPayTarget.months
-      .filter((m) => m.status !== "paid")
-      .map((m) => m.id);
+    const { ids } = devPayTarget;
 
     if (ADMIN_PREVIEW) {
       const now = new Date().toISOString();
@@ -276,10 +277,10 @@ export default function CommissionClient({
 
   // ─── Developer data ───────────────────────────────────────────────────────
 
-  const quarters = useMemo(() => groupIntoQuarters(statements), [statements]);
+  const unpaidDeveloper = useMemo(() => unpaidDeveloperStatements(statements), [statements]);
   const devOutstanding = useMemo(
-    () => statements.filter((s) => s.status !== "paid").reduce((n, s) => n + s.totalCommissionAed, 0),
-    [statements],
+    () => unpaidDeveloper.reduce((n, s) => n + s.totalCommissionAed, 0),
+    [unpaidDeveloper],
   );
   const devPaid = useMemo(
     () => statements.filter((s) => s.status === "paid").reduce((n, s) => n + s.totalCommissionAed, 0),
@@ -297,6 +298,17 @@ export default function CommissionClient({
   }, [agents, purchasers, referralRecipients, selectedScopes]);
   const selectedStaffOutstanding = useMemo(
     () => selectedStaff.reduce((total, staff) => total + staff.totalCommission, 0),
+    [selectedStaff],
+  );
+  const recentStaffPayments = useMemo(
+    () => selectedStaff
+      .flatMap((staff) => staff.paymentHistory.map((payment) => ({
+        ...payment,
+        staffName: staff.displayName,
+        roleLabel: ROLE_LABELS[staff.role],
+      })))
+      .sort((a, b) => b.paidAt.localeCompare(a.paidAt))
+      .slice(0, 6),
     [selectedStaff],
   );
   const showsStaffCommission = selectedScopes.some((scope) => scope !== "developer");
@@ -425,23 +437,30 @@ export default function CommissionClient({
             emptyLabel="selected staff"
             onViewDetails={setDetailTarget}
           />
+          <RecentStaffPayments payments={recentStaffPayments} />
         </>
       )}
 
       {!isStaffSelfViewer && showsDeveloperCommission && (
         <>
           <div>
-            <h2 className="text-lg font-semibold text-text">Developer Quarterly Share</h2>
-            <p className="mt-1 text-sm text-text-muted">Recorded monthly and settled every three months.</p>
+            <h2 className="text-lg font-semibold text-text">Developer Share</h2>
+            <p className="mt-1 text-sm text-text-muted">Pay anytime. Every sale adds the developer&apos;s 2% share here.</p>
           </div>
           <DeveloperCommissionView
             outstanding={devOutstanding}
             paidToDate={devPaid}
-            quarters={quarters}
+            statements={statements}
             loading={loading}
-            onMarkPaid={(q) => {
+            onPayNow={() => {
+              if (unpaidDeveloper.length === 0) return;
               setDevPayError(null);
-              setDevPayTarget(q);
+              setDevPayTarget({
+                ids: unpaidDeveloper.map((statement) => statement.id),
+                total: devOutstanding,
+                monthCount: unpaidDeveloper.length,
+                carCount: unpaidDeveloper.reduce((total, statement) => total + statement.entryCount, 0),
+              });
             }}
           />
         </>
@@ -489,9 +508,9 @@ export default function CommissionClient({
         description={
           payTarget ? (
             <>
-              This will mark <span className="text-text">{payTarget.displayName}</span>&apos;s commission of{" "}
-              <span className="text-gold">{formatAed(payTarget.totalCommission)}</span> as paid for this month.
-              Their totals will reset to 0 for the next period.
+              This will record <span className="text-text">{payTarget.displayName}</span>&apos;s commission of{" "}
+              <span className="text-gold">{formatAed(payTarget.totalCommission)}</span> as paid. A permanent payment
+              history will keep the amount, included sales, UAE date/time, and confirmer.
             </>
           ) : null
         }
@@ -511,19 +530,18 @@ export default function CommissionClient({
       {/* ─── Developer pay confirmation ───────────────────────────────── */}
       <ConfirmDialog
         open={devPayTarget !== null}
-        title="Mark Quarter as Paid?"
+        title="Record developer payment?"
         description={
           devPayTarget ? (
             <>
-              This records <span className="text-gold">{formatAed(devPayTarget.totalCommissionAed)}</span> for{" "}
-              {devPayTarget.label} as settled. It cannot be undone from here.
+              This records <span className="text-gold">{formatAed(devPayTarget.total)}</span> for {devPayTarget.carCount} {devPayTarget.carCount === 1 ? "car" : "cars"} across {devPayTarget.monthCount} {devPayTarget.monthCount === 1 ? "month" : "months"}. It cannot be undone from here.
             </>
           ) : null
         }
-        confirmLabel="Mark as Paid"
+        confirmLabel="Record payment"
         cancelLabel="Cancel"
         busy={devPayBusy}
-        onConfirm={() => void handlePayDeveloperQuarter()}
+        onConfirm={() => void handlePayDeveloperNow()}
         onCancel={() => setDevPayTarget(null)}
       >
         {devPayError && (
@@ -559,6 +577,10 @@ function StaffCommissionView({
   // from, so the owner's cross-staff table keeps the staff count and the
   // individual view gets a total that means something to the person reading it.
   const totalCarsSold = staffList.reduce((n, s) => n + s.totalCarsSold, 0);
+  // Financial columns are an owner-level grid feature, not a condition of
+  // whether a staff member currently has an unpaid sale. Keeping them visible
+  // makes the table stable and lets a zero-balance staff account read clearly.
+  const showFinancialColumns = !hideProfit;
 
 
   return (
@@ -594,21 +616,27 @@ function StaffCommissionView({
                 right next to it. Fixed widths give every column its own
                 share regardless of how short or long its content happens to
                 be, so the gaps between columns read as even. */}
-            <table className={`w-full table-fixed text-left text-fluid--1 ${hideProfit ? "min-w-[680px]" : "min-w-[820px]"}`}>
+            <table className={`w-full table-fixed text-left text-fluid--1 ${hideProfit ? "min-w-[680px]" : showFinancialColumns ? "min-w-[1120px]" : "min-w-[820px]"}`}>
               <thead>
                 <tr className="border-b border-border text-text-faint">
-                  <th className="w-[20%] py-2 pr-4 font-normal">Name</th>
-                  <th className="w-[11%] py-2 pr-4 text-right font-normal">Unpaid Sales</th>
-                  {!hideProfit && <th className="w-[15%] py-2 pr-4 text-right font-normal">Total Profit</th>}
+                  <th className="w-[15%] py-2 pr-4 font-normal">Name</th>
+                  <th className="w-[8%] py-2 pr-4 text-right font-normal">Unpaid Sales</th>
+                  {showFinancialColumns && <>
+                    <th className="w-[10%] py-2 pr-4 text-right font-normal">Sold for</th>
+                    <th className="w-[9%] py-2 pr-4 text-right font-normal">Expenses</th>
+                    <th className="w-[11%] py-2 pr-4 text-right font-normal">Net profit</th>
+                    <th className="w-[7%] py-2 pr-4 text-right font-normal">Margin</th>
+                  </>}
+                  {!hideProfit && !showFinancialColumns && <th className="w-[15%] py-2 pr-4 text-right font-normal">Total Profit</th>}
                   {/* Extra right padding (pr-8, not pr-4) on purpose: this
                       column is right-aligned and the next one is left-aligned,
                       so their content would otherwise sit directly against
                       each other with nothing but the column boundary between
                       "AED 400" and "Unpaid". The padding pulls the number back
                       from that boundary to open up real breathing room. */}
-                  <th className="w-[15%] py-2 pr-8 text-right font-normal">Commission</th>
-                  <th className="w-[11%] py-2 pr-4 font-normal">Status</th>
-                  <th className="w-[28%] py-2 pr-1 font-normal"></th>
+                  <th className="w-[10%] py-2 pr-8 text-right font-normal">Commission</th>
+                  <th className="w-[9%] py-2 pr-4 font-normal">Status</th>
+                  <th className="w-[21%] py-2 pr-1 font-normal"></th>
                 </tr>
               </thead>
               <tbody>
@@ -623,7 +651,13 @@ function StaffCommissionView({
                       )}
                     </td>
                     <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{staff.totalCarsSold}</td>
-                    {!hideProfit && <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{formatAed(staff.totalProfit)}</td>}
+                    {showFinancialColumns && <>
+                      <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{formatAed(getStaffFinancialSummary(staff).soldFor)}</td>
+                      <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{formatAed(getStaffFinancialSummary(staff).expenses)}</td>
+                      <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{formatAed(getStaffFinancialSummary(staff).netProfit)}</td>
+                      <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{getStaffFinancialSummary(staff).margin == null ? "—" : `${getStaffFinancialSummary(staff).margin!.toFixed(1)}%`}</td>
+                    </>}
+                    {!hideProfit && !showFinancialColumns && <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{formatAed(staff.totalProfit)}</td>}
                     <td className="py-3 pr-8 text-right tabular-nums text-gold">{formatAed(staff.totalCommission)}</td>
                     <td className="py-3 pr-4">
                       {staff.totalCarsSold === 0 && staff.paidAt === null ? (
@@ -658,6 +692,14 @@ function StaffCommissionView({
   );
 }
 
+function getStaffFinancialSummary(staff: StaffCommission) {
+  const financialEntries = staff.entries.filter((entry) => entry.kind === "role_commission" && entry.financialReview);
+  const soldFor = financialEntries.reduce((total, entry) => total + (entry.financialReview?.salePrice ?? 0), 0);
+  const expenses = financialEntries.reduce((total, entry) => total + (entry.financialReview?.expenses ?? 0), 0);
+  const netProfit = financialEntries.reduce((total, entry) => total + (entry.financialReview?.netProfit ?? 0), 0);
+  return { soldFor, expenses, netProfit, margin: soldFor > 0 ? (netProfit / soldFor) * 100 : null };
+}
+
 // ─── Staff Detail Modal ─────────────────────────────────────────────────────
 
 function StaffDetailModal({
@@ -676,6 +718,7 @@ function StaffDetailModal({
   onMarkPaid: () => void;
 }) {
   const roleEntries = staff.entries.filter((entry) => entry.kind === "role_commission");
+  const hasFinancialReview = roleEntries.some((entry) => entry.financialReview);
   const referralEntries = staff.entries.filter((entry) => entry.kind === "referral_incentive");
   const referralTotal = referralEntries.reduce((total, entry) => total + entry.commission, 0);
   const [showReferralBreakdown, setShowReferralBreakdown] = useState(false);
@@ -701,7 +744,7 @@ function StaffDetailModal({
       aria-modal="true"
       aria-label={`${staff.displayName} commission details`}
     >
-      <div className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-card border border-border bg-bg-elev shadow-2xl">
+      <div className="w-full max-w-[min(96vw,1200px)] max-h-[85vh] overflow-y-auto rounded-card border border-border bg-bg-elev shadow-2xl">
         {/* Header */}
         <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
           <div>
@@ -754,13 +797,42 @@ function StaffDetailModal({
         {roleEntries.length > 0 && (
           <div className="px-5 pb-2">
             <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-text-faint">Closed car sales</p>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-fluid--1">
+            <div className="flex flex-col gap-3 md:hidden">
+              {roleEntries.map((entry) => (
+                <div key={`mobile-${entry.id}`} className="rounded-card border border-border bg-surface-2 p-4">
+                  <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-text">{entry.leadName}</p>
+                      <p className="mt-1 text-sm text-text-muted">{entry.carDetails}</p>
+                    </div>
+                    <span className="shrink-0 tabular-nums font-medium text-gold">{formatAed(entry.commission)}</span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+                    <DetailMetric label="Sold date" value={formatDate(entry.soldAt)} />
+                    {hasFinancialReview && <>
+                      <DetailMetric label="Sold for" value={entry.financialReview?.salePrice == null ? "—" : formatAed(entry.financialReview.salePrice)} />
+                      <DetailMetric label="Expenses" value={entry.financialReview ? formatAed(entry.financialReview.expenses) : "—"} />
+                      <DetailMetric label="Net profit" value={entry.financialReview?.netProfit == null ? "Pending review" : formatAed(entry.financialReview.netProfit)} />
+                      <DetailMetric label="Margin" value={entry.financialReview?.margin == null ? "—" : `${entry.financialReview.margin.toFixed(1)}%`} />
+                    </>}
+                    {!hideProfit && <DetailMetric label="Profit" value={entry.profit === null ? "—" : formatAed(entry.profit)} />}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full min-w-[980px] text-left text-fluid--1">
                 <thead>
                   <tr className="border-b border-border text-text-faint">
                     <th className="py-2 pr-4 font-normal">Customer</th>
                     <th className="py-2 pr-4 font-normal">Car</th>
                     <th className="py-2 pr-4 font-normal">Sold Date</th>
+                    {hasFinancialReview && <>
+                      <th className="py-2 pr-4 text-right font-normal">Sold for</th>
+                      <th className="py-2 pr-4 text-right font-normal">Expenses</th>
+                      <th className="py-2 pr-4 text-right font-normal">Net profit</th>
+                      <th className="py-2 pr-4 text-right font-normal">Margin</th>
+                    </>}
                     {!hideProfit && <th className="py-2 pr-4 text-right font-normal">Profit</th>}
                     <th className="py-2 pr-1 text-right font-normal">Commission</th>
                   </tr>
@@ -771,6 +843,14 @@ function StaffDetailModal({
                       <td className="py-2.5 pr-4 text-text">{entry.leadName}</td>
                       <td className="py-2.5 pr-4 text-text-muted">{entry.carDetails}</td>
                       <td className="py-2.5 pr-4 text-text-muted">{formatDate(entry.soldAt)}</td>
+                      {hasFinancialReview && <>
+                        <td className="py-2.5 pr-4 text-right tabular-nums text-text-muted">{entry.financialReview?.salePrice == null ? "—" : formatAed(entry.financialReview.salePrice)}</td>
+                        <td className="py-2.5 pr-4 text-right tabular-nums text-text-muted">
+                          {entry.financialReview ? formatAed(entry.financialReview.expenses) : "—"}
+                        </td>
+                        <td className="py-2.5 pr-4 text-right tabular-nums text-text-muted">{entry.financialReview?.netProfit == null ? "Pending review" : formatAed(entry.financialReview.netProfit)}</td>
+                        <td className="py-2.5 pr-4 text-right tabular-nums text-text-muted">{entry.financialReview?.margin == null ? "—" : `${entry.financialReview.margin.toFixed(1)}%`}</td>
+                      </>}
                       {!hideProfit && (
                         <td className="py-2.5 pr-4 text-right tabular-nums text-text-muted">
                           {entry.profit === null ? "—" : formatAed(entry.profit)}
@@ -790,6 +870,8 @@ function StaffDetailModal({
         {staff.entries.length === 0 && (
           <p className="px-5 pb-4 text-fluid--1 text-text-faint">No commission entries yet for this period.</p>
         )}
+
+        <StaffPaymentHistory payments={staff.paymentHistory} staff={staff} canDownload={canPay} />
 
         {/* Footer */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-4">
@@ -849,131 +931,81 @@ function StaffDetailModal({
   );
 }
 
-// ─── Developer Commission View (simplified quarterly) ───────────────────────
+function DetailMetric({ label, value }: { label: string; value: string }) {
+  return <div><p className="text-text-faint">{label}</p><p className="mt-0.5 tabular-nums text-text">{value}</p></div>;
+}
 
-const QUARTER_TONE: Record<Quarter["status"], string> = {
-  draft: "text-text-muted",
-  partial: "text-warning",
-  issued: "text-info",
-  paid: "text-success",
-};
-
-const QUARTER_LABEL: Record<Quarter["status"], string> = {
-  draft: "Unpaid",
-  partial: "Partly paid",
-  issued: "Awaiting payment",
-  paid: "Paid",
-};
+// ─── Developer Commission View (pay-anytime) ────────────────────────────────
 
 function DeveloperCommissionView({
   outstanding,
   paidToDate,
-  quarters,
+  statements,
   loading,
-  onMarkPaid,
+  onPayNow,
 }: {
   outstanding: number;
   paidToDate: number;
-  quarters: Quarter[];
+  statements: CommissionStatement[];
   loading: boolean;
-  onMarkPaid: (quarter: Quarter) => void;
+  onPayNow: () => void;
 }) {
+  const monthlyStatements = [...statements].sort((a, b) => b.periodMonth.localeCompare(a.periodMonth));
+
   return (
     <>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Card className="border-gold/40 p-4">
-          <p className="text-fluid--1 text-text-faint">Developer Share Outstanding</p>
-          <p className="mt-1.5 tabular-nums text-fluid-1 text-gold">{formatAed(outstanding)}</p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-fluid--1 text-text-faint">Developer Share Paid to Date</p>
-          <p className="mt-1.5 tabular-nums text-fluid-1 text-text">{formatAed(paidToDate)}</p>
-        </Card>
-      </div>
+      <Card className="border-gold/40 p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-fluid--1 text-text-faint">Available to pay now</p>
+            <p className="mt-1 tabular-nums text-fluid-2 text-gold">{formatAed(outstanding)}</p>
+            <p className="mt-2 max-w-xl text-sm text-text-muted">
+              This is the developer&apos;s {(COMMISSION_RATE * 100).toFixed(0)}% share from all unpaid sold cars. Paying every three months is recommended, but early payment is allowed anytime.
+            </p>
+          </div>
+          {outstanding > 0 && (
+            <Button onClick={onPayNow} className="w-full sm:w-auto">
+              <CheckCircle2 className="h-4 w-4" /> Pay developer now
+            </Button>
+          )}
+        </div>
+      </Card>
 
-      <p className="text-fluid--1 text-text-muted">
-        The developer&apos;s {(COMMISSION_RATE * 100).toFixed(0)}% share of the profit on every car sold.
-        Recorded monthly, paid every three months.
-      </p>
+      <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-text-muted">
+        <span>Paid to date: <strong className="tabular-nums text-text">{formatAed(paidToDate)}</strong></span>
+        {outstanding === 0 && monthlyStatements.length > 0 && <span className="text-success">Everything recorded so far is paid.</span>}
+      </div>
 
       {loading ? (
         <Card className="p-5">
           <p className="text-fluid--1 text-text-muted">Loading…</p>
         </Card>
-      ) : quarters.length === 0 ? (
+      ) : monthlyStatements.length === 0 ? (
         <Card className="p-8 text-center">
           <p className="text-fluid-0 text-text">Nothing to pay yet.</p>
           <p className="mt-1 text-fluid--1 text-text-muted">
-            A month appears here once a car has been sold in it.
+            A record appears here once a car has been sold.
           </p>
         </Card>
       ) : (
-        <div className="flex flex-col gap-5">
-          {quarters.map((q) => (
-            <Card key={q.key} className="p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
+        <details className="rounded-card border border-border bg-surface-2 px-4 py-3">
+          <summary className="cursor-pointer text-sm font-medium text-text">View monthly breakdown ({monthlyStatements.length})</summary>
+          <ul className="mt-3 divide-y divide-border border-t border-border">
+            {monthlyStatements.map((statement) => (
+              <li key={statement.id} className="flex flex-wrap items-center justify-between gap-x-5 gap-y-1 py-3 text-sm">
                 <div>
-                  <h2 className="font-display text-fluid-1 text-text">{q.label}</h2>
-                  <p className={`mt-0.5 text-fluid--1 ${QUARTER_TONE[q.status]}`}>
-                    {QUARTER_LABEL[q.status]} · {q.entryCount} {q.entryCount === 1 ? "car" : "cars"} sold
-                  </p>
+                  <span className="font-medium text-text">{formatMonth(statement.periodMonth)}</span>
+                  <span className="ml-2 text-xs text-text-muted">{statement.entryCount} {statement.entryCount === 1 ? "car" : "cars"}</span>
+                  {statement.carriedCount > 0 && <span className="ml-2 text-xs text-warning">Includes {statement.carriedCount} carried forward</span>}
                 </div>
-                <div className="text-right">
-                  <p className="text-fluid--1 text-text-faint">Payable this quarter</p>
-                  <p className="tabular-nums text-fluid-1 text-gold">{formatAed(q.totalCommissionAed)}</p>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
+                  <span className="tabular-nums text-gold">{formatAed(statement.totalCommissionAed)}</span>
+                  <span>{statement.status === "paid" && statement.paidAt ? `Paid ${formatDate(statement.paidAt)}` : "Unpaid"}</span>
                 </div>
-              </div>
-
-              <div className="mt-5 overflow-x-auto">
-                <table className="w-full min-w-[500px] text-left text-fluid--1">
-                  <thead>
-                    <tr className="border-b border-border text-text-faint">
-                      <th className="py-2 pr-4 font-normal">Month</th>
-                      <th className="py-2 pr-4 text-right font-normal">Cars sold</th>
-                      <th className="py-2 pr-4 text-right font-normal">Profit</th>
-                      <th className="py-2 pr-4 text-right font-normal">Share ({(COMMISSION_RATE * 100).toFixed(0)}%)</th>
-                      <th className="py-2 pr-1 font-normal"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {q.months.map((m) => (
-                      <tr key={m.id} className="border-b border-border last:border-0">
-                        <td className="py-3 pr-4 text-text">{formatMonth(m.periodMonth)}</td>
-                        <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{m.entryCount}</td>
-                        <td
-                          className={`py-3 pr-4 text-right tabular-nums ${
-                            m.totalProfitAed < 0 ? "text-danger" : "text-text-muted"
-                          }`}
-                        >
-                          {formatAed(m.totalProfitAed)}
-                        </td>
-                        <td className="py-3 pr-4 text-right tabular-nums text-gold">
-                          {formatAed(m.totalCommissionAed)}
-                        </td>
-                        <td className="py-3 pr-1 text-text-muted">
-                          {m.paidAt && <span className="block text-text-faint">Paid {formatDate(m.paidAt)}</span>}
-                          {m.carriedCount > 0 && (
-                            <span className="block text-warning">
-                              includes {m.carriedCount} carried forward
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {q.status !== "paid" && (
-                <div className="mt-5 border-t border-border pt-4">
-                  <Button onClick={() => onMarkPaid(q)}>
-                    <CheckCircle2 className="h-4 w-4" /> Mark Quarter as Paid
-                  </Button>
-                </div>
-              )}
-            </Card>
-          ))}
-        </div>
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
     </>
   );

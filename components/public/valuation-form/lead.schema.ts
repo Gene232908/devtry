@@ -28,7 +28,9 @@ export const leadSchema = z.object({
   mileageKm: z
     .string()
     .min(1, "Enter valid mileage")
+    .regex(/^\d+$/, "Use whole numbers only")
     .refine((v) => Number(v) >= 0 && Number(v) <= 1_000_000, "Enter valid mileage"),
+  mileageUnit: z.enum(["km", "miles"]),
   specification: z.string().min(1, "Select a specification"),
   description: z.string().max(400, "Keep it under 400 characters").optional().or(z.literal("")),
   trim: z.string().min(1, "Select a trim"),

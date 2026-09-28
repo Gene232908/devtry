@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Milestone 3 — Presentation Script</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm 18mm 15mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 11.2pt; line-height: 1.65; color: #14171a; margin: 0;
+  }
+  h1 { font-size: 22pt; margin: 0 0 2mm; letter-spacing: -.2pt; }
+  .sub { color: #5b6570; font-size: 10pt; font-family: Arial, Helvetica, sans-serif; margin-bottom: 6mm; }
+  h2 {
+    font-size: 13.5pt; margin: 0 0 3mm; padding-bottom: 1.5mm;
+    border-bottom: 2px solid #14171a;
+  }
+  .slide { page-break-inside: avoid; margin-bottom: 7mm; }
+  .slide-no {
+    font-family: Arial, Helvetica, sans-serif; font-size: 8.5pt; font-weight: bold;
+    letter-spacing: .8pt; color: #8a929b; text-transform: uppercase;
+  }
+  /* ---- Colour legend: the whole point of this document ---- */
+  .say, .coach, .note, .demo {
+    padding: 3mm 4mm; margin: 2.5mm 0; border-left: 4px solid;
+    page-break-inside: avoid;
+  }
+  .say   { border-color: #1f6feb; background: #eef4ff; }
+  .coach { border-color: #b8860b; background: #fdf6e3; }
+  .demo  { border-color: #17803d; background: #edf7f0; }
+  .note  { border-color: #8a929b; background: #f4f5f7; }
+  .tag {
+    display: inline-block; font-family: Arial, Helvetica, sans-serif;
+    font-size: 7.5pt; font-weight: bold; letter-spacing: .9pt;
+    text-transform: uppercase; padding: .6mm 2mm; border-radius: 2px;
+    color: #fff; margin-bottom: 1.5mm;
+  }
+  .say .tag   { background: #1f6feb; }
+  .coach .tag { background: #b8860b; }
+  .demo .tag  { background: #17803d; }
+  .note .tag  { background: #6b7280; }
+  .say p { margin: 0; }
+  .coach p, .note p, .demo p { margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; color: #3d444d; }
+  .legend {
+    border: 1px solid #d5d9de; padding: 4mm; margin-bottom: 7mm;
+    page-break-inside: avoid; background: #fbfcfd;
+  }
+  .legend h3 { margin: 0 0 3mm; font-size: 11pt; font-family: Arial, Helvetica, sans-serif; }
+  .legend-row { display: flex; align-items: flex-start; gap: 3mm; margin-bottom: 2mm; font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; }
+  .swatch { width: 4mm; height: 4mm; border-radius: 1px; flex: none; margin-top: 1mm; }
+  table { width: 100%; border-collapse: collapse; margin: 2.5mm 0; font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; }
+  th, td { border: 1px solid #d5d9de; padding: 1.8mm 2.5mm; text-align: left; vertical-align: top; }
+  th { background: #f4f5f7; font-weight: bold; }
+  .pagebreak { page-break-before: always; }
+  strong { color: #000; }
+  .num { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+
+<h1>Milestone 3 — Presentation Script</h1>
+<div class="sub">CarVibeDubai Admin Dashboard &middot; read-aloud script with scenarios and coaching notes</div>
+
+<div class="legend">
+  <h3>How to use this script</h3>
+  <div class="legend-row"><div class="swatch" style="background:#1f6feb"></div><div><strong>SAY</strong> &mdash; read this out. Written to be spoken, not recited.</div></div>
+  <div class="legend-row"><div class="swatch" style="background:#17803d"></div><div><strong>SCENARIO</strong> &mdash; the concrete example that makes the point land. Say it right after the explanation.</div></div>
+  <div class="legend-row"><div class="swatch" style="background:#b8860b"></div><div><strong>COACHING</strong> &mdash; for you only. Never read aloud.</div></div>
+  <div class="legend-row"><div class="swatch" style="background:#6b7280"></div><div><strong>IF ASKED</strong> &mdash; answers to likely questions. Do not volunteer these.</div></div>
+</div>
+</div>
+
+<div class="slide">
+  <div class="slide-no">Slide 1</div>
+  <h2>Opening</h2>
+  <div class="say"><span class="tag">Say</span>
+    <p>Good day. Today I'll walk you through Milestone 3 — the admin dashboard for CarVibeDubai. This is the private side of the system: where you see every customer who requested a valuation, every car you've bought, and the commission owed each month. We'll go through eight screens, and I'll take questions at the end.</p>
+  </div>
+  <div class="coach"><span class="tag">Coaching</span>
+    <p>Slow, confident pace. This slide just sets expectations — eight screens, questions at the end — so Sir Nyash knows the shape of the talk before it starts.</p>
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-no">Slide 2</div>
+  <h2>What Was Built in Milestone 3</h2>
+  <div class="say"><span class="tag">Say</span>
+    <p>Milestone 1 was the public website — where the customer submits. Milestone 3 is the other end: what happens to that information after it's sent. Three things were added. First, the full lead pipeline, from "New" to "Deal." Second, tracking for cars you've purchased, plus the 2% commission on every sale. Third, spam protection — because every verification message we send is billed.</p>
+  </div>
+  <div class="demo"><span class="tag">Scenario</span>
+    <p>Think of it this way: before Milestone 3, a submitted form just sat there with no next step. Now, that same form moves through a visible pipeline — New, Contacted, Deal — and if the car gets bought, it shows up in Inventory with the commission already calculated.</p>
+  </div>
+  <div class="coach"><span class="tag">Coaching</span>
+    <p>The line "every message we send is billed" is the seed for the spam section later. Say it plainly here, no need to elaborate yet.</p>
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-no">Slide 3</div>
+  <h2>Dashboard — Overview</h2>
+  <div class="demo"><span class="tag">Scenario</span><p>Open <strong>/admin</strong>. Point to the eight pipeline cards, then the two charts.</p></div>
+  <div class="say"><span class="tag">Say</span>
+    <p>This is the first thing you see after signing in. At the top, the whole business at a glance — how many new leads, how many being worked, how many closed as deals. Below that, two charts: website visitors, and how many of them actually submitted a form. It updates on its own — no need to refresh.</p>
+  </div>
+  <div class="demo"><span class="tag">Scenario</span>
+    <p>Say a customer submits a form right now, from their phone, while you're looking at this screen. Within seconds, the "New" card ticks up by one — you don't need to refresh the page or check another tab. That's the "updates on its own" part.</p>
+  </div>
+  <div class="coach"><span class="tag">Coaching</span>
+    <p>Don't read every card. Point to two or three. If asked about a term, answer it — but don't pre-explain all eight, it drags.</p>
+  </div>
+  <div class="note"><span class="tag">If asked</span>
+    <p>"Why is there an info icon?" — The explanation is tucked behind that small icon to keep the screen clean. Just hover over it.</p>
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-no">Slide 4</div>
+  <h2>Leads — The Heart of the System</h2>
+  <div class="demo"><span class="tag">Scenario</span><p>Open <strong>Leads</strong>. Click into one lead to show detail and the status dropdown.</p></div>
+  <div class="say"><span class="tag">Say</span>
+    <p>This is every customer who completed the form. You'll see their name, the car, the mileage, and which Emirate they're in. You can search, filter, and export to Excel. When you open a lead, this is where you move it through the process — from "New," to "Contacted," to "Deal" once you've bought the car.</p>
+  </div>
+  <div class="demo"><span class="tag">Scenario</span>
+    <p>Picture this: a customer calls you back after you contacted them, and now wants to sell. You open their lead, change the status from "Contacted" to "Deal," fill in the purchase price — and that's it. The car now appears automatically in Inventory, ready to be marked sold later.</p>
+  </div>
+  <div class="coach"><span class="tag">Coaching</span>
+    <p>Spend the most time here — this is what gets used daily. Actually change a status live, in front of him. Seeing it move is what convinces, not the explanation.</p>
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-no">Slide 5</div>
+  <h2>Incomplete Forms — Recovering Lost Enquiries</h2>
+  <div class="demo"><span class="tag">Scenario</span><p>Open <strong>Incomplete Forms</strong>.</p></div>
+  <div class="say"><span class="tag">Say</span>
+    <p>This is one of the most valuable parts, so I want to explain it carefully. When a customer types their name and phone number but doesn't finish the form — maybe they got distracted, or something came up — that lead used to be gone completely. Now, the moment they enter a phone number, it's captured here. Think of this as a temporary holding area for people who showed interest but didn't complete the process.</p>
+  </div>
+  <div class="demo"><span class="tag">Scenario</span>
+    <p>Here's exactly how it plays out: a customer opens the valuation form on their phone, types "Ahmed" and a WhatsApp number, then gets a call and closes the tab before finishing. That name and number are already sitting on this screen. You can call Ahmed directly, ask about his car over the phone, and record the deal manually — a lead that would have been lost is now a lead you can act on.</p>
+  </div>
+  <div class="say"><span class="tag">Say</span>
+    <p>And once they do finish the form, this entry disappears from here automatically and moves to Leads. They're never duplicated — one person, one place.</p>
+  </div>
+  <div class="demo"><span class="tag">Scenario</span>
+    <p>Following the same example — if Ahmed comes back later and completes the form properly, his entry vanishes from Incomplete Forms and appears in Leads instead. You will never see "Ahmed" listed in both places at once.</p>
+  </div>
+  <div class="coach"><span class="tag">Coaching</span>
+    <p>This is the part the owner will care about most — it's recovered revenue. Stress the line "you can call them directly." Pause briefly after it.</p>
+  </div>
+  <div class="note"><span class="tag">If asked</span>
+    <p>"What if they come back and finish it?" — It moves to Leads and disappears from here. It won't show in both places.</p>
+    <p>"Is the record lost when it moves?" — No, we keep the history so there's a trace of when they first started.</p>
+  </div>
+</div>
+
+<div class="slide pagebreak">
+  <div class="slide-no">Slide 6</div>
+  <h2>Phone Verification — and Why It Costs Money</h2>
+  <div class="say"><span class="tag">Say</span>
+    <p>Before I go further, let me explain how a phone number gets verified. When a customer submits, we send a six-digit code to their WhatsApp. They have to type it back in to prove the number is real. That's how we guarantee every lead in your list has a genuine, reachable number — not something typed in randomly.</p>
+  </div>
+  <div class="say"><span class="tag">Say</span>
+    <p>But there's a cost to this: <strong>every single message we send is billed</strong>. So if someone requests a code over and over — on purpose or not — that cost falls on the business. That's exactly why four layers of protection exist.</p>
+  </div>
+  <div class="demo"><span class="tag">Scenario</span>
+    <p>Without any limit, someone could sit there and hit "send code" fifty times in a row, or point the form at a random stranger's number just to be annoying — and every one of those fifty messages would be a real charge to you, even though not a single one leads to a customer.</p>
+  </div>
+  <div class="coach"><span class="tag">Coaching</span>
+    <p>Don't skip this even though it sounds technical. Once he understands "it costs money," the next two slides become value, not complexity. Slow and clear.</p>
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-no">Slide 7</div>
+  <h2>Spam Protection — Four Limits</h2>
+  <div class="say"><span class="tag">Say</span>
+    <p>Here's how the four protections work. First, one phone number can only request a code <strong>five times a day</strong>. Second, one internet connection can only request <strong>ten times a day</strong>, even if they try different numbers. Third, there's a system-wide daily cap of <strong>three hundred</strong>, so no matter what happens, your total cost has a ceiling. And fourth — this one's the smartest.</p>
+  </div>
+  <div class="say"><span class="tag">Say</span>
+    <p>If a number requests a code <strong>three times in a row and never successfully verifies</strong>, it's automatically stopped. Why? Because if that number really belongs to the customer, they'd receive the code and be able to type it in. Three failed attempts with zero successful verifications means that number almost certainly isn't theirs.</p>
+  </div>
+  <table>
+    <tr><th>Protection</th><th>Limit</th><th>What it stops</th></tr>
+    <tr><td>Per number</td><td class="num">5 / day</td><td>The same person requesting repeatedly</td></tr>
+    <tr><td>Per connection</td><td class="num">10 / day</td><td>One person trying many different numbers</td></tr>
+    <tr><td>System-wide</td><td class="num">300 / day</td><td>A hard ceiling on total cost</td></tr>
+    <tr><td>Unverified streak</td><td class="num">3 in a row</td><td>A number that isn't actually theirs</td></tr>
+  </table>
+  <div class="demo"><span class="tag">Scenario</span>
+    <p>Imagine someone typing in a random UAE number that isn't theirs, just to see what happens. They can request a code up to three times — but since they never receive it themselves, they can never type it back in. On the third failed attempt, that number is automatically locked out. No manual work from you, and no fourth message gets billed.</p>
+  </div>
+  <div class="coach"><span class="tag">Coaching</span>
+    <p>Spend the most time on the fourth rule — it's the clever one and the hardest to grasp at first. Use the logic: "if it's your number, you'll receive the code." That line explains itself.</p>
+  </div>
+  <div class="note"><span class="tag">If asked</span>
+    <p>"What if a real customer gets caught by mistake?" — They're not lost. They'll still show up on the Blocked Numbers screen with their number, so you can call them directly.</p>
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-no">Slide 8</div>
+  <h2>Blocked Numbers — Who Was Stopped, and Why</h2>
+  <div class="demo"><span class="tag">Scenario</span><p>Open <strong>Blocked Numbers</strong>. Point to the two tables.</p></div>
+  <div class="say"><span class="tag">Say</span>
+    <p>This is where every case of abuse shows up. There are two tables. The top one shows numbers that <strong>hit a limit</strong> in the last twenty-four hours — including how many times they tried, and which protection stopped them. The bottom one shows numbers that are <strong>permanently blocked</strong>.</p>
+  </div>
+  <div class="say"><span class="tag">Say</span>
+    <p>A number can land here two ways: automatically, when it hits one of the four limits — or manually, by you. If you spot a lead that's obviously fake, there's a "Mark as spam" button right there, and that number can never send another request. And if you ever make a mistake, there's an "Unblock" button to bring them back.</p>
+  </div>
+  <div class="demo"><span class="tag">Scenario</span>
+    <p>Say you're reviewing Leads and see one entry with a clearly fake name and a number that never verified — you click "Mark as spam" right from that lead, and it's instantly added to Blocked Numbers. If it later turns out to be a real customer who mistyped something, you open Blocked Numbers and click "Unblock" — takes seconds, fully reversible.</p>
+  </div>
+  <div class="coach"><span class="tag">Coaching</span>
+    <p>Show the "Mark as spam" and "Unblock" buttons live. The point: <em>you're in control</em>, not the machine making a final call. The fact that it's reversible is what removes the fear.</p>
+  </div>
+  <div class="note"><span class="tag">If asked</span>
+    <p>"Can I still see who they are?" — Yes. Their number and name stay listed, so if it turns out to be a real customer, you can still reach them.</p>
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-no">Slide 9</div>
+  <h2>Inventory — Cars You've Purchased</h2>
+  <div class="demo"><span class="tag">Scenario</span><p>Open <strong>Inventory</strong>. Point to the month filter and "Mark sold."</p></div>
+  <div class="say"><span class="tag">Say</span>
+    <p>When you mark a lead as "Deal," the car appears here automatically. There's no "add a car" button on purpose — every car in this list traces back to a real customer and a real purchase price. Once you sell it, you click "Mark sold," enter the sale price, and the profit and commission are calculated right there.</p>
+  </div>
+  <div class="demo"><span class="tag">Scenario</span>
+    <p>Say you bought a Nissan Patrol for 40,000 AED from a lead. It's now sitting in Inventory as "in stock." Three weeks later you resell it for 50,000. You click "Mark sold," type in 50,000 — instantly, the system shows a 10,000 AED profit and a 200 AED commission, without you touching a calculator.</p>
+  </div>
+  <div class="coach"><span class="tag">Coaching</span>
+    <p>"No add a car button" is by design, not a limitation. If asked, the reasoning is: every car should trace back to a real transaction. Allowing manual entries would break that trail.</p>
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-no">Slide 10</div>
+  <h2>Commission — The Monthly Share</h2>
+  <div class="demo"><span class="tag">Scenario</span><p>Open <strong>Commission</strong>.</p></div>
+  <div class="say"><span class="tag">Say</span>
+    <p>This is the 2% of profit earned on every car sold, grouped by month. It's calculated automatically — no manual bookkeeping. When you're ready to settle a month, you mark it "Issued," then "Paid." Once that happens, the figures are locked and can't be changed — so there's never any doubt later about what was actually paid.</p>
+  </div>
+  <div class="demo"><span class="tag">Scenario</span>
+    <p>By the end of August, say five cars were sold with a combined profit of 50,000 AED. This page already shows August's commission as 1,000 AED — you didn't add a single number yourself. You mark it "Paid" once settled, and even if a sixth car from August turns up later, it rolls into September instead of quietly changing August's number.</p>
+  </div>
+  <div class="coach"><span class="tag">Coaching</span>
+    <p>This is money, so use the word "locked." That's the reassurance he wants to hear — that recorded payments can't casually be changed.</p>
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-no">Slide 11</div>
+  <h2>Vehicle Catalog and Settings</h2>
+  <div class="demo"><span class="tag">Scenario</span><p>Open <strong>Vehicle Catalog</strong>, then <strong>Settings</strong>. Keep this brief.</p></div>
+  <div class="say"><span class="tag">Say</span>
+    <p>Vehicle Catalog controls which cars a customer can select on the public form. Add a new make or model here, and it appears on the website immediately — no need to contact us for that. Settings holds your WhatsApp number, your call number, and the email that gets notified when a new lead comes in.</p>
+  </div>
+  <div class="demo"><span class="tag">Scenario</span>
+    <p>If you start dealing in a new brand — say, McLaren — you add it here yourself, and within seconds the very next customer opening the valuation form can select it. No waiting on us to push an update.</p>
+  </div>
+  <div class="coach"><span class="tag">Coaching</span>
+    <p>Move fast through these two — they're supporting screens. The one line worth emphasizing is "no need to contact us" — that's the independence he's getting.</p>
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-no">Slide 12</div>
+  <h2>Sign-In Security</h2>
+  <div class="say"><span class="tag">Say</span>
+    <p>Last technical point. This dashboard is for you alone. If someone tries to guess a password, only five wrong attempts are allowed before that account is temporarily locked out. We also never say whether the email or the password was wrong — both give the same message, so nobody guessing gets any useful information back.</p>
+  </div>
+  <div class="demo"><span class="tag">Scenario</span>
+    <p>If someone got hold of your email and tried guessing passwords, they'd get five tries before being blocked for fifteen minutes — nowhere near enough to brute-force anything. Meanwhile, if you sign in with the correct password right after a couple of typos, it works immediately and the failed count resets to zero.</p>
+  </div>
+  <div class="coach"><span class="tag">Coaching</span>
+    <p>Keep this short. If asked whether he could lock himself out — no, because the moment the correct password is entered, the counter clears.</p>
+  </div>
+</div>
+
+<div class="slide">
+  <div class="slide-no">Slide 13</div>
+  <h2>Closing</h2>
+  <div class="say"><span class="tag">Say</span>
+    <p>That covers Milestone 3. In short: you can now see every customer from the moment they first engage, all the way through to a completed purchase. Enquiries that would have been lost are now recoverable. And your messaging costs are protected automatically. I'll take any questions now.</p>
+  </div>
+  <div class="coach"><span class="tag">Coaching</span>
+    <p>Stop talking after this. Let the silence sit — don't fill it. If there are no questions, prompt him: "Which part would you like to go back to?"</p>
+  </div>
+</div>
+
+</body>
+</html>

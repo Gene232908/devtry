@@ -6,6 +6,7 @@ import { hasCapability } from "@/lib/auth/permissions";
 import { pickNextAssignee } from "@/lib/server/lead-assignment";
 import { canRoleSetStatus, canSeeLead } from "@/lib/auth/lead-visibility";
 import { createInspectionScheduleNotifications } from "@/lib/server/inspection-schedule-notifications";
+import { arrivalResetForRescheduledInspection } from "@/lib/server/inspection-reschedule";
 
 // "deal" = the customer agreed to sell; "closed" = met but no agreement.
 // "valuation_sent" stays accepted so historical rows can still be written back,
@@ -134,23 +135,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   // Checked before the deal branch below, so an agent cannot reach
   // record_lead_deal() — and a purchaser cannot walk a lead back to "contacted".
   if (typeof body.status === "string" && body.status !== current.status) {
+    if (role === "call_center" && current.arrival_status === "arrived") {
+      return NextResponse.json(
+        { ok: false, error: { message: "Status is locked after Customer Service confirms customer arrival." } },
+        { status: 409 },
+      );
+    }
     if (!canRoleSetStatus(role, body.status)) {
       return NextResponse.json(
         { ok: false, error: { message: "That status is not available for your role." } },
         { status: 403 },
       );
     }
-  }
-
-  // A Scrap inquiry is permanently classified as Scrap, but the Super Admin
-  // makes the commercial decision to buy it. Purchasers may inspect and add
-  // their recommendation through the normal inspection workflow; only an
-  // owner may turn a Scrap Inquiry into a Deal/Inventory item.
-  if (current.inquiry_type === "scrap" && body.status === "deal" && role !== "admin" && role !== "manager") {
-    return NextResponse.json(
-      { ok: false, error: { message: "Only Super Admin can approve a Scrap Inquiry as a Deal." } },
-      { status: 403 },
-    );
   }
 
   // "Deal" means the car was bought, so it is the one status that carries money
@@ -280,6 +276,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
           type: "inspection_rescheduled",
           meta: eventMeta({ previous_scheduled_at: previous, scheduled_at: value }),
         });
+
+        // An arrival is valid for only one appointment. A moved appointment
+        // must be confirmed again before it can unlock the inspection workflow.
+        const arrivalReset = arrivalResetForRescheduledInspection(previous, value, current.arrival_status);
+        if (arrivalReset) {
+          Object.assign(update, arrivalReset);
+          events.push({
+            lead_id: id,
+            type: "arrival_reset_due_to_reschedule",
+            meta: eventMeta({ previous_scheduled_at: previous, scheduled_at: value }),
+          });
+        }
       } else if (value) {
         events.push({
           lead_id: id,

@@ -5,8 +5,9 @@ import { Banknote, MapPin, ShieldCheck, X } from "lucide-react";
 import { copy } from "@/config/copy";
 import { ValuationForm } from "./valuation-form";
 import { type ValuationModalMode, VALUATION_MODAL_EVENT } from "./open-valuation-modal";
+import type { PublicLeadVerificationMode } from "@/lib/server/public-lead-verification";
 
-export function ValuationModal() {
+export function ValuationModal({ verificationMode }: { verificationMode: PublicLeadVerificationMode }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<ValuationModalMode>("valuation");
   // Set by the form. Records whatever was typed into a half-finished form
@@ -91,7 +92,7 @@ export function ValuationModal() {
               </span>
             </div>
 
-            <ValuationForm registerCapture={registerCapture} mode={mode} />
+            <ValuationForm registerCapture={registerCapture} mode={mode} verificationMode={verificationMode} />
           </div>
 
           <div className="relative hidden min-h-[560px] flex-col justify-between overflow-hidden border-l border-border-gold/55 bg-[radial-gradient(120%_85%_at_82%_0%,rgba(212,175,78,.18),transparent_58%)] p-8 lg:flex">

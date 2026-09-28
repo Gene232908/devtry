@@ -43,7 +43,7 @@ export function InventoryTable({ items, roleFilter, viewerRole, onSell }: Props)
   const showDeveloper = isOwner && roleFilter.includes("developer");
   return (
     <div className="mt-5 overflow-x-auto">
-      <table className="w-full min-w-[980px] text-left text-fluid--1">
+      <table className="w-full min-w-[1120px] text-left text-fluid--1">
         <thead>
           <tr className="border-b border-border text-text-faint">
             <th className="py-2 pr-4 font-normal">Car</th>
@@ -51,7 +51,9 @@ export function InventoryTable({ items, roleFilter, viewerRole, onSell }: Props)
             <th className="py-2 pr-4 font-normal">Bought</th>
             <th className="py-2 pr-4 text-right font-normal">Paid</th>
             <th className="py-2 pr-4 text-right font-normal">Sold for</th>
-            <th className="py-2 pr-4 text-right font-normal">Profit</th>
+            <th className="py-2 pr-4 text-right font-normal">Expenses</th>
+            <th className="py-2 pr-4 text-right font-normal">Net profit</th>
+            <th className="py-2 pr-4 text-right font-normal">Margin</th>
             {showCallCenter && (
               <th className="py-2 pr-4 text-right font-normal">Call Centre 2%</th>
             )}
@@ -92,12 +94,24 @@ export function InventoryTable({ items, roleFilter, viewerRole, onSell }: Props)
               <td className="py-3 pr-4 text-right tabular-nums text-text-muted whitespace-nowrap">
                 {formatAed(item.salePriceAed)}
               </td>
+              <td className="py-3 pr-4 text-right tabular-nums text-text-muted whitespace-nowrap">
+                {formatAed(item.expenseTotalAed)}
+              </td>
               <td
                 className={`py-3 pr-4 text-right tabular-nums whitespace-nowrap ${
-                  (item.commission?.profitAed ?? 0) < 0 ? "text-danger" : "text-text"
+                  (item.netProfitAed ?? item.commission?.profitAed ?? 0) < 0 ? "text-danger" : "text-text"
                 }`}
               >
-                {item.commission ? formatAed(item.commission.profitAed) : "—"}
+                {item.financialStatus === "awaiting_confirmation"
+                  ? "Review expenses"
+                  : item.netProfitAed !== null
+                    ? formatAed(item.netProfitAed)
+                    : item.commission ? formatAed(item.commission.profitAed) : "—"}
+              </td>
+              <td className="py-3 pr-4 text-right tabular-nums text-text-muted whitespace-nowrap">
+                {item.netProfitAed !== null && item.salePriceAed && item.salePriceAed > 0
+                  ? `${((item.netProfitAed / item.salePriceAed) * 100).toFixed(1)}%`
+                  : "—"}
               </td>
               {showCallCenter && (
                 <td className="py-3 pr-4 text-right tabular-nums text-gold whitespace-nowrap">

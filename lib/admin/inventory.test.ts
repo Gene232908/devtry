@@ -9,7 +9,7 @@ import {
 } from "./inventory";
 
 // These assertions describe the agreed commercial rules, not just the code:
-// only the purchase price is deducted, a loss earns nothing, and a loss is
+// purchase price and confirmed expenses are deducted, a loss earns nothing, and a loss is
 // never carried against another sale. The same rules are enforced for real by
 // sell_inventory_item() in migration 0014 — if one changes, both must.
 
@@ -22,9 +22,11 @@ describe("previewCommission", () => {
     expect(commissionAed).toBe(100);
   });
 
-  it("deducts only the purchase price, never other costs", () => {
-    // There is no third argument by design; repairs and fees cannot reduce it.
-    expect(previewCommission(100000, 130000).commissionAed).toBe(600);
+  it("uses net profit after manual expenses", () => {
+    // Sir Nyash's confirmed example: 25,000 - 20,000 - 520 = 4,480.
+    const preview = previewCommission(20000, 25000, 520);
+    expect(preview.profitAed).toBe(4480);
+    expect(preview.commissionAed).toBe(89.6);
   });
 
   it("earns nothing when the car sells at a loss", () => {
@@ -96,6 +98,10 @@ describe("mapDbInventory", () => {
 
   it("reports no commission for a car that has not sold", () => {
     expect(mapDbInventory(row).commission).toBeNull();
+  });
+
+  it("inherits a permanent Scrap origin from the linked lead", () => {
+    expect(mapDbInventory({ ...row, leads: { inquiry_type: "scrap" } }).inquiryType).toBe("scrap");
   });
 
   it("reads an embedded commission entry returned as an object", () => {

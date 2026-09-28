@@ -16,6 +16,8 @@ export type DbLead = {
   trim: string | null;
   year: number;
   mileage_km: number | null;
+  mileage_value?: number | null;
+  mileage_unit?: "km" | "miles" | null;
   specification?: string | null;
   /** @deprecated Legacy field from before the Basic/Mid/Full Option rework. */
   condition: "excellent" | "good" | "fair" | null;
@@ -48,6 +50,8 @@ export function mapDbLead(r: DbLead): Lead {
     trim: r.trim ?? "",
     year: r.year,
     mileageKm: r.mileage_km ?? 0,
+    mileageValue: r.mileage_value ?? r.mileage_km ?? 0,
+    mileageUnit: r.mileage_unit === "miles" ? "miles" : "km",
     specification: r.specification ?? "",
     condition: r.condition ?? "good",
     optionLevel: r.option_level ?? undefined,

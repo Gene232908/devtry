@@ -40,6 +40,7 @@ export function formatEventTimestamp(iso: string): string {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Asia/Dubai",
   });
 }
 

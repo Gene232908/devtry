@@ -1,7 +1,8 @@
 import { Lead } from "@/config/mock-data";
+import { formatMileage } from "@/lib/format";
 
 export function exportLeadsCsv(leads: Lead[], filename = "carvibedubai-leads.csv") {
-  const headers = ["Lead ID", "Name", "Mobile", "Email", "Make", "Model", "Trim", "Year", "Mileage (km)", "Option Level", "Description", "Status", "Estimated Value (AED)", "Date"];
+  const headers = ["Lead ID", "Name", "Mobile", "Email", "Make", "Model", "Trim", "Year", "Mileage", "Option Level", "Description", "Status", "Estimated Value (AED)", "Date"];
   const rows = leads.map((l) => [
     l.id,
     // Both redacted server-side for a purchaser (see projectLeadForPurchaser),
@@ -14,7 +15,7 @@ export function exportLeadsCsv(leads: Lead[], filename = "carvibedubai-leads.csv
     l.model,
     l.trim,
     String(l.year),
-    String(l.mileageKm),
+    formatMileage(l.mileageValue ?? l.mileageKm, l.mileageUnit),
     l.optionLevel ?? "",
     l.description,
     l.status,

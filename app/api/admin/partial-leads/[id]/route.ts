@@ -44,6 +44,17 @@ function int(v: unknown): number | null {
   return Number.isFinite(n) && n > 0 ? Math.trunc(n) : null;
 }
 
+function mileageFromBody(value: unknown, unit: unknown) {
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 1_000_000) return null;
+  const mileageUnit = unit === "miles" ? "miles" : "km";
+  return {
+    value: parsed,
+    unit: mileageUnit,
+    km: mileageUnit === "miles" ? Math.round(parsed * 1.609344) : parsed,
+  } as const;
+}
+
 /**
  * Marks an abandoned form as a Deal: converts it to a real lead, then records
  * the purchase. See ADR-004 for why converting is the right answer rather than
@@ -112,6 +123,10 @@ async function convertPartialToLead(
   const year = int(body.year) ?? int(partial.year);
   const specification = str(body.specification) ?? str(partial.specification);
   const emirate = str(body.emirate);
+  const suppliedMileage = body.mileage_value === undefined ? null : mileageFromBody(body.mileage_value, body.mileage_unit);
+  if (body.mileage_value !== undefined && !suppliedMileage) {
+    return fail("Mileage must be a whole number between 0 and 1,000,000.", 400);
+  }
 
   const missing = [
     !fullName && "customer name",
@@ -172,7 +187,9 @@ async function convertPartialToLead(
       model,
       trim: str(body.trim),
       year,
-      mileage_km: int(body.mileage_km) ?? int(partial.mileage_km),
+      mileage_km: suppliedMileage?.km ?? int(partial.mileage_km),
+      mileage_value: suppliedMileage?.value ?? int(partial.mileage_value) ?? int(partial.mileage_km),
+      mileage_unit: suppliedMileage?.unit ?? (partial.mileage_unit === "miles" ? "miles" : "km"),
       specification,
       emirate,
       description: str(partial.description),

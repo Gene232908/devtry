@@ -54,7 +54,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: { message: "That staff account was not found." } }, { status: 400 });
   }
 
-  const { data, error } = await supabase.rpc("pay_staff_commission", { p_staff_id: body.staffId });
+  const { data, error } = await supabase.rpc("pay_staff_commission", {
+    p_staff_id: body.staffId,
+    p_paid_by: auth.userId,
+  });
 
   if (error) {
     return NextResponse.json({ ok: false, error: { message: error.message } }, { status: 500 });
@@ -66,6 +69,7 @@ export async function POST(req: NextRequest) {
     ok: true,
     data: {
       staffId: body.staffId,
+      paymentId: result?.payment_id ?? null,
       paidCount: Number(result?.paid_count ?? 0),
       paidTotal: Number(result?.paid_total ?? 0),
     },

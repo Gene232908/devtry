@@ -38,9 +38,9 @@ export async function GET() {
   }
 
   const fieldsWithSchedule =
-    "id, created_at, full_name, phone_e164, email, make, model, trim, year, mileage_km, specification, condition, option_level, description, emirate, status, estimated_value_aed, notes, source, inquiry_type, scrap_condition, scrap_asking_price_aed, is_duplicate, is_spam, call_center_id, purchaser_id, inspection_scheduled_at, arrival_status";
+    "id, created_at, full_name, phone_e164, email, make, model, trim, year, mileage_km, mileage_value, mileage_unit, specification, condition, option_level, description, emirate, status, estimated_value_aed, notes, source, inquiry_type, scrap_condition, scrap_asking_price_aed, is_duplicate, is_spam, call_center_id, purchaser_id, inspection_scheduled_at, arrival_status";
   const fieldsWithoutSchedule =
-    "id, created_at, full_name, phone_e164, email, make, model, trim, year, mileage_km, specification, condition, option_level, description, emirate, status, estimated_value_aed, notes, source, inquiry_type, scrap_condition, scrap_asking_price_aed, is_duplicate, is_spam, call_center_id, purchaser_id";
+    "id, created_at, full_name, phone_e164, email, make, model, trim, year, mileage_km, mileage_value, mileage_unit, specification, condition, option_level, description, emirate, status, estimated_value_aed, notes, source, inquiry_type, scrap_condition, scrap_asking_price_aed, is_duplicate, is_spam, call_center_id, purchaser_id";
   const fieldsLegacy =
     "id, created_at, full_name, phone_e164, email, make, model, trim, year, mileage_km, condition, option_level, description, emirate, status, estimated_value_aed, notes, source, is_duplicate, is_spam, call_center_id, purchaser_id";
 
@@ -72,12 +72,12 @@ export async function GET() {
 
   let { data, error } = await fetchLeads(fieldsWithSchedule);
 
-  if (error && /inspection_scheduled_at|specification|arrival_status|inquiry_type|scrap_condition|scrap_asking_price_aed/.test(error.message ?? "")) {
+  if (error && /inspection_scheduled_at|specification|arrival_status|inquiry_type|scrap_condition|scrap_asking_price_aed|mileage_value|mileage_unit/.test(error.message ?? "")) {
     console.warn("[GET /api/admin/leads] newer lead columns missing on live database, retrying without scheduling fields...");
     const fallback = await fetchLeads(fieldsWithoutSchedule);
     data = fallback.data;
     error = fallback.error;
-    if (error && /specification|inquiry_type|scrap_condition|scrap_asking_price_aed/.test(error.message ?? "")) {
+    if (error && /specification|inquiry_type|scrap_condition|scrap_asking_price_aed|mileage_value|mileage_unit/.test(error.message ?? "")) {
       const legacy = await fetchLeads(fieldsLegacy);
       data = legacy.data;
       error = legacy.error;

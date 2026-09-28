@@ -42,7 +42,7 @@ export function LeadReferralCard({ leadId }: { leadId: string }) {
         </a>
       </div>
       <p className="mt-4 rounded-card bg-surface-2/70 p-3 text-sm leading-6 text-text-muted">{referral.proofNote}</p>
-      <p className="mt-3 text-xs text-text-faint">{employeeReferral ? "The referral incentive is created only when this vehicle is marked Sold." : "Client referrals are recorded for context and do not receive an incentive."}</p>
+      <p className="mt-3 text-xs text-text-faint">Referral proof is kept for context. A sale does not create an automatic referral payout; the company decides any future award separately.</p>
     </Card>
   );
 }

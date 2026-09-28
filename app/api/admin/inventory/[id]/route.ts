@@ -21,6 +21,19 @@ export const dynamic = "force-dynamic";
 
 const PLAIN_STATUSES = new Set<string>(INVENTORY_STATUS_OPTIONS);
 
+async function canManageExpenses(inventoryId: string, userId: string, role: string) {
+  if (role === "admin" || role === "manager") return true;
+  const { data } = await getSupabaseAdmin()
+    .from("inventory")
+    .select("leads ( call_center_id, purchaser_id )")
+    .eq("id", inventoryId)
+    .maybeSingle();
+  const lead = Array.isArray(data?.leads) ? data.leads[0] : data?.leads;
+  return role === "call_center"
+    ? lead?.call_center_id === userId
+    : role === "purchaser" && lead?.purchaser_id === userId;
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   // Every write here moves money (a sale) or the record of an asset (status,
   // notes) — this had no role check at all beyond "middleware confirmed a
@@ -31,7 +44,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!auth.ok) {
     return NextResponse.json({ ok: false, error: { message: auth.message } }, { status: auth.status });
   }
-  if (!hasCapability(auth.identity, "viewInventory")) {
+  let body: { action?: unknown; status?: unknown; notes?: unknown; sale_price_aed?: unknown; sold_at?: unknown; financial_review_version?: unknown };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ ok: false, error: { message: "Invalid request." } }, { status: 400 });
+  }
+
+  const expenseAction = body.action === "confirm_expenses";
+  const reopenAction = body.action === "reopen_finances";
+  if (expenseAction && auth.identity.role !== "admin") {
+    return NextResponse.json({ ok: false, error: { message: "Only Super Admin can confirm expenses." } }, { status: 403 });
+  }
+  if (!hasCapability(auth.identity, "viewInventory") && !(expenseAction && await canManageExpenses(params.id, auth.identity.userId, auth.identity.role))) {
     return NextResponse.json({ ok: false, error: { message: "Not authorized." } }, { status: 403 });
   }
 
@@ -43,14 +68,55 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   const id = params.id;
-  let body: { action?: unknown; status?: unknown; notes?: unknown; sale_price_aed?: unknown; sold_at?: unknown };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ ok: false, error: { message: "Invalid request." } }, { status: 400 });
-  }
 
   const supabase = getSupabaseAdmin();
+
+  if (reopenAction) {
+    if (auth.identity.role !== "admin" && auth.identity.role !== "manager") {
+      return NextResponse.json({ ok: false, error: { message: "Only Super Admin can reopen a financial review." } }, { status: 403 });
+    }
+    const reason = typeof (body as { correction_reason?: unknown }).correction_reason === "string"
+      ? (body as { correction_reason: string }).correction_reason.trim() : "";
+    const { error } = await supabase.rpc("reopen_inventory_finances", {
+      p_inventory_id: id, p_actor_id: auth.identity.userId, p_reason: reason,
+    });
+    if (error) return NextResponse.json({ ok: false, error: { message: error.message } }, { status: 400 });
+    const { data: inventory } = await supabase.from("inventory").select("lead_id").eq("id", id).maybeSingle();
+    if (inventory?.lead_id) {
+      const { error: activityError } = await supabase.from("lead_events").insert({
+        lead_id: inventory.lead_id,
+        actor: auth.identity.userId,
+        type: "financial_review_reopened",
+        meta: {
+          reason,
+          actor_name: auth.identity.displayName,
+          actor_role: auth.identity.role,
+        },
+      });
+      if (activityError) return NextResponse.json({ ok: false, error: { message: activityError.message } }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true, data: { id, financialStatus: "awaiting_confirmation" } });
+  }
+
+  if (body.action === "confirm_expenses") {
+    const version = Number(body.financial_review_version);
+    if (!Number.isInteger(version) || version < 0) {
+      return NextResponse.json({ ok: false, error: { message: "Review the latest expenses before confirming." } }, { status: 400 });
+    }
+    const { data, error } = await supabase.rpc("finalize_inventory_finances", {
+      p_inventory_id: id,
+      p_actor_id: auth.identity.userId,
+      p_expected_review_version: version,
+      p_rate: COMMISSION_RATE,
+      p_agent_rate: AGENT_COMMISSION_RATE,
+      p_purchaser_rate: PURCHASER_COMMISSION_RATE,
+    });
+    if (error) return NextResponse.json({ ok: false, error: { message: error.message } }, { status: 400 });
+    const entry = Array.isArray(data) ? data[0] : data;
+    return NextResponse.json({ ok: true, data: { id, commission: entry ? {
+      profitAed: Number(entry.profit_aed), rate: Number(entry.rate), commissionAed: Number(entry.commission_aed), soldAt: entry.sold_at,
+    } : null } });
+  }
 
   if (body.action === "sell") {
     const price = Number(body.sale_price_aed);
@@ -85,20 +151,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ ok: false, error: { message: error.message } }, { status: 400 });
     }
 
-    // The function returns the frozen commission entry it wrote.
-    const entry = Array.isArray(data) ? data[0] : data;
     return NextResponse.json({
       ok: true,
       data: {
         id,
-        commission: entry
-          ? {
-              profitAed: Number(entry.profit_aed),
-              rate: Number(entry.rate),
-              commissionAed: Number(entry.commission_aed),
-              soldAt: entry.sold_at,
-            }
-          : null,
+        financialStatus: (Array.isArray(data) ? data[0] : data)?.financial_status ?? "awaiting_confirmation",
       },
     });
   }

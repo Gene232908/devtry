@@ -6,12 +6,16 @@ import { isRateLimited } from "@/lib/rate-limit";
 import { logOtpAttempt } from "@/lib/server/otp-log";
 import { getClientIp } from "@/lib/server/ip";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
+import { getPublicLeadVerificationMode } from "@/lib/server/public-lead-verification";
 
 function err(kind: string, message: string, status: number) {
   return NextResponse.json({ ok: false, error: { kind, message } }, { status });
 }
 
 export async function POST(req: NextRequest) {
+  if (getPublicLeadVerificationMode() === "unverified") {
+    return err("otp_sending_disabled", "WhatsApp verification is temporarily unavailable.", 503);
+  }
   if (!isSupabaseConfigured()) {
     return err("server_error", "Verification is not configured yet.", 503);
   }

@@ -1,3 +1,6 @@
+import { formatUaeDateShort, formatUaeDateTime } from "@/lib/uae-time";
+import type { StaffCommissionPayment } from "@/lib/admin/commission";
+
 /**
  * PDF Invoice Generator for CarVibe Dubai Staff Commissions.
  * Outputs a valid PDF 1.4 vector document downloaded as "carvibedubai.pdf".
@@ -21,20 +24,23 @@ export type StaffCommissionForPdf = {
   totalCommission: number;
   isPaidThisMonth: boolean;
   entries: StaffCommissionEntryForPdf[];
+  documentTitle?: string;
+  documentDate?: string;
+  confirmedBy?: string;
+  receiptId?: string;
+  totalLabel?: string;
+  filename?: string;
 };
 
 export function downloadStaffInvoicePdf(staff: StaffCommissionForPdf) {
   const roleTitle = staff.role === "call_center" ? "Call Center Agent" : staff.role === "purchaser" ? "Purchaser" : staff.role === "admin" ? "Super Admin" : "Owner";
   const rateLabel = staff.role === "call_center" ? "2%" : staff.role === "purchaser" ? "10%" : "Role-based and referral incentive";
   const hidesProfit = staff.role === "call_center";
+  const dateLabel = staff.documentDate ? "Paid at UAE:" : "Invoice Date:";
   const roleEntries = staff.entries.filter((entry) => entry.kind === "role_commission");
   const referralEntries = staff.entries.filter((entry) => entry.kind === "referral_incentive");
   const referralTotal = referralEntries.reduce((total, entry) => total + entry.commission, 0);
-  const now = new Date().toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  const now = staff.documentDate ?? formatUaeDateShort(new Date());
 
   const esc = (str: string) =>
     (str || "").replace(/[()\\]/g, "\\$&").replace(/[^\x00-\x7F]/g, " ");
@@ -54,16 +60,23 @@ export function downloadStaffInvoicePdf(staff: StaffCommissionForPdf) {
   const headerAccent = "0.83 0.68 0.21 rg\n40 795 515 15 re\nf\n0 0 0 rg\n";
   const titleBlock =
     "BT\n/F2 20 Tf\n40 760 Td\n(CARVIBE DUBAI) Tj\nET\n" +
-    "BT\n/F2 13 Tf\n40 740 Td\n(COMMISSION INVOICE STATEMENT) Tj\nET\n" +
+    `BT\n/F2 13 Tf\n40 740 Td\n(${esc(staff.documentTitle ?? "COMMISSION INVOICE STATEMENT")}) Tj\nET\n` +
     "0.8 0.8 0.8 RG\n1 w\n40 728 m\n555 728 l\nS\n0 0 0 rg\n";
 
-  const referralBlock = referralEntries.length > 0
+  const isPaymentReceipt = Boolean(staff.confirmedBy);
+  const referralBlock = !isPaymentReceipt && referralEntries.length > 0
     ? `BT\n/F2 9 Tf\n330 688 Td\n(Referral Incentive:) Tj\nET\n` +
       `BT\n/F2 9 Tf\n460 688 Td\n(${esc(formatAedNum(referralTotal))}) Tj\nET\n` +
       `BT\n/F2 9 Tf\n330 671 Td\n(Customers Referred:) Tj\nET\n` +
       `BT\n/F2 9 Tf\n460 671 Td\n(${referralEntries.length}) Tj\nET\n`
     : "";
-  const paymentStatusY = referralEntries.length > 0 ? 654 : 688;
+  const paymentStatusY = !isPaymentReceipt && referralEntries.length > 0 ? 654 : 688;
+  const receiptConfirmedY = 671;
+  const receiptIdY = 654;
+  const paymentReceiptBlock = staff.confirmedBy
+    ? `BT\n/F2 9 Tf\n310 ${receiptConfirmedY} Td\n(Confirmed by:) Tj\nET\nBT\n/F1 9 Tf\n410 ${receiptConfirmedY} Td\n(${esc(staff.confirmedBy)}) Tj\nET\n` +
+      (staff.receiptId ? `BT\n/F2 9 Tf\n310 ${receiptIdY} Td\n(Receipt ID:) Tj\nET\nBT\n/F1 9 Tf\n410 ${receiptIdY} Td\n(${esc(staff.receiptId)}) Tj\nET\n` : "")
+    : "";
   const staffBlock =
     `BT\n/F2 10 Tf\n40 705 Td\n(Staff Name:) Tj\nET\n` +
     `BT\n/F1 10 Tf\n130 705 Td\n(${esc(staff.displayName)}) Tj\nET\n` +
@@ -71,11 +84,11 @@ export function downloadStaffInvoicePdf(staff: StaffCommissionForPdf) {
     `BT\n/F1 10 Tf\n130 688 Td\n(${esc(roleTitle)}) Tj\nET\n` +
     `BT\n/F2 10 Tf\n40 671 Td\n(Commission Rate:) Tj\nET\n` +
     `BT\n/F1 10 Tf\n130 671 Td\n(${rateLabel}) Tj\nET\n` +
-    `BT\n/F2 10 Tf\n330 705 Td\n(Invoice Date:) Tj\nET\n` +
-    `BT\n/F1 10 Tf\n460 705 Td\n(${esc(now)}) Tj\nET\n` +
+    `BT\n/F2 10 Tf\n310 705 Td\n(${dateLabel}) Tj\nET\n` +
+    `BT\n/F1 10 Tf\n410 705 Td\n(${esc(now)}) Tj\nET\n` +
     referralBlock +
-    `BT\n/F2 9 Tf\n330 ${paymentStatusY} Td\n(Payment Status:) Tj\nET\n` +
-    `BT\n/F2 10 Tf\n440 ${paymentStatusY} Td\n(${staff.isPaidThisMonth ? "PAID" : "UNPAID / OUTSTANDING"}) Tj\nET\n`;
+    `BT\n/F2 9 Tf\n310 ${paymentStatusY} Td\n(Payment Status:) Tj\nET\n` +
+    `BT\n/F2 10 Tf\n410 ${paymentStatusY} Td\n(${staff.isPaidThisMonth ? "PAID" : "UNPAID / OUTSTANDING"}) Tj\nET\n` + paymentReceiptBlock;
 
   const summaryBox = hidesProfit
     ? "0.96 0.96 0.96 rg\n40 610 515 42 re\nf\n0.8 0.8 0.8 RG\n40 610 515 42 re\nS\n0 0 0 rg\n" +
@@ -132,7 +145,7 @@ export function downloadStaffInvoicePdf(staff: StaffCommissionForPdf) {
   currentY -= 10;
   const totalBar =
     `0.83 0.68 0.21 rg\n40 ${currentY - 5} 515 26 re\nf\n0 0 0 rg\n` +
-    `BT\n/F2 10 Tf\n48 ${currentY + 3} Td\n(TOTAL COMMISSION PAYABLE) Tj\nET\n` +
+    `BT\n/F2 10 Tf\n48 ${currentY + 3} Td\n(${esc(staff.totalLabel ?? "TOTAL COMMISSION PAYABLE")}) Tj\nET\n` +
     `BT\n/F2 11 Tf\n465 ${currentY + 3} Td\n(${esc(formatAedNum(staff.totalCommission))}) Tj\nET\n`;
 
   const footer =
@@ -173,9 +186,39 @@ export function downloadStaffInvoicePdf(staff: StaffCommissionForPdf) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "carvibedubai.pdf";
+  a.download = staff.filename ?? "carvibedubai.pdf";
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+/** Downloads one immutable staff-payment receipt, independent of current unpaid totals. */
+export function downloadStaffPaymentReceiptPdf(
+  staff: Pick<StaffCommissionForPdf, "displayName" | "role">,
+  payment: StaffCommissionPayment,
+) {
+  const entries: StaffCommissionEntryForPdf[] = payment.entries.map((entry) => ({
+    id: entry.id,
+    kind: entry.kind,
+    leadName: entry.leadName,
+    carDetails: entry.carDetails,
+    soldAt: entry.soldAt,
+    profit: entry.profit,
+    commission: entry.commission,
+  }));
+  downloadStaffInvoicePdf({
+    ...staff,
+    totalCarsSold: payment.entryCount,
+    totalProfit: entries.reduce((total, entry) => total + (entry.profit ?? 0), 0),
+    totalCommission: payment.totalAmount,
+    isPaidThisMonth: true,
+    entries,
+    documentTitle: "STAFF PAYMENT RECEIPT",
+    documentDate: formatUaeDateTime(payment.paidAt),
+    confirmedBy: payment.paidByName,
+    receiptId: payment.id.slice(0, 8).toUpperCase(),
+    totalLabel: "TOTAL PAID",
+    filename: "carvibedubai-payment-" + payment.id.slice(0, 8) + ".pdf",
+  });
 }

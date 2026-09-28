@@ -1,24 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
 import { leadSchema } from "@/components/public/valuation-form/lead.schema";
-import { normalizeWhatsappPhone } from "@/lib/whatsapp/phone";
+import { normalizeWhatsappPhone, isAllowedWhatsappRecipient } from "@/lib/whatsapp/phone";
 import { readOtpProof } from "@/lib/whatsapp/otp-proof";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { pickNextAssignee } from "@/lib/server/lead-assignment";
 import { sendNewLeadNotification } from "@/lib/server/lead-notifications";
+import { getPublicLeadVerificationMode } from "@/lib/server/public-lead-verification";
+import { getClientIp } from "@/lib/server/ip";
+import { isRateLimited } from "@/lib/rate-limit";
+import { REOPENABLE_STATUSES } from "@/lib/server/enquiry";
 
-// Flags a lead as duplicate if the same verified phone submitted within this window.
+// Flags a lead as duplicate if the same submitted phone appeared within this window.
 const DUPLICATE_WINDOW_DAYS = 30;
 
 // Fields other than whatsapp are re-validated with the shared schema; whatsapp
 // is handled separately below since it must accept the test-mode WhatsApp
 // phone format (PH) as well as UAE, unlike the schema's UAE-only regex.
 const restSchema = leadSchema.omit({ whatsapp: true });
+const MILES_TO_KM = 1.609344;
+
+function mileageFromBody(body: Record<string, unknown>) {
+  const value = typeof body.mileageKm === "number" ? body.mileageKm : Number(body.mileageKm);
+  const unit = body.mileageUnit === "miles" ? "miles" : "km";
+  if (!Number.isInteger(value) || value < 0 || value > 1_000_000) return null;
+  return { value, unit, km: unit === "miles" ? Math.round(value * MILES_TO_KM) : value } as const;
+}
 
 function err(kind: string, message: string, status: number) {
   return NextResponse.json({ ok: false, error: { kind, message } }, { status });
 }
 
+const RETRY_FIELDS = "id, phone_e164, inquiry_type, full_name, email, make, model, trim, year, mileage_value, mileage_unit, specification, description, option_level, emirate, marketing_consent, scrap_condition, scrap_asking_price_aed";
+
+function sameSubmission(row: Record<string, unknown>, expected: Record<string, unknown>) {
+  return Object.entries(expected).every(([key, value]) => row[key] === value);
+}
+
 export async function POST(req: NextRequest) {
+  const verificationMode = getPublicLeadVerificationMode();
   if (!isSupabaseConfigured()) {
     return err("server_error", "Database is not configured yet.", 503);
   }
@@ -31,28 +50,41 @@ export async function POST(req: NextRequest) {
   }
 
   const proofToken = typeof body.proof === "string" ? body.proof : "";
+  const submissionId = typeof body.submissionId === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.submissionId)
+    ? body.submissionId
+    : null;
+  if (body.inquiryType !== "scrap" && body.inquiryType !== "valuation") {
+    return err("validation", "Invalid enquiry type.", 400);
+  }
   const inquiryType = body.inquiryType === "scrap" ? "scrap" : "valuation";
   const scrapCondition = typeof body.scrapCondition === "string" ? body.scrapCondition.trim().slice(0, 400) : "";
   const scrapAskingPrice = body.scrapAskingPriceAed === undefined || body.scrapAskingPriceAed === ""
     ? null
     : Number(body.scrapAskingPriceAed);
   const phone = typeof body.whatsapp === "string" ? normalizeWhatsappPhone(body.whatsapp) : null;
+  const mileage = mileageFromBody(body);
 
   if (!phone) {
     return err("validation", "Enter a valid mobile number.", 400);
   }
+  if (!isAllowedWhatsappRecipient(phone)) return err("validation", "Enter a valid mobile number.", 400);
+  if (!mileage) return err("validation", "Enter whole-number mileage between 0 and 1,000,000.", 400);
   if (inquiryType === "scrap" && (!scrapCondition || !Number.isFinite(scrapAskingPrice) || (scrapAskingPrice ?? 0) < 0)) {
     return err("validation", "Add the vehicle condition and asking price for this scrap inquiry.", 400);
   }
 
-  // The proof must be signed, unexpired, and bound to this exact phone.
-  const proofPayload = readOtpProof(proofToken, phone);
-  if (!proofPayload) {
-    return err("otp_expired", "Please verify your WhatsApp number before submitting.", 401);
+  if (typeof body.honeypot !== "string" || body.honeypot.trim()) return err("validation", "Please try again.", 400);
+  if (verificationMode === "unverified" && (!submissionId || proofToken)) {
+    return err("validation", "Please refresh the form and try again.", 400);
   }
 
   const supabase = getSupabaseAdmin();
+  const proofPayload = verificationMode === "otp" ? readOtpProof(proofToken, phone) : null;
+  if (verificationMode === "otp" && !proofPayload) {
+    return err("otp_expired", "Please verify your WhatsApp number before submitting.", 401);
+  }
 
+  if (proofPayload) {
   let { data: verification, error: verificationError } = await supabase
     .from("whatsapp_otp_verifications")
     .select("id, phone_number, inquiry_type, verification_session_id, verified_at, used_at, valuation_submission_id")
@@ -94,6 +126,7 @@ export async function POST(req: NextRequest) {
     }
     return err("otp_expired", "Your verification expired. Please verify your number again.", 401);
   }
+  }
 
   // Re-validate all other fields server-side (never trust the client).
   const parsed = restSchema.safeParse({
@@ -101,6 +134,7 @@ export async function POST(req: NextRequest) {
     model: body.model,
     year: body.year,
     mileageKm: body.mileageKm,
+    mileageUnit: body.mileageUnit ?? "km",
     specification: body.specification,
     description: body.description ?? "",
     trim: body.trim,
@@ -116,6 +150,63 @@ export async function POST(req: NextRequest) {
   }
 
   const v = parsed.data;
+  const expectedSubmission = {
+    phone_e164: phone,
+    inquiry_type: inquiryType,
+    full_name: v.fullName,
+    email: v.email || null,
+    make: v.make,
+    model: v.model,
+    trim: v.trim,
+    year: Number(v.year),
+    mileage_value: mileage.value,
+    mileage_unit: mileage.unit,
+    specification: v.specification,
+    description: v.description || null,
+    option_level: v.optionLevel,
+    emirate: v.location,
+    marketing_consent: true,
+    scrap_condition: inquiryType === "scrap" ? scrapCondition : null,
+    scrap_asking_price_aed: inquiryType === "scrap" ? scrapAskingPrice : null,
+  };
+
+  if (verificationMode === "unverified" && submissionId) {
+    // The existing UUID primary key gives atomic retry idempotency without a
+    // migration. A repeat must match the submitted identity and vehicle.
+    const { data: existing, error: existingError } = await supabase
+      .from("leads")
+      .select(RETRY_FIELDS)
+      .eq("id", submissionId)
+      .maybeSingle();
+    if (existingError) return err("server_error", "Please try again later.", 503);
+    if (existing) {
+      if (sameSubmission(existing, expectedSubmission)) {
+        return NextResponse.json({ ok: true, data: { id: existing.id } });
+      }
+      return err("validation", "Please refresh the form and try again.", 409);
+    }
+
+    const ip = getClientIp(req);
+    if (isRateLimited(`public-lead-phone:${phone}`, 5, 60 * 60 * 1000) ||
+        (ip && isRateLimited(`public-lead-ip:${ip}`, 20, 60 * 60 * 1000))) {
+      return err("rate_limited", "Too many requests. Please try again later.", 429);
+    }
+
+    // Unlike the OTP send gate, failed blocklist/open-lead lookups must stop a
+    // direct submission; there is no verified phone proof to fall back on.
+    const { data: blocked, error: blockedError } = await supabase
+      .from("blocked_numbers").select("phone_e164").eq("phone_e164", phone).maybeSingle();
+    if (blockedError) return err("server_error", "Please try again later.", 503);
+    if (blocked) return err("rate_limited", "Unable to accept this request.", 429);
+
+    const { data: latestLead, error: leadLookupError } = await supabase
+      .from("leads").select("status").eq("phone_e164", phone).eq("inquiry_type", inquiryType)
+      .order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (leadLookupError) return err("server_error", "Please try again later.", 503);
+    if (latestLead && !REOPENABLE_STATUSES.has(latestLead.status as string)) {
+      return err("already_submitted", "Your information has already been received. Our team will contact you.", 409);
+    }
+  }
 
   // Specification is configured by Super Admin in Vehicle Catalog. Validate
   // it on the server too, so a crafted public request cannot store a made-up
@@ -156,15 +247,18 @@ export async function POST(req: NextRequest) {
   const callCenterId = await pickNextAssignee("call_center");
 
   const insertRow = {
+    ...(verificationMode === "unverified" ? { id: submissionId } : {}),
     full_name: v.fullName,
     phone_e164: phone,
-    phone_verified: true,
+    phone_verified: verificationMode === "otp",
     email: v.email && v.email.length > 0 ? v.email : null,
     make: v.make,
     model: v.model,
     trim: v.trim,
     year: Number(v.year),
-    mileage_km: Number(v.mileageKm),
+    mileage_km: mileage.km,
+    mileage_value: mileage.value,
+    mileage_unit: mileage.unit,
     specification: v.specification,
     description: v.description && v.description.length > 0 ? v.description : null,
     option_level: v.optionLevel,
@@ -183,15 +277,22 @@ export async function POST(req: NextRequest) {
   const { data, error } = await supabase.from("leads").insert(insertRow).select("id, created_at").single();
 
   if (error || !data) {
+    if (verificationMode === "unverified" && error?.code === "23505") {
+      const { data: existing } = await supabase.from("leads").select(RETRY_FIELDS).eq("id", submissionId).maybeSingle();
+      if (existing && sameSubmission(existing, expectedSubmission)) {
+        return NextResponse.json({ ok: true, data: { id: existing.id } });
+      }
+      return err("already_submitted", "Your request was already received. Please contact our team if needed.", 409);
+    }
     return err("server_error", "Couldn't submit your details. Please try again.", 500);
   }
 
   // Consume the proof — bind it to this lead so it can never be reused for a
   // different submission, while still allowing an idempotent retry above.
-  await supabase
+  if (proofPayload) await supabase
     .from("whatsapp_otp_verifications")
     .update({ used_at: new Date().toISOString(), valuation_submission_id: data.id })
-    .eq("id", verification.id);
+    .eq("id", proofPayload.verificationId);
 
   // This person finished the form, so any half-finished capture for the same
   // number must stop showing as incomplete. Marking (rather than deleting) is
@@ -209,7 +310,7 @@ export async function POST(req: NextRequest) {
     await supabase.from("lead_events").insert({
       lead_id: data.id,
       type: "lead_created",
-      meta: { source: "web", inquiry_type: inquiryType, is_duplicate: isDuplicate },
+      meta: { source: "web", inquiry_type: inquiryType, is_duplicate: isDuplicate, verification_method: verificationMode },
     });
   } catch {
     // non-fatal
@@ -238,7 +339,9 @@ export async function POST(req: NextRequest) {
         model: v.model,
         trim: v.trim || null,
         year: Number(v.year),
-        mileageKm: Number(v.mileageKm),
+        mileageKm: mileage.km,
+        mileageValue: mileage.value,
+        mileageUnit: mileage.unit,
         emirate: v.location,
         createdAt: data.created_at,
       });

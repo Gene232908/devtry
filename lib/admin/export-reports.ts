@@ -1,6 +1,7 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import type { Lead } from "@/config/mock-data";
 import type { InventoryItem } from "@/lib/admin/inventory";
+import { formatMileage } from "@/lib/format";
 
 type ExportRow = Record<string, string | number>;
 
@@ -101,7 +102,7 @@ export function leadExportRows(leads: Lead[]): ExportRow[] {
     Model: lead.model,
     Trim: lead.trim,
     Year: lead.year,
-    "Mileage (km)": lead.mileageKm,
+    Mileage: formatMileage(lead.mileageValue ?? lead.mileageKm, lead.mileageUnit),
     Specification: lead.specification ?? "",
     Description: lead.description,
     "Lead Source": sourceLabels[lead.source ?? "web"] ?? "Other",

@@ -26,6 +26,9 @@ export type Lead = {
   trim: string;
   year: number;
   mileageKm: number;
+  /** Customer-entered value and unit. Older/manual records default to KM. */
+  mileageValue?: number;
+  mileageUnit?: "km" | "miles";
   specification?: string;
   /** @deprecated Replaced by `optionLevel` on the current valuation form; kept for historical rows only. */
   condition: "excellent" | "good" | "fair";

@@ -119,9 +119,11 @@ export function MobileInventoryList({
                       Sold: <strong className="font-semibold text-emerald-400">{formatAed(item.salePriceAed)}</strong>
                     </span>
                   )}
-                  {isSold && item.commission?.profitAed != null && (
-                    <span className={item.commission.profitAed < 0 ? "text-danger" : "text-gold"}>
-                      Profit: <strong>{formatAed(item.commission.profitAed)}</strong>
+                  {isSold && <span className="text-text-muted">Expenses: <strong className="font-semibold text-text">{formatAed(item.expenseTotalAed)}</strong></span>}
+                  {isSold && item.financialStatus === "awaiting_confirmation" && <span className="text-warning">Net: <strong>Review expenses</strong></span>}
+                  {isSold && item.financialStatus !== "awaiting_confirmation" && item.netProfitAed !== null && (
+                    <span className={item.netProfitAed < 0 ? "text-danger" : "text-gold"}>
+                      Net: <strong>{formatAed(item.netProfitAed)}</strong>
                     </span>
                   )}
                 </div>

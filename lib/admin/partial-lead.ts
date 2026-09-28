@@ -19,6 +19,8 @@ export type PartialLead = {
   model: string | null;
   year: number | null;
   mileage_km: number | null;
+  mileage_value?: number | null;
+  mileage_unit?: "km" | "miles" | null;
   specification?: string | null;
   description: string | null;
   inquiry_type?: "valuation" | "scrap" | null;
@@ -39,7 +41,7 @@ export type PartialLeadActivity = {
 /** Columns selected everywhere a partial lead is read, kept in one place so the
  *  list and detail endpoints can never drift apart. */
 export const PARTIAL_LEAD_COLUMNS =
-  "id, created_at, updated_at, phone_e164, full_name, consent, status, notes, furthest_step, last_trigger, make, model, year, mileage_km, specification, description, inquiry_type, scrap_condition, scrap_asking_price_aed, call_center_id, purchaser_id";
+  "id, created_at, updated_at, phone_e164, full_name, consent, status, notes, furthest_step, last_trigger, make, model, year, mileage_km, mileage_value, mileage_unit, specification, description, inquiry_type, scrap_condition, scrap_asking_price_aed, call_center_id, purchaser_id";
 
 export const PARTIAL_LEAD_COLUMNS_LEGACY =
   "id, created_at, updated_at, phone_e164, full_name, consent, status, notes, furthest_step, last_trigger, make, model, year, mileage_km, specification, description, call_center_id, purchaser_id";

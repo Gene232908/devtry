@@ -46,7 +46,7 @@ export function SellCarDialog({
 
   const parsed = Number(price);
   const valid = price.trim() !== "" && Number.isFinite(parsed) && parsed >= 0;
-  const preview = car && valid ? previewCommission(car.purchasePriceAed, parsed) : null;
+  const preview = car && valid ? previewCommission(car.purchasePriceAed, parsed, car.expenseTotalAed) : null;
   const atALoss = preview !== null && preview.profitAed < 0;
 
   return (
@@ -59,8 +59,8 @@ export function SellCarDialog({
             <span className="text-text">
               {car.year} {car.make} {car.model}
             </span>
-            , bought for {formatAed(car.purchasePriceAed)}. The figures below are saved permanently and cannot be
-            edited afterwards.
+            , bought for {formatAed(car.purchasePriceAed)}. After saving the sale, review and confirm expenses before
+            any commission becomes payable.
           </>
         ) : null
       }
@@ -86,9 +86,10 @@ export function SellCarDialog({
           <div className="flex flex-col gap-2 rounded-card border border-border bg-surface-2 px-4 py-3 text-fluid--1">
             <Row label="Sale price" value={formatAed(parsed)} />
             <Row label="Purchase price" value={`− ${formatAed(car!.purchasePriceAed)}`} />
+            <Row label="Expenses" value={`− ${formatAed(car!.expenseTotalAed)}`} />
             <div className="border-t border-border pt-2">
               <Row
-                label="Profit"
+                label="Net profit before commissions"
                 value={formatAed(preview.profitAed)}
                 tone={atALoss ? "text-danger" : "text-text"}
               />

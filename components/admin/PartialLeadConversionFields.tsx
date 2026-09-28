@@ -10,6 +10,7 @@ export type PartialDealState = {
   year: string;
   trim: string;
   mileageKm: string;
+  mileageUnit: "km" | "miles";
   specification: string;
   emirate: string;
   inspectionScheduledAt: string;
@@ -147,12 +148,30 @@ export function PartialLeadConversionFields({
           disabled={!deal.model}
           onChange={(trim) => setDeal((d) => ({ ...d, trim }))}
         />
-        <Input
-          label="Mileage (km)"
-          inputMode="numeric"
-          value={deal.mileageKm}
-          onChange={(e) => setDeal((d) => ({ ...d, mileageKm: e.target.value }))}
-        />
+        <div className="flex flex-col gap-1.5">
+          <label className="text-fluid--1 font-medium uppercase tracking-[0.14em] text-text-faint">Mileage</label>
+          <div className="grid grid-cols-[minmax(0,1fr)_7.5rem] gap-2">
+            <input
+              type="number"
+              inputMode="numeric"
+              min="0"
+              max="1000000"
+              step="1"
+              value={deal.mileageKm}
+              onChange={(event) => setDeal((current) => ({ ...current, mileageKm: event.target.value }))}
+              className="min-w-0 rounded-card border border-border bg-surface-2 px-3 py-2.5 text-sm text-text outline-none focus:border-gold"
+            />
+            <select
+              aria-label="Mileage unit"
+              value={deal.mileageUnit}
+              onChange={(event) => setDeal((current) => ({ ...current, mileageUnit: event.target.value as "km" | "miles" }))}
+              className="rounded-card border border-border bg-surface-2 px-3 py-2.5 text-sm text-text outline-none focus:border-gold"
+            >
+              <option value="km">KM</option>
+              <option value="miles">Miles</option>
+            </select>
+          </div>
+        </div>
         <Select
           label="Specification *"
           placeholder="Select specification"

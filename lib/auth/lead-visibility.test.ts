@@ -108,6 +108,10 @@ describe("status choices", () => {
     expect(statusChoicesForRole("purchaser")).toEqual(["negotiating", "deal", "closed"]);
   });
 
+  it("uses the same purchaser Deal permission for Scrap because Scrap is provenance, not a separate workflow", () => {
+    expect(canRoleSetStatus("purchaser", "deal")).toBe(true);
+  });
+
   it("offers a purchaser Not Purchased after inspection", () => {
     expect(PURCHASER_STATUS_CHOICES).toContain("closed");
   });
