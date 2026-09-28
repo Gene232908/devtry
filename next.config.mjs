@@ -16,12 +16,15 @@ const csp = [
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   // data: and blob: are what next/image uses for placeholders and optimisation.
-  "img-src 'self' data: blob:",
+  // Meta Pixel is intentionally limited to PageView in MetaPixel.tsx. Its
+  // fallback beacon is an image request to facebook.com.
+  "img-src 'self' data: blob: https://www.facebook.com",
   // next/font self-hosts at build time, so no external font host is needed.
   "font-src 'self'",
   // Supabase is the only host the browser talks to directly. Twilio and the
   // WhatsApp Graph API are called from server routes, never from the page.
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.facebook.com https://connect.facebook.net",
+  "script-src-elem 'self' https://connect.facebook.net",
   "media-src 'self'",
   "frame-ancestors 'none'",
   "base-uri 'self'",

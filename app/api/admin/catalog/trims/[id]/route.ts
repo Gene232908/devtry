@@ -7,8 +7,9 @@ export const dynamic = "force-dynamic";
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const resolvedParams = await params;
   const auth = await requireAdmin();
   if (!auth.ok)
     return NextResponse.json(
@@ -24,7 +25,7 @@ export async function DELETE(
 
   const result = await setCatalogArchived(
     "trim",
-    params.id,
+    resolvedParams.id,
     true,
     auth.identity,
   );
@@ -39,8 +40,9 @@ export async function DELETE(
 
 export async function PATCH(
   _req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const resolvedParams = await params;
   const auth = await requireAdmin();
   if (!auth.ok)
     return NextResponse.json(
@@ -54,7 +56,7 @@ export async function PATCH(
     );
   const result = await setCatalogArchived(
     "trim",
-    params.id,
+    resolvedParams.id,
     false,
     auth.identity,
   );

@@ -263,19 +263,21 @@ async function convertPartialToLead(
   return NextResponse.json({ ok: true, data: { id: partialId, leadId: lead.id } });
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const access = await authorizePartialLead(params.id);
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const access = await authorizePartialLead(resolvedParams.id);
   if (!access.ok) return access.response;
   return NextResponse.json({ ok: true, data: { partialLead: access.partial } });
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
   const blocked = blockedByPreview();
   if (blocked) return blocked;
 
   if (!isSupabaseConfigured()) return fail("Database is not configured.", 503);
 
-  const access = await authorizePartialLead(params.id);
+  const access = await authorizePartialLead(resolvedParams.id);
   if (!access.ok) return access.response;
 
   let body: Record<string, unknown>;
@@ -290,7 +292,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   if (body.status === "inspection_scheduled") {
-    return convertPartialToLead(params.id, body, "inspection_scheduled", access.identity);
+    return convertPartialToLead(resolvedParams.id, body, "inspection_scheduled", access.identity);
   }
 
   let nextStatus: string | undefined;
@@ -335,14 +337,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   let { error: updateError } = await supabase
     .from("partial_leads")
     .update(updatePayload)
-    .eq("id", params.id)
+    .eq("id", resolvedParams.id)
     .is("converted_lead_id", null);
 
   if (updateError && updateError.message?.includes("specification")) {
     const { error: fallbackError } = await supabase
       .from("partial_leads")
       .update({ status, notes, updated_at: new Date().toISOString() })
-      .eq("id", params.id)
+      .eq("id", resolvedParams.id)
       .is("converted_lead_id", null);
     updateError = fallbackError;
   }
@@ -352,14 +354,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const events = [];
   if ((current.notes ?? "") !== notes) {
     events.push({
-      partial_lead_id: params.id,
+      partial_lead_id: resolvedParams.id,
       type: "note_updated",
       meta: { from: current.notes ?? "", to: notes },
     });
   }
   if (current.status !== status) {
     events.push({
-      partial_lead_id: params.id,
+      partial_lead_id: resolvedParams.id,
       type: "status_changed",
       meta: { from: current.status, to: status },
     });
@@ -372,24 +374,25 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
   }
 
-  return NextResponse.json({ ok: true, data: { id: params.id } });
+  return NextResponse.json({ ok: true, data: { id: resolvedParams.id } });
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
   const blocked = blockedByPreview();
   if (blocked) return blocked;
 
   if (!isSupabaseConfigured()) return fail("Database is not configured.", 503);
 
-  const access = await authorizePartialLead(params.id);
+  const access = await authorizePartialLead(resolvedParams.id);
   if (!access.ok) return access.response;
 
   const { error } = await getSupabaseAdmin()
     .from("partial_leads")
     .delete()
-    .eq("id", params.id)
+    .eq("id", resolvedParams.id)
     .is("converted_lead_id", null);
   if (error) return fail(error.message, 500);
 
-  return NextResponse.json({ ok: true, data: { id: params.id } });
+  return NextResponse.json({ ok: true, data: { id: resolvedParams.id } });
 }

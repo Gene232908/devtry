@@ -27,7 +27,7 @@ export type AdminCheck =
   | { ok: false; status: 401 | 403; message: string };
 
 export const requireAdmin = cache(async function requireAdmin(): Promise<AdminCheck> {
-  const supabase = getSupabaseServer();
+  const supabase = await getSupabaseServer();
 
   // getClaims() verifies the JWT signature locally rather than calling the auth
   // server, matching how middleware.ts authenticates every other admin route.

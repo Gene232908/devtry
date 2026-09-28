@@ -11,8 +11,9 @@ function fail(message: string, status: number) {
   return NextResponse.json({ ok: false, error: { message } }, { status });
 }
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
-  const access = await authorizeInspectionLead(params.id, "write");
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const access = await authorizeInspectionLead(resolvedParams.id, "write");
   if (!access.ok) return fail(access.message, access.status);
 
   const form = await request.formData().catch(() => null);
@@ -27,13 +28,13 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   let { data: report, error: reportError } = await access.supabase
     .from("inspection_reports")
     .select("id, status")
-    .eq("lead_id", params.id)
+    .eq("lead_id", resolvedParams.id)
     .maybeSingle();
   if (reportError) return fail(reportError.message, 500);
   if (!report) {
     const created = await access.supabase
       .from("inspection_reports")
-      .insert({ lead_id: params.id, created_by: access.auth.userId, updated_by: access.auth.userId })
+      .insert({ lead_id: resolvedParams.id, created_by: access.auth.userId, updated_by: access.auth.userId })
       .select("id, status")
       .single();
     report = created.data;
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
   const extension = file.type === "image/png" ? "png" : "jpg";
   const safeAngle = angle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-  const path = `${params.id}/${safeAngle}.${extension}`;
+  const path = `${resolvedParams.id}/${safeAngle}.${extension}`;
   const bytes = await file.arrayBuffer();
   const { error: uploadError } = await access.supabase.storage.from("inspection-photos").upload(path, bytes, {
     contentType: file.type,
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
   const saved = await access.supabase.rpc("save_inspection_photo", {
     p_report_id: report.id,
-    p_lead_id: params.id,
+    p_lead_id: resolvedParams.id,
     p_angle: angle,
     p_storage_path: path,
     p_content_type: file.type,
@@ -78,6 +79,6 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
   return NextResponse.json({
     ok: true,
-    data: { angle, note, url: `/api/admin/leads/${encodeURIComponent(params.id)}/inspection/photos/${encodeURIComponent(angle)}?v=${Date.now()}` },
+    data: { angle, note, url: `/api/admin/leads/${encodeURIComponent(resolvedParams.id)}/inspection/photos/${encodeURIComponent(angle)}?v=${Date.now()}` },
   });
 }

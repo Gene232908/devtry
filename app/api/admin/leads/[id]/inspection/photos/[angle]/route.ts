@@ -8,17 +8,18 @@ function fail(message: string, status: number) {
   return NextResponse.json({ ok: false, error: { message } }, { status });
 }
 
-export async function GET(_request: NextRequest, { params }: { params: { id: string; angle: string } }) {
-  const access = await authorizeInspectionLead(params.id, "read");
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string; angle: string }> }) {
+  const resolvedParams = await params;
+  const access = await authorizeInspectionLead(resolvedParams.id, "read");
   if (!access.ok) return fail(access.message, access.status);
 
-  const angle = params.angle;
+  const angle = resolvedParams.angle;
   if (!PHOTO_ANGLES.includes(angle as (typeof PHOTO_ANGLES)[number])) return fail("Unknown inspection photo.", 404);
 
   const { data: report, error: reportError } = await access.supabase
     .from("inspection_reports")
     .select("id")
-    .eq("lead_id", params.id)
+    .eq("lead_id", resolvedParams.id)
     .maybeSingle();
   if (reportError) return fail(reportError.message, 500);
   if (!report) return fail("Inspection photo not found.", 404);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   AlertTriangle,
   CalendarDays,
@@ -397,7 +398,7 @@ function ScrapOverview({ data, isLoading }: { data: NonNullable<ReturnType<typeo
           <h2 className="flex items-center gap-2 text-base font-semibold text-text"><Recycle className="h-4 w-4 text-gold" /> Scrap Sales</h2>
           <p className="mt-1 text-xs text-text-muted">Sales completed in the selected date range.</p>
         </div>
-        <a href="/admin/leads?origin=scrap" className="text-sm font-medium text-gold hover:text-text">View scrap inquiries →</a>
+        <Link href="/admin/leads?origin=scrap" className="text-sm font-medium text-gold hover:text-text">View scrap inquiries →</Link>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4 border-t border-white/10 pt-4 sm:grid-cols-4">
         {figures.map((figure) => (

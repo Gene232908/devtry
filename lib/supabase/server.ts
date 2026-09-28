@@ -6,7 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // Reads the signed-in admin's session from cookies (set by the browser
 // client during login) - governed by RLS, NOT the service role.
 // Use this to check "who is logged in", not for privileged data access.
-export function getSupabaseServer(): SupabaseClient {
+export async function getSupabaseServer(): Promise<SupabaseClient> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -14,7 +14,7 @@ export function getSupabaseServer(): SupabaseClient {
     throw new Error("Supabase is not configured (missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY).");
   }
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
 
   return createServerClient(url, anon, {
     // Same reason as the admin client: Next caches `fetch` inside Server

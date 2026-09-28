@@ -12,14 +12,15 @@ function fail(message: string, status: number) {
  * already completed but its lead still says Inspection Scheduled. It is safe
  * to call repeatedly: drafts and later workflow stages are never changed.
  */
-export async function POST(_request: Request, { params }: { params: { id: string } }) {
-  const access = await authorizeInspectionLead(params.id, "write");
+export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const access = await authorizeInspectionLead(resolvedParams.id, "write");
   if (!access.ok) return fail(access.message, access.status);
 
   const { data: report, error: reportError } = await access.supabase
     .from("inspection_reports")
     .select("status")
-    .eq("lead_id", params.id)
+    .eq("lead_id", resolvedParams.id)
     .maybeSingle();
   if (reportError) return fail(reportError.message, 500);
   if (report?.status !== "completed") return NextResponse.json({ ok: true, data: { reconciled: false } });
@@ -27,7 +28,7 @@ export async function POST(_request: Request, { params }: { params: { id: string
   const { data: lead, error: leadError } = await access.supabase
     .from("leads")
     .select("status")
-    .eq("id", params.id)
+    .eq("id", resolvedParams.id)
     .single();
   if (leadError || !lead) return fail(leadError?.message ?? "Lead not found.", 404);
 
@@ -36,7 +37,7 @@ export async function POST(_request: Request, { params }: { params: { id: string
   const { error: updateError } = await access.supabase
     .from("leads")
     .update({ status: "inspected" })
-    .eq("id", params.id)
+    .eq("id", resolvedParams.id)
     .eq("status", "inspection_scheduled");
   if (updateError) return fail(updateError.message, 500);
 

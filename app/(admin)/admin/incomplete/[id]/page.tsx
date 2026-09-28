@@ -7,9 +7,10 @@ import { demoPartialLeads } from "@/config/demo-admin-data";
 
 export const dynamic = "force-dynamic";
 
-export default async function IncompleteDetailPage({ params }: { params: { id: string } }) {
+export default async function IncompleteDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
   if (ADMIN_PREVIEW) {
-    const fallback = demoPartialLeads.find((row) => row.id === params.id) ?? null;
+    const fallback = demoPartialLeads.find((row) => row.id === resolvedParams.id) ?? null;
     if (!fallback) return <NotFound />;
     return <PartialLeadDetail partial={fallback} />;
   }
@@ -19,9 +20,9 @@ export default async function IncompleteDetailPage({ params }: { params: { id: s
     return <div>Not authorized</div>;
   }
 
-  const result = await fetchPartialLead(params.id, auth.identity);
+  const result = await fetchPartialLead(resolvedParams.id, auth.identity);
   if (!result.ok) {
-    const fallback = demoPartialLeads.find((row) => row.id === params.id) ?? null;
+    const fallback = demoPartialLeads.find((row) => row.id === resolvedParams.id) ?? null;
     if (fallback) {
       return <PartialLeadDetail partial={fallback} />;
     }

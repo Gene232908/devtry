@@ -160,6 +160,7 @@
 
 ## Next
 
+- [ ] Before each Vercel deployment, complete `VERCEL_DEPLOYMENT_CHECKLIST.md` and retain its release sign-off with the deployment record.
 - [ ] Test admin login live (requires a real Supabase Auth user matching an email in `0002_seed.sql`).
 - [ ] Decide on lead data retention/deletion policy (`KNOWN_ISSUES.md` ISSUE-004).
 - [ ] Add pagination to `/api/admin/leads` before lead volume grows (`KNOWN_ISSUES.md` ISSUE-003).

@@ -9,14 +9,15 @@ function fail(message: string, status: number) {
   return Response.json({ ok: false, error: { message } }, { status });
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
-  const access = await authorizeInspectionLead(params.id, "read");
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const access = await authorizeInspectionLead(resolvedParams.id, "read");
   if (!access.ok) return fail(access.message, access.status);
 
   const { data: report, error } = await access.supabase
     .from("inspection_reports")
     .select("id, report_data, completed_at, updated_by, photos_purged_at")
-    .eq("lead_id", params.id)
+    .eq("lead_id", resolvedParams.id)
     .eq("status", "completed")
     .maybeSingle();
   if (error) return fail(error.message, 500);

@@ -29,7 +29,7 @@ export type StaffCheck =
 
 export const requireStaff = cache(async function requireStaff(): Promise<StaffCheck> {
   try {
-    const supabase = getSupabaseServer();
+    const supabase = await getSupabaseServer();
 
     // Verify JWT locally (same approach as middleware.ts and require-admin.ts).
     const { data: claims } = await supabase.auth.getClaims();

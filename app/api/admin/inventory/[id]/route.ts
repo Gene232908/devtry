@@ -10,10 +10,10 @@ export const dynamic = "force-dynamic";
 // Two different kinds of change live here, and they are deliberately separate
 // actions rather than one free-form status write:
 //
-//   sell    — records the sale price and freezes the developer's share. Goes
+//   sell    ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â records the sale price and freezes the developer's share. Goes
 //             through sell_inventory_item() so the sale and its commission
 //             entry are written in one transaction.
-//   default — moving between in_stock / reserved / withdrawn, and notes. No
+//   default ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â moving between in_stock / reserved / withdrawn, and notes. No
 //             money involved.
 //
 // "sold" is not accepted as a plain status. Allowing it would let a car be
@@ -34,9 +34,10 @@ async function canManageExpenses(inventoryId: string, userId: string, role: stri
     : role === "purchaser" && lead?.purchaser_id === userId;
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
   // Every write here moves money (a sale) or the record of an asset (status,
-  // notes) — this had no role check at all beyond "middleware confirmed a
+  // notes) ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â this had no role check at all beyond "middleware confirmed a
   // session exists," so any authenticated staff account, including a call
   // centre agent with no `viewInventory` capability and a sidebar that hides
   // this whole page, could sell a car by calling the endpoint directly.
@@ -56,7 +57,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (expenseAction && auth.identity.role !== "admin") {
     return NextResponse.json({ ok: false, error: { message: "Only Super Admin can confirm expenses." } }, { status: 403 });
   }
-  if (!hasCapability(auth.identity, "viewInventory") && !(expenseAction && await canManageExpenses(params.id, auth.identity.userId, auth.identity.role))) {
+  if (!hasCapability(auth.identity, "viewInventory") && !(expenseAction && await canManageExpenses(resolvedParams.id, auth.identity.userId, auth.identity.role))) {
     return NextResponse.json({ ok: false, error: { message: "Not authorized." } }, { status: 403 });
   }
 
@@ -67,7 +68,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ ok: false, error: { message: "Database is not configured." } }, { status: 503 });
   }
 
-  const id = params.id;
+  const id = resolvedParams.id;
 
   const supabase = getSupabaseAdmin();
 
@@ -140,14 +141,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       p_sold_at: soldAt.toISOString(),
       p_rate: COMMISSION_RATE,
       // Credits whichever agent and purchaser the car's lead carries, in the
-      // same transaction as the sale — see migration 0025.
+      // same transaction as the sale ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â see migration 0025.
       p_agent_rate: AGENT_COMMISSION_RATE,
       p_purchaser_rate: PURCHASER_COMMISSION_RATE,
     });
 
     if (error) {
       // "already sold" and "sale price must be zero or more" are raised with
-      // wording the owner can act on — surface it rather than a generic error.
+      // wording the owner can act on ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â surface it rather than a generic error.
       return NextResponse.json({ ok: false, error: { message: error.message } }, { status: 400 });
     }
 
@@ -195,7 +196,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   if (!data) {
     return NextResponse.json(
-      { ok: false, error: { message: "This car has been sold — its record can no longer be changed." } },
+      { ok: false, error: { message: "This car has been sold ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â its record can no longer be changed." } },
       { status: 400 },
     );
   }

@@ -55,7 +55,7 @@ function messageFor(event: DbLeadEvent, actor?: ActorSnapshot): string {
     case "status_change": {
       const from = STATUS_LABEL[String(meta.from)] ?? String(meta.from ?? "");
       const to = STATUS_LABEL[String(meta.to)] ?? String(meta.to ?? "");
-      return `Status changed${actionBy(meta, actor)}: ${from} → ${to}.`;
+      return `Status changed${actionBy(meta, actor)}: ${from} ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ ${to}.`;
     }
     case "value_updated": return meta.value != null ? `Estimated value set${actionBy(meta, actor)} to AED ${Number(meta.value).toLocaleString()}.` : `Estimated value cleared${actionBy(meta, actor)}.`;
     case "note_updated": {
@@ -64,8 +64,8 @@ function messageFor(event: DbLeadEvent, actor?: ActorSnapshot): string {
     }
     case "car_purchased": return meta.purchase_price_aed != null ? `Car bought${actionBy(meta, actor)} for AED ${Number(meta.purchase_price_aed).toLocaleString()} and added to Inventory.` : `Car added to Inventory${actionBy(meta, actor)}.`;
     case "financial_review_reopened": return `Financial review reopened${actionBy(meta, actor)}. Reason: ${String(meta.reason ?? "No reason provided")}`;
-    case "expense_added": return `Expense ${meta.action === "updated" ? "updated" : "added"}${actionBy(meta, actor)}: ${String(meta.description ?? "Expense")} — AED ${Number(meta.amount_aed ?? 0).toLocaleString()}.`;
-    case "expense_deleted": return `Expense deleted${actionBy(meta, actor)}: ${String(meta.description ?? "Expense")} — AED ${Number(meta.amount_aed ?? 0).toLocaleString()}.`;
+    case "expense_added": return `Expense ${meta.action === "updated" ? "updated" : "added"}${actionBy(meta, actor)}: ${String(meta.description ?? "Expense")} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â AED ${Number(meta.amount_aed ?? 0).toLocaleString()}.`;
+    case "expense_deleted": return `Expense deleted${actionBy(meta, actor)}: ${String(meta.description ?? "Expense")} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â AED ${Number(meta.amount_aed ?? 0).toLocaleString()}.`;
     case "marked_spam": return meta.is_spam === false ? `Unmarked as spam${actionBy(meta, actor)}.` : `Marked as spam${actionBy(meta, actor)}.`;
     case "assigned": return `Lead assignment updated${actionBy(meta, actor)}.`;
     case "arrival_confirmed": return `Customer arrival confirmed${actionBy(meta, actor)}.`;
@@ -77,7 +77,7 @@ function messageFor(event: DbLeadEvent, actor?: ActorSnapshot): string {
     case "inspection_rescheduled": {
       const previous = typeof meta.previous_scheduled_at === "string" ? formatScheduledInspection(meta.previous_scheduled_at) : "the previous appointment";
       const next = typeof meta.scheduled_at === "string" ? formatScheduledInspection(meta.scheduled_at) : "the new appointment";
-      return `Inspection rescheduled${actionBy(meta, actor)}: ${previous} → ${next}.`;
+      return `Inspection rescheduled${actionBy(meta, actor)}: ${previous} ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ ${next}.`;
     }
     case "inspection_completed": return `Inspection report completed${actionBy(meta, actor)}.`;
     case "inspection_card_updated": {
@@ -103,15 +103,16 @@ async function authorizeLead(id: string) {
   return { auth, supabase };
 }
 
-export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
   if (!isSupabaseConfigured()) return NextResponse.json({ ok: false, error: { message: "Database is not configured." } }, { status: 503 });
-  const access = await authorizeLead(params.id);
+  const access = await authorizeLead(resolvedParams.id);
   if ("error" in access) return access.error;
 
   const { data, error } = await access.supabase
     .from("lead_events")
     .select("id, type, meta, created_at, actor")
-    .eq("lead_id", params.id)
+    .eq("lead_id", resolvedParams.id)
     .order("created_at", { ascending: false });
   if (error) return NextResponse.json({ ok: false, error: { message: error.message } }, { status: 500 });
 
@@ -143,16 +144,17 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
   });
 }
 
-export async function POST(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
   if (!isSupabaseConfigured()) return NextResponse.json({ ok: false, error: { message: "Database is not configured." } }, { status: 503 });
-  const access = await authorizeLead(params.id);
+  const access = await authorizeLead(resolvedParams.id);
   if ("error" in access) return access.error;
 
   const since = new Date(Date.now() - VIEW_DEDUPE_MINUTES * 60 * 1000).toISOString();
   const { data: recent, error: recentError } = await access.supabase
     .from("lead_events")
     .select("id")
-    .eq("lead_id", params.id)
+    .eq("lead_id", resolvedParams.id)
     .eq("type", LEAD_VIEWED)
     .eq("actor", access.auth.identity.userId)
     .gte("created_at", since)
@@ -161,7 +163,7 @@ export async function POST(_request: NextRequest, { params }: { params: { id: st
   if (recent.length > 0) return NextResponse.json({ ok: true, data: { recorded: false } });
 
   const { error } = await access.supabase.from("lead_events").insert({
-    lead_id: params.id,
+    lead_id: resolvedParams.id,
     actor: access.auth.identity.userId,
     type: LEAD_VIEWED,
     meta: { viewer_name: access.auth.identity.displayName, viewer_role: access.auth.identity.role },

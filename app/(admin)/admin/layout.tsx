@@ -25,7 +25,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     return <AdminShell identity={identity}>{children}</AdminShell>;
   }
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const roleCookie = cookieStore.get("cvd_role")?.value ?? "";
   const nameCookie = cookieStore.get("cvd_display_name")?.value ?? "";
 
@@ -38,7 +38,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     const displayName = nameCookie || null;
     if (userId === "unknown") {
       try {
-        const supabase = getSupabaseServer();
+        const supabase = await getSupabaseServer();
         const { data: claims } = await supabase.auth.getClaims();
         if (claims?.claims.sub) userId = claims.claims.sub;
       } catch {

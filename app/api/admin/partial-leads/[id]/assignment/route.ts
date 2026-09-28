@@ -3,7 +3,8 @@ import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { requireStaff } from "@/lib/server/require-staff";
 import { hasCapability } from "@/lib/auth/permissions";
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
   const auth = await requireStaff();
   if (!auth.ok) return NextResponse.json({ ok: false, error: { message: auth.message } }, { status: auth.status });
 
@@ -62,13 +63,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       call_center_id: callCenterId || null,
       purchaser_id: null,
     })
-    .eq("id", params.id);
+    .eq("id", resolvedParams.id);
 
   if (error) return NextResponse.json({ ok: false, error: { message: error.message } }, { status: 500 });
 
   // Record history
   await supabase.from("partial_lead_events").insert({
-    partial_lead_id: params.id,
+    partial_lead_id: resolvedParams.id,
     type: "assigned",
     meta: { call_center_id: callCenterId || null },
   });

@@ -45,7 +45,7 @@ vi.mock("@/lib/inspection/access", () => ({
 describe("GET /api/admin/leads/[id]/inspection/pdf", () => {
   it("embeds all required stored photos into a downloadable PDF", async () => {
     const { GET } = await import("./route");
-    const response = await GET(new Request("http://localhost"), { params: { id: "lead-1" } });
+    const response = await GET(new Request("http://localhost"), { params: Promise.resolve({ id: "lead-1" }) });
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe("application/pdf");
@@ -61,7 +61,7 @@ describe("GET /api/admin/leads/[id]/inspection/pdf", () => {
 
   it("supports an internal binary response that download managers cannot intercept as an attachment", async () => {
     const { GET } = await import("./route");
-    const response = await GET(new Request("http://localhost?delivery=internal"), { params: { id: "lead-1" } });
+    const response = await GET(new Request("http://localhost?delivery=internal"), { params: Promise.resolve({ id: "lead-1" }) });
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe("application/octet-stream");

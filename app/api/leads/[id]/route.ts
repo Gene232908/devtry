@@ -26,9 +26,10 @@ const STATUSES = new Set([
 
 type LeadEventInsert = { lead_id: string; type: string; meta: Record<string, unknown> };
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
   // Milestone 2: the dashboard is a design preview, so admin writes are refused
-  // at the server too — the UI guard alone would still leave this endpoint open
+  // at the server too ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â the UI guard alone would still leave this endpoint open
   // to anything holding a session.
   if (ADMIN_PREVIEW) {
     return NextResponse.json(
@@ -38,7 +39,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   // Middleware only proves a valid session exists. This resolves WHO is acting,
-  // which is what every guard below is written against — until now this endpoint
+  // which is what every guard below is written against ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â until now this endpoint
   // checked nothing beyond "signed in", so any staff account could edit any lead
   // in the company just by knowing its id.
   const auth = await requireStaff();
@@ -51,7 +52,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ ok: false, error: { message: "Database is not configured." } }, { status: 503 });
   }
 
-  const id = params.id;
+  const id = resolvedParams.id;
   let body: {
     status?: unknown;
     estimated_value_aed?: unknown;
@@ -71,7 +72,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const supabase = getSupabaseAdmin();
 
-  // Load the current row so we can record meaningful timeline diffs — and so
+  // Load the current row so we can record meaningful timeline diffs ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â and so
   // the role guards below decide against what the database says rather than
   // against anything the caller sent.
   const loadCurrent = (fields: string) => supabase.from("leads").select(fields).eq("id", id).single();
@@ -107,7 +108,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   };
 
   // Ownership. A lead belongs to exactly one agent and, once handed over, to
-  // exactly one purchaser; only that person — or an owner, who sees everything —
+  // exactly one purchaser; only that person ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â or an owner, who sees everything ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â
   // may write to it.
   if (!hasCapability(auth.identity, "viewAllLeads")) {
     const ownsLead = canSeeLead(
@@ -133,7 +134,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   });
 
   // Checked before the deal branch below, so an agent cannot reach
-  // record_lead_deal() — and a purchaser cannot walk a lead back to "contacted".
+  // record_lead_deal() ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â and a purchaser cannot walk a lead back to "contacted".
   if (typeof body.status === "string" && body.status !== current.status) {
     if (role === "call_center" && current.arrival_status === "arrived") {
       return NextResponse.json(
@@ -200,7 +201,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // A lead that has a car cannot leave "deal".
     //
     // record_lead_deal() guarantees a lead at 'deal' has an inventory row, but
-    // nothing guarded the way back out — so moving the lead to any other status
+    // nothing guarded the way back out ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â so moving the lead to any other status
     // left the car stranded: still in Inventory, still holding the money paid
     // for it, but no longer reachable from a lead anyone would look at. If that
     // car is later sold, its commission is calculated against a purchase the
@@ -213,7 +214,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // this is the only place every client has to come through.
     //
     // Undoing a purchase is a real thing an owner may need, but it means
-    // removing a car from stock and unwinding money — a deliberate action with
+    // removing a car from stock and unwinding money ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â a deliberate action with
     // its own confirmation, not a side effect of changing a dropdown.
     if (current.status === "deal" && body.status !== "deal") {
       const { data: car } = await supabase
@@ -243,7 +244,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   // Who a lead belongs to is decided by the round-robin below and by the
-  // owner-only assignment endpoint — never by whatever the browser posted. The
+  // owner-only assignment endpoint ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â never by whatever the browser posted. The
   // dashboard used to compute an assignee client-side from a hardcoded demo list
   // and send it here, so any caller could hand themselves someone else's lead.
   if ("purchaser_id" in body && hasCapability(auth.identity, "assignLeads")) {
@@ -337,7 +338,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     // Required when the lead is being MOVED to Inspection Scheduled, or when the
     // date itself is being edited. A lead already sitting at this status with no
-    // date — a row written before the date existed — is not blocked from having
+    // date ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â a row written before the date existed ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â is not blocked from having
     // its notes saved.
     const mustHaveDate = update.status === "inspection_scheduled" || "inspection_scheduled_at" in update;
 
@@ -349,7 +350,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 
     // Round-robin onto the next purchaser. Skipped when one already holds the
-    // lead — a re-save must not shuffle it to somebody else mid-negotiation —
+    // lead ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â a re-save must not shuffle it to somebody else mid-negotiation ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â
     // and when an owner named someone in this same request.
     if (!("purchaser_id" in update) && !current.purchaser_id) {
       const purchaserId = await pickNextAssignee("purchaser");

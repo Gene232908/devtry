@@ -13,14 +13,15 @@ function isMissingInspectionNoteColumn(error: { message?: string } | null) {
   return Boolean(error?.message && /column .*inspection_photos\.note|inspection_photos\.note.*does not exist/i.test(error.message));
 }
 
-export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
-  const access = await authorizeInspectionLead(params.id, "read");
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const access = await authorizeInspectionLead(resolvedParams.id, "read");
   if (!access.ok) return fail(access.message, access.status);
 
   const { data: report, error } = await access.supabase
     .from("inspection_reports")
     .select("id, report_data, status, completed_at, updated_at")
-    .eq("lead_id", params.id)
+    .eq("lead_id", resolvedParams.id)
     .maybeSingle();
   if (error) return fail(error.message, 500);
 
@@ -52,15 +53,16 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
       photos: (photoRows.data ?? []).map((photo: { angle: string; note?: string | null; created_at: string }) => ({
         angle: photo.angle,
         note: photo.note ?? (legacyPhotoSchema ? "Legacy photo. Add a note when replacing this image after migration 0028." : ""),
-        url: `/api/admin/leads/${encodeURIComponent(params.id)}/inspection/photos/${encodeURIComponent(photo.angle)}`,
+        url: `/api/admin/leads/${encodeURIComponent(resolvedParams.id)}/inspection/photos/${encodeURIComponent(photo.angle)}`,
         createdAt: photo.created_at,
       })),
     },
   });
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  const access = await authorizeInspectionLead(params.id, "write");
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const access = await authorizeInspectionLead(resolvedParams.id, "write");
   if (!access.ok) return fail(access.message, access.status);
   const body = await request.json().catch(() => null) as { report?: unknown; complete?: unknown } | null;
   const complete = body?.complete === true;
@@ -69,7 +71,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   const { data: existing, error: existingError } = await access.supabase
     .from("inspection_reports")
     .select("id, status, report_data")
-    .eq("lead_id", params.id)
+    .eq("lead_id", resolvedParams.id)
     .maybeSingle();
   if (existingError) return fail(existingError.message, 500);
   const mustBeComplete = complete || existing?.status === "completed";
@@ -78,7 +80,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
   const changedCards = inspectionChangedCards((existing?.report_data ?? {}) as Partial<typeof parsed.data>, parsed.data);
   const saved = await access.supabase.rpc("save_inspection_report", {
-    p_lead_id: params.id,
+    p_lead_id: resolvedParams.id,
     p_report_data: parsed.data,
     p_actor: access.auth.userId,
     p_actor_name: access.auth.displayName,
@@ -102,7 +104,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     const { error: completeError } = await access.supabase.rpc("complete_inspection_report", {
       p_report_id: report.id,
-      p_lead_id: params.id,
+      p_lead_id: resolvedParams.id,
       p_actor: access.auth.userId,
       p_actor_name: access.auth.displayName,
       p_actor_role: access.auth.role,
@@ -117,14 +119,14 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   const { error: statusError } = await access.supabase
     .from("leads")
     .update({ status: "inspected" })
-    .eq("id", params.id)
+    .eq("id", resolvedParams.id)
     .eq("status", "inspection_scheduled");
   if (statusError) return fail(statusError.message, 500);
 
   const { data: verifiedLead, error: verifiedLeadError } = await access.supabase
     .from("leads")
     .select("status")
-    .eq("id", params.id)
+    .eq("id", resolvedParams.id)
     .single();
   if (verifiedLeadError || !["inspected", "negotiating", "deal", "closed"].includes(verifiedLead?.status ?? "")) {
     return fail("The inspection was saved, but the lead status could not be updated to Inspected. Please refresh and try again.", 409);

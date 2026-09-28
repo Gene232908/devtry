@@ -60,13 +60,14 @@ async function recordExpenseActivity(
   if (error) throw new Error(error.message);
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const gate = await authorize(params.id);
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const gate = await authorize(resolvedParams.id);
   if ("response" in gate) return gate.response;
   const { data, error } = await getSupabaseAdmin()
     .from("inventory_expenses")
     .select("id, description, amount_aed, created_by, created_at, updated_at")
-    .eq("inventory_id", params.id)
+    .eq("inventory_id", resolvedParams.id)
     .order("created_at", { ascending: false })
     .limit(100);
   if (error) return NextResponse.json({ ok: false, error: { message: error.message } }, { status: 500 });
@@ -86,8 +87,9 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   return NextResponse.json({ ok: true, data: { expenses } });
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const gate = await authorize(params.id);
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const gate = await authorize(resolvedParams.id);
   if ("response" in gate) return gate.response;
   const blocked = blockedByPreview();
   if (blocked) return blocked;
@@ -100,12 +102,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ ok: false, error: { message: "Enter a short description and a valid AED amount." } }, { status: 400 });
   }
   const { data, error } = await getSupabaseAdmin().rpc("upsert_inventory_expense", {
-    p_inventory_id: params.id, p_expense_id: expenseId, p_description: description, p_amount_aed: amount, p_actor_id: gate.identity.userId,
+    p_inventory_id: resolvedParams.id, p_expense_id: expenseId, p_description: description, p_amount_aed: amount, p_actor_id: gate.identity.userId,
   });
   if (error) return NextResponse.json({ ok: false, error: { message: error.message } }, { status: 400 });
   const row = Array.isArray(data) ? data[0] : data;
   try {
-    await recordExpenseActivity(params.id, gate.identity, "expense_added", {
+    await recordExpenseActivity(resolvedParams.id, gate.identity, "expense_added", {
       description,
       amount_aed: amount,
       action: expenseId ? "updated" : "added",
@@ -116,8 +118,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   return NextResponse.json({ ok: true, data: { id: row?.id } });
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const gate = await authorize(params.id);
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const gate = await authorize(resolvedParams.id);
   if ("response" in gate) return gate.response;
   const blocked = blockedByPreview();
   if (blocked) return blocked;
@@ -127,13 +130,13 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     .from("inventory_expenses")
     .select("description, amount_aed")
     .eq("id", expenseId)
-    .eq("inventory_id", params.id)
+    .eq("inventory_id", resolvedParams.id)
     .maybeSingle();
   if (expenseReadError || !expense) return NextResponse.json({ ok: false, error: { message: expenseReadError?.message ?? "Expense not found." } }, { status: 404 });
-  const { error } = await getSupabaseAdmin().rpc("delete_inventory_expense", { p_inventory_id: params.id, p_expense_id: expenseId });
+  const { error } = await getSupabaseAdmin().rpc("delete_inventory_expense", { p_inventory_id: resolvedParams.id, p_expense_id: expenseId });
   if (error) return NextResponse.json({ ok: false, error: { message: error.message } }, { status: 400 });
   try {
-    await recordExpenseActivity(params.id, gate.identity, "expense_deleted", {
+    await recordExpenseActivity(resolvedParams.id, gate.identity, "expense_deleted", {
       description: expense.description,
       amount_aed: Number(expense.amount_aed),
     });
