@@ -2,7 +2,7 @@
 
 ## Current objective
 
-- [x] 2026-10-01 Added automated incomplete-form retention: unconverted records with no activity for 30 days are archived, records inactive for 90 days are deleted in bounded daily batches, converted records are excluded, and returning customers automatically reactivate the existing capture. Migration `0040_partial_lead_retention.sql` was applied and verified on the production Supabase project; matching application deployment remains pending.
+- [x] 2026-10-01 Added automated incomplete-form retention: unconverted records with no activity for 30 days are archived, records inactive for 90 days are deleted in bounded daily batches, converted records are excluded, and returning customers automatically reactivate the existing capture. Migration `0040_partial_lead_retention.sql` was applied and verified on the production Supabase project; application code is pushed to the protected `almostdone` preview branch.
 
 - [x] 2026-10-01 Hardened incomplete valuation/scrap capture for X, backdrop, Escape, checkbox, tab close, Alt+F4, navigation, and browser/device exit. Exit saves use `sendBeacon` with a keepalive fallback, maintain a synchronous latest-values snapshot to prevent type-then-close races, and show invalid UAE phone formatting on blur instead of failing silently.
 

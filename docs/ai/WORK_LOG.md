@@ -1708,3 +1708,6 @@ log's history.
   12-digit number used during preview testing.
 - Verified with focused tests (22), TypeScript, ESLint, all 259 Vitest tests,
   the production build check, and `git diff --check`.
+- Pushed fix commit `dd156d0` to both `origin/almostdone` and
+  `production/almostdone`; Vercel preview access remains SSO-protected for the
+  final authenticated browser test.

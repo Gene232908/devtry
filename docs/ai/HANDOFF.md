@@ -5,9 +5,10 @@
 - 2026-10-01 update: the Step 1 abandoned-form race is fixed locally on
   `almostdone` for both Valuation and Scrap. Every exit/consent path reads a
   synchronous latest-values ref, and invalid UAE numbers show format feedback
-  on blur. TypeScript, ESLint, 259 tests, and the production build check pass;
-  the branch still needs push plus Vercel preview verification with a valid
-  non-production number.
+  on blur. TypeScript, ESLint, 259 tests, and the production build check pass.
+  Commit `dd156d0` was pushed to both `almostdone` remotes; the protected
+  Vercel preview still needs an authenticated browser check with a valid
+  non-production number after deployment completes.
 
 - 2026-10-01 update: incomplete-form retention is implemented on `almostdone`, and migration `0040_partial_lead_retention.sql` was applied to the production Supabase project. Verification found 2 active incomplete forms, 0 archived forms, and 4 preserved converted forms; only `service_role` can execute cleanup. Commit `82f8aa1` was pushed to both GitHub remotes.
 
