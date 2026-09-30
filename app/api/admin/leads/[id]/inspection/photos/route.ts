@@ -4,7 +4,7 @@ import { PHOTO_ANGLES } from "@/lib/inspection/report-schema";
 
 export const dynamic = "force-dynamic";
 
-const MAX_BYTES = 8 * 1024 * 1024;
+const MAX_BYTES = 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png"]);
 
 function fail(message: string, status: number) {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!PHOTO_ANGLES.includes(angle as (typeof PHOTO_ANGLES)[number])) return fail("Invalid required photo angle.", 400);
   if (!note || note.length > 600) return fail("Add a photo note between 1 and 600 characters.", 400);
   if (!(file instanceof File) || file.size === 0) return fail("Choose a photo to upload.", 400);
-  if (!ALLOWED_TYPES.has(file.type) || file.size > MAX_BYTES) return fail("Use a JPG or PNG photo up to 8 MB.", 400);
+  if (!ALLOWED_TYPES.has(file.type) || file.size > MAX_BYTES) return fail("Use a JPG or PNG photo up to 1 MB.", 400);
 
   let { data: report, error: reportError } = await access.supabase
     .from("inspection_reports")

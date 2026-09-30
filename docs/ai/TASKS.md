@@ -2,6 +2,8 @@
 
 ## Current objective
 
+- [x] 2026-10-01 Inspection photos are compressed in the browser to JPEG files under 1 MB before upload, with a server-side 1 MB enforcement as a second storage guard. The upload progress now shows compression, upload, and secure-save stages.
+
 - [x] 2026-09-28 Added Meta standard browser events for public CTA interactions: `Lead` for valuation/scrap actions and successful submissions, and `Contact` for Call Now/Message Us actions. Events are best-effort, carry only a button/content label, and never block the user flow. Verify on the `almostdone` Preview in Meta Test Events after deployment.
 
 - [x] 2026-09-28 Added the new CarVibe Dubai Web Meta Pixel (`2123934174864799`) as an environment-controlled base `PageView` integration. No personal form data, advanced matching, or Conversions API is enabled yet.
