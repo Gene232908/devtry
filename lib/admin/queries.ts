@@ -120,7 +120,11 @@ export async function fetchAdminStats(
   const startOfToday = startOfUaeDayUtc();
 
   let leadsQuery = supabase.from("leads").select("status, created_at").limit(SESSION_SCAN_CAP);
-  let partialLeadsQuery = supabase.from("partial_leads").select("id", { count: "exact", head: true }).is("converted_lead_id", null);
+  let partialLeadsQuery = supabase
+    .from("partial_leads")
+    .select("id", { count: "exact", head: true })
+    .is("converted_lead_id", null)
+    .is("archived_at", null);
 
   if (resolved) {
     leadsQuery = leadsQuery
@@ -400,7 +404,8 @@ export async function fetchPartialLeads(identity?: { role: string; userId: strin
       // Only unconverted rows are ever returned, so someone who later completed
       // the form disappears from here automatically and is never shown in both
       // places.
-      .is("converted_lead_id", null);
+      .is("converted_lead_id", null)
+      .is("archived_at", null);
     if (identity?.role === "call_center") query = query.eq("call_center_id", identity.userId);
     return query.order("created_at", { ascending: false });
   };
@@ -429,7 +434,8 @@ export async function fetchPartialLead(
       .from("partial_leads")
       .select(columns)
       .eq("id", id)
-      .is("converted_lead_id", null);
+      .is("converted_lead_id", null)
+      .is("archived_at", null);
     if (identity?.role === "call_center") query = query.eq("call_center_id", identity.userId);
     return query.maybeSingle();
   };

@@ -443,6 +443,9 @@ Use reverse chronological order.
 - **Inventory role commission view.** Added an owner-only checkbox dropdown for Call Centre, Purchaser, and Developer commission columns, with all roles selected by default and amounts calculated from the existing inventory profit and assignment data.
 # Unreleased
 
+- Added automatic abandoned-form retention: unconverted incomplete valuation and Scrap records archive after 30 inactive days and permanently delete after 90 days in bounded daily batches. Returning activity restores an archived form; confirmed leads and operational/financial records are excluded.
+- Updated locked Axios and Nodemailer patch versions to resolve the dependency audit findings without changing their application APIs.
+
 - Simplified the Super Admin Developer Share payment flow: all currently
   unpaid monthly developer-share records can be paid immediately through one
   clearly labelled action. Quarterly payment is now guidance, not a system

@@ -1,5 +1,16 @@
 # RELEASE_OPERATIONS.md
 
+## 2026-10-01 incomplete-form retention release order
+
+1. Back up the target Supabase database and apply `0040_partial_lead_retention.sql` before deploying the application code.
+2. Keep the existing server-only `CRON_SECRET` configured in the Vercel target environment. Do not expose it with a public framework prefix.
+3. Deploy and confirm `/api/cron/incomplete-form-retention` is registered as a daily cron. Vercel Hobby timing may vary within the scheduled hour.
+4. Verify one controlled stale test partial archives, a returning capture restores it, and a converted test partial remains unchanged. Do not age or delete real customer rows for testing.
+5. Check Vercel function logs for `backlogMayRemain`; if true on repeated days, inspect volume before increasing the bounded batch cap.
+
+Rollback: disable the incomplete-form cron first, then roll back application code. Keep the additive column/table/function in place until retained data and rollback implications have been reviewed; do not reverse the migration by deleting data.
+
+
 Read this for deployment, Vercel, CI/CD, environments, migrations, backups, or production work.
 
 ## Environments

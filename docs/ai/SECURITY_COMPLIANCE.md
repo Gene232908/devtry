@@ -1,5 +1,13 @@
 # SECURITY_COMPLIANCE.md
 
+## 2026-10-01 incomplete-form retention boundary
+
+- Unverified, unconverted incomplete forms are hidden after 30 inactive days and permanently deleted after 90 inactive days. The job cannot select converted rows and has no SQL delete path to confirmed leads or operational/financial tables.
+- Cleanup runs through a `CRON_SECRET`-protected server route and a `service_role`-only database function. Work is capped at five 1,000-row batches per daily invocation to avoid an unbounded serverless task.
+- Retention audit rows contain only cutoffs and aggregate counts; no customer name, phone, vehicle details, or IP hash is copied into the audit ledger.
+- This operational rule covers abandoned incomplete forms only. Broader lead-personal-data retention and deletion requests still require client/legal approval before production.
+
+
 ## 2026-09-28 Meta Pixel boundary
 
 - The browser loads Meta Pixel only when `NEXT_PUBLIC_META_PIXEL_ID` is

@@ -94,6 +94,7 @@ async function convertPartialToLead(
     .from("partial_leads")
     .select("*")
     .eq("id", partialId)
+    .is("archived_at", null)
     .maybeSingle();
 
   if (readError) return fail(readError.message, 500);
@@ -218,6 +219,7 @@ async function convertPartialToLead(
     .update({ converted_lead_id: lead.id, converted_at: new Date().toISOString() })
     .eq("id", partialId)
     .is("converted_lead_id", null)
+    .is("archived_at", null)
     .select("id")
     .maybeSingle();
 
@@ -334,22 +336,30 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     updatePayload.specification = specification;
   }
 
-  let { error: updateError } = await supabase
+  let { data: updatedPartial, error: updateError } = await supabase
     .from("partial_leads")
     .update(updatePayload)
     .eq("id", resolvedParams.id)
-    .is("converted_lead_id", null);
+    .is("converted_lead_id", null)
+    .is("archived_at", null)
+    .select("id")
+    .maybeSingle();
 
   if (updateError && updateError.message?.includes("specification")) {
-    const { error: fallbackError } = await supabase
+    const { data: fallbackPartial, error: fallbackError } = await supabase
       .from("partial_leads")
       .update({ status, notes, updated_at: new Date().toISOString() })
       .eq("id", resolvedParams.id)
-      .is("converted_lead_id", null);
+      .is("converted_lead_id", null)
+      .is("archived_at", null)
+      .select("id")
+      .maybeSingle();
+    updatedPartial = fallbackPartial;
     updateError = fallbackError;
   }
 
   if (updateError) return fail(updateError.message, 500);
+  if (!updatedPartial) return fail("Incomplete form not found.", 404);
 
   const events = [];
   if ((current.notes ?? "") !== notes) {
@@ -387,12 +397,16 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const access = await authorizePartialLead(resolvedParams.id);
   if (!access.ok) return access.response;
 
-  const { error } = await getSupabaseAdmin()
+  const { data: deletedPartial, error } = await getSupabaseAdmin()
     .from("partial_leads")
     .delete()
     .eq("id", resolvedParams.id)
-    .is("converted_lead_id", null);
+    .is("converted_lead_id", null)
+    .is("archived_at", null)
+    .select("id")
+    .maybeSingle();
   if (error) return fail(error.message, 500);
+  if (!deletedPartial) return fail("Incomplete form not found.", 404);
 
   return NextResponse.json({ ok: true, data: { id: resolvedParams.id } });
 }

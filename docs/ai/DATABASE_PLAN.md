@@ -2,6 +2,14 @@
 
 This is a draft until `FINISH THE PRODUCT`.
 
+## 2026-10-01 incomplete-form retention
+
+- Migration `0040_partial_lead_retention.sql` adds `partial_leads.archived_at`, bounded retention indexes, an aggregate-only retention-run ledger, and a service-role-only transactional cleanup RPC.
+- Only unconverted incomplete forms are eligible. Inactivity is measured from `updated_at`: archive after 30 days and permanently delete after 90 days. Deleting a partial also removes its child `partial_lead_events` through the existing cascade.
+- Confirmed `leads`, converted partials, inspection data/photos, Inventory, financial/audit ledgers, and Vehicle Catalog records are outside the function's delete target.
+- A new capture or staff activity advances `updated_at`; if the same unconverted record was archived, a database trigger clears `archived_at` so it returns to the active recovery queue without creating a duplicate.
+
+
 ## 2026-09-25 Expense and financial confirmation ledger
 
 - `inventory_expenses` stores manual, AED-denominated vehicle costs with a description, creator, and timestamps. It is linked to Inventory so it survives the lead-to-stock workflow.

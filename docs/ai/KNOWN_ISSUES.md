@@ -273,6 +273,8 @@ surface `truncated` to the user.
 **Severity:** Medium (UAE privacy compliance gap)  
 **Status:** Open
 
+**Partial resolution 2026-10-01:** unconverted incomplete forms now have a defined policy through migration `0040`: archive after 30 inactive days and delete after 90 inactive days, with aggregate-only run auditing. The migration was applied and its objects, row preservation, and service-role-only execution were verified on the production Supabase project. This does not resolve retention for confirmed lead personal data, which remains subject to client/legal approval.
+
 The `leads` table stores personal data (name, phone, email, car details)
 with no retention period or deletion process defined yet. `SECURITY_COMPLIANCE.md`
 requires this documented before production; still needs client/legal input

@@ -1688,3 +1688,13 @@ log's history.
   Developer Share demo seed using fictitious customers. It exercises the real
   purchase, sale, expense-confirmation, staff commission, and monthly
   developer-statement paths without a broad data reset.
+
+## 2026-10-01 — Incomplete-form retention
+
+- Added migration `0040_partial_lead_retention.sql` with active/retention indexes, automatic reactivation on new activity, a service-role-only batched retention RPC, and aggregate-only run auditing.
+- Added a daily `CRON_SECRET`-protected Vercel route. Each invocation is capped at five 1,000-row batches and reports whether a backlog may remain.
+- Active incomplete-form lists, detail reads, dashboard counts, assignment, updates, conversion links, and manual deletion now exclude archived rows. Zero-row races return 404 instead of recording false activity.
+- Confirmed leads, converted partials, inspections/photos, Inventory, financial/audit ledgers, and Vehicle Catalog are not cleanup targets.
+- Updated the dependency lock to Axios 1.20.0 and Nodemailer 10.0.13 after the production dependency audit identified patched advisories.
+- Verified the final dependency graph with TypeScript, ESLint, 259 Vitest tests, the isolated production build, `git diff --check`, and `npm audit --omit=dev` (zero known vulnerabilities).
+- Applied migration `0040` to production Supabase and verified all six schema objects, 2 active/0 archived incomplete forms, preservation of 4 converted forms, and execution access limited to `service_role` (`anon` and `authenticated` are denied).

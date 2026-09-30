@@ -179,6 +179,7 @@ export async function fetchExecutiveOverview(
       .from("partial_leads")
       .select("id", { count: "exact", head: true })
       .is("converted_lead_id", null)
+      .is("archived_at", null)
       .gte("created_at", bounds.from)
       .lte("created_at", bounds.to),
     supabase.from("profiles").select("id, display_name, role").in("role", ["call_center", "purchaser"]).eq("is_active", true),

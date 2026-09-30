@@ -2,6 +2,25 @@
 
 Record only important decisions future developers must understand.
 
+## ADR-015 — Abandoned incomplete forms use 30/90-day inactivity retention
+
+**Date:** 2026-10-01
+**Status:** Accepted
+
+### Decision
+
+An unconverted incomplete valuation or Scrap form is archived after 30 days without activity and permanently deleted after 90 days without activity. Converted records are excluded. A returning capture updates the existing row and automatically restores it to the active recovery queue.
+
+The daily job uses a service-role-only transactional RPC, row locks, bounded batches, and aggregate-only run records. It does not delete from `leads`, inspections, Inventory, financial/audit ledgers, or Vehicle Catalog.
+
+### Consequences
+
+- The active Incomplete Forms screen and dashboard counts no longer grow forever with abandoned records.
+- Unverified personal data is not retained indefinitely, while staff still have a 30-day recovery window.
+- Migration `0040_partial_lead_retention.sql` must be applied before the application version that filters on `archived_at` is deployed.
+- Confirmed-lead retention remains a separate policy requiring client/legal approval.
+
+
 ## ADR-001 — Commission is frozen at the moment of sale, not computed on read
 
 **Date:** 2026-08-03

@@ -1,5 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "regions": ["hnd1"],
-  "crons": [{ "path": "/api/cron/inspection-photo-retention", "schedule": "0 3 * * *" }]
+  "crons": [
+    { "path": "/api/cron/inspection-photo-retention", "schedule": "0 3 * * *" },
+    { "path": "/api/cron/incomplete-form-retention", "schedule": "0 4 * * *" }
+  ]
 }

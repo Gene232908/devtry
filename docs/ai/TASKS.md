@@ -2,6 +2,8 @@
 
 ## Current objective
 
+- [x] 2026-10-01 Added automated incomplete-form retention: unconverted records with no activity for 30 days are archived, records inactive for 90 days are deleted in bounded daily batches, converted records are excluded, and returning customers automatically reactivate the existing capture. Migration `0040_partial_lead_retention.sql` was applied and verified on the production Supabase project; matching application deployment remains pending.
+
 - [x] 2026-10-01 Hardened incomplete valuation/scrap capture for X, backdrop, Escape, checkbox, tab close, Alt+F4, navigation, and browser/device exit. Exit saves now use `sendBeacon` with a keepalive fallback and cannot be incorrectly skipped by the ordinary debounced-input duplicate guard.
 
 - [x] 2026-10-01 Added a pan-and-zoom inspection photo viewer: zoom in, zoom out, reset, mouse-wheel zoom, and drag-to-inspect a specific area. Photo navigation remains available and resets the view between photos.

@@ -57,15 +57,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   // Update partial lead
-  const { error } = await supabase
+  const { data: updatedPartial, error } = await supabase
     .from("partial_leads")
     .update({
       call_center_id: callCenterId || null,
       purchaser_id: null,
+      updated_at: new Date().toISOString(),
     })
-    .eq("id", resolvedParams.id);
+    .eq("id", resolvedParams.id)
+    .is("converted_lead_id", null)
+    .is("archived_at", null)
+    .select("id")
+    .maybeSingle();
 
   if (error) return NextResponse.json({ ok: false, error: { message: error.message } }, { status: 500 });
+  if (!updatedPartial) {
+    return NextResponse.json({ ok: false, error: { message: "Incomplete form not found." } }, { status: 404 });
+  }
 
   // Record history
   await supabase.from("partial_lead_events").insert({
