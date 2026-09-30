@@ -2,6 +2,8 @@
 
 ## Current objective
 
+- [x] 2026-10-01 Added zoom controls to the inspection photo viewer: zoom in, zoom out, reset, mouse-wheel zoom, and automatic reset when changing photos. Photo navigation remains available.
+
 - [x] 2026-10-01 Inspection photos are compressed in the browser to JPEG files under 1 MB before upload, with a server-side 1 MB enforcement as a second storage guard. The upload progress now shows compression, upload, and secure-save stages.
 
 - [x] 2026-09-28 Added Meta standard browser events for public CTA interactions: `Lead` for valuation/scrap actions and successful submissions, and `Contact` for Call Now/Message Us actions. Events are best-effort, carry only a button/content label, and never block the user flow. Verify on the `almostdone` Preview in Meta Test Events after deployment.

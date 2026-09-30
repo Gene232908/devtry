@@ -5,7 +5,7 @@
 
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Camera, Check, ChevronLeft, ChevronRight, Download, Eye, FolderOpen, Save, Upload, X } from "lucide-react";
+import { ArrowLeft, Camera, Check, ChevronLeft, ChevronRight, Download, Eye, FolderOpen, RotateCcw, Save, Upload, X, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Dialog } from "@/components/ui/Dialog";
@@ -95,6 +95,7 @@ export function InspectionWorkspace({ leadId }: { leadId: string }) {
   const [activityRefreshKey, setActivityRefreshKey] = useState(0);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [previewPhoto, setPreviewPhoto] = useState<{ angle: string; title: string; url: string; note: string; failed?: boolean } | null>(null);
+  const [photoZoom, setPhotoZoom] = useState(1);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const photoSwipeStartX = useRef<number | null>(null);
@@ -110,6 +111,7 @@ export function InspectionWorkspace({ leadId }: { leadId: string }) {
 
   function openPhotoPreview(requirement: (typeof PHOTO_REQUIREMENTS)[number], photo: Photo | undefined) {
     if (!photo?.url) return;
+    setPhotoZoom(1);
     setPreviewPhoto({ angle: requirement.angle, title: requirement.title, url: photo.url, note: photo.note });
   }
 
@@ -117,6 +119,7 @@ export function InspectionWorkspace({ leadId }: { leadId: string }) {
     if (!previewPhoto || previewablePhotos.length < 2) return;
     const current = previewablePhotos.findIndex((photo) => photo.angle === previewPhoto.angle);
     const nextIndex = (Math.max(current, 0) + direction + previewablePhotos.length) % previewablePhotos.length;
+    setPhotoZoom(1);
     setPreviewPhoto(previewablePhotos[nextIndex]);
   }, [previewPhoto, previewablePhotos]);
 
@@ -422,7 +425,7 @@ export function InspectionWorkspace({ leadId }: { leadId: string }) {
         </div>
       </Dialog>
       <Dialog open={previewPhoto !== null} onClose={() => setPreviewPhoto(null)} title={previewPhoto ? `${Math.max(previewIndex, 0) + 1} of ${previewablePhotos.length} captured — ${previewPhoto.title}` : "Photo preview"} className="max-w-4xl">
-        {previewPhoto && <div className="space-y-3"><div className="flex min-h-56 max-h-[65vh] w-full touch-pan-y items-center justify-center overflow-auto rounded-card bg-black p-2" onTouchStart={(event) => { photoSwipeStartX.current = event.touches[0]?.clientX ?? null; }} onTouchEnd={(event) => { const startX = photoSwipeStartX.current; const endX = event.changedTouches[0]?.clientX; photoSwipeStartX.current = null; if (startX === null || endX === undefined || Math.abs(endX - startX) < 50) return; movePhotoPreview(endX < startX ? 1 : -1); }} onTouchCancel={() => { photoSwipeStartX.current = null; }}><img src={previewPhoto.url} alt={previewPhoto.title} className="max-h-[62vh] max-w-full object-contain" onError={() => setPreviewPhoto((current) => current ? { ...current, failed: true } : current)} />{previewPhoto.failed && <p className="absolute rounded-card bg-black/80 p-3 text-sm text-danger">This photo could not be loaded. Please refresh the inspection page and try again.</p>}</div><div className="rounded-card border border-gold/30 bg-gold/5 p-3"><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gold">Inspector note</p><p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-text">{previewPhoto.note || "No note recorded."}</p></div><div className="flex items-center justify-between gap-3"><Button size="sm" variant="outline" disabled={previewablePhotos.length < 2} onClick={() => movePhotoPreview(-1)}><ChevronLeft className="h-4 w-4" /> Previous</Button><p className="text-center text-xs text-text-muted">Use the keyboard arrows, swipe, or Previous and Next to review saved photos.</p><Button size="sm" variant="outline" disabled={previewablePhotos.length < 2} onClick={() => movePhotoPreview(1)}>Next <ChevronRight className="h-4 w-4" /></Button></div></div>}
+        {previewPhoto && <div className="space-y-3"><div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs text-text-muted">Zoom: {Math.round(photoZoom * 100)}%</p><div className="flex items-center gap-2"><Button size="sm" variant="outline" aria-label="Zoom out" title="Zoom out" disabled={photoZoom <= 1} onClick={() => setPhotoZoom((current) => Math.max(1, Number((current - 0.25).toFixed(2))))}><ZoomOut className="h-4 w-4" /></Button><Button size="sm" variant="outline" aria-label="Reset zoom" title="Reset zoom" disabled={photoZoom === 1} onClick={() => setPhotoZoom(1)}><RotateCcw className="h-4 w-4" /></Button><Button size="sm" variant="outline" aria-label="Zoom in" title="Zoom in" disabled={photoZoom >= 3} onClick={() => setPhotoZoom((current) => Math.min(3, Number((current + 0.25).toFixed(2))))}><ZoomIn className="h-4 w-4" /></Button></div></div><div className="flex min-h-56 max-h-[65vh] w-full touch-pan-y items-center justify-center overflow-auto rounded-card bg-black p-2" onWheel={(event) => { event.preventDefault(); setPhotoZoom((current) => Math.min(3, Math.max(1, Number((current + (event.deltaY < 0 ? 0.1 : -0.1)).toFixed(2))))); }} onTouchStart={(event) => { photoSwipeStartX.current = event.touches[0]?.clientX ?? null; }} onTouchEnd={(event) => { const startX = photoSwipeStartX.current; const endX = event.changedTouches[0]?.clientX; photoSwipeStartX.current = null; if (startX === null || endX === undefined || Math.abs(endX - startX) < 50) return; movePhotoPreview(endX < startX ? 1 : -1); }} onTouchCancel={() => { photoSwipeStartX.current = null; }}><img src={previewPhoto.url} alt={previewPhoto.title} className="max-h-[62vh] max-w-full object-contain transition-transform duration-150" style={{ transform: `scale(${photoZoom})`, transformOrigin: "center center" }} onError={() => setPreviewPhoto((current) => current ? { ...current, failed: true } : current)} />{previewPhoto.failed && <p className="absolute rounded-card bg-black/80 p-3 text-sm text-danger">This photo could not be loaded. Please refresh the inspection page and try again.</p>}</div><div className="rounded-card border border-gold/30 bg-gold/5 p-3"><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gold">Inspector note</p><p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-text">{previewPhoto.note || "No note recorded."}</p></div><div className="flex items-center justify-between gap-3"><Button size="sm" variant="outline" disabled={previewablePhotos.length < 2} onClick={() => movePhotoPreview(-1)}><ChevronLeft className="h-4 w-4" /> Previous</Button><p className="text-center text-xs text-text-muted">Use the keyboard arrows, swipe, or Previous and Next to review saved photos.</p><Button size="sm" variant="outline" disabled={previewablePhotos.length < 2} onClick={() => movePhotoPreview(1)}>Next <ChevronRight className="h-4 w-4" /></Button></div></div>}
       </Dialog>
     </div>
   );
