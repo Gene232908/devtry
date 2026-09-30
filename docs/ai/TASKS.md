@@ -2,6 +2,8 @@
 
 ## Current objective
 
+- [x] 2026-10-01 Hardened incomplete valuation/scrap capture for X, backdrop, Escape, checkbox, tab close, Alt+F4, navigation, and browser/device exit. Exit saves now use `sendBeacon` with a keepalive fallback and cannot be incorrectly skipped by the ordinary debounced-input duplicate guard.
+
 - [x] 2026-10-01 Added a pan-and-zoom inspection photo viewer: zoom in, zoom out, reset, mouse-wheel zoom, and drag-to-inspect a specific area. Photo navigation remains available and resets the view between photos.
 
 - [x] 2026-10-01 Inspection photos are compressed in the browser to JPEG files under 1 MB before upload, with a server-side 1 MB enforcement as a second storage guard. The upload progress now shows compression, upload, and secure-save stages.

@@ -81,6 +81,9 @@ export function useValuationForm(mode: ValuationModalMode, verificationMode: Pub
   // Last payload sent to /api/partial-lead — suppresses repeat captures that
   // carry no new information.
   const capturedSignatureRef = useRef<string | null>(null);
+  // A normal debounced fetch may be cancelled before it reaches Vercel. Keep
+  // exit delivery separate so closing the form still sends the latest values.
+  const exitSignatureRef = useRef<string | null>(null);
   // Set the moment a real lead is created. Read synchronously by
   // capturePartial, which cannot wait for the `state` re-render.
   const submittedRef = useRef(false);
@@ -384,19 +387,37 @@ export function useValuationForm(mode: ValuationModalMode, verificationMode: Pub
       // Trigger is excluded from the signature on purpose: the same details
       // arriving via a different trigger is not new information.
       const signature = JSON.stringify({ ...payload, trigger: undefined });
-      if (signature === capturedSignatureRef.current) return;
+      const isExitCapture = trigger === "close";
+      if (isExitCapture ? signature === exitSignatureRef.current : signature === capturedSignatureRef.current) return;
       capturedSignatureRef.current = signature;
+
+      const body = JSON.stringify(payload);
+
+      // Unlike an ordinary fetch, a beacon is allowed to finish while the
+      // modal/document is closing. The database RPC remains an idempotent
+      // upsert, so this safety send cannot create duplicate phone rows.
+      if (isExitCapture && typeof navigator.sendBeacon === "function") {
+        const accepted = navigator.sendBeacon(
+          "/api/partial-lead",
+          new Blob([body], { type: "application/json" }),
+        );
+        if (accepted) {
+          exitSignatureRef.current = signature;
+          return;
+        }
+      }
 
       try {
         void fetch("/api/partial-lead", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body,
           // Lets the request survive the modal unmounting right after this.
           keepalive: true,
         }).catch(() => {
           // Ignored: a failed capture is invisible to the customer by design.
         });
+        if (isExitCapture) exitSignatureRef.current = signature;
       } catch {
         // Ignored — see above.
       }
@@ -411,6 +432,7 @@ export function useValuationForm(mode: ValuationModalMode, verificationMode: Pub
     setPhoneVerification(emptyPhoneVerification);
     startedAtRef.current = Date.now();
     capturedSignatureRef.current = null;
+    exitSignatureRef.current = null;
     submittedRef.current = false;
     submissionIdRef.current = null;
     setState("filling");

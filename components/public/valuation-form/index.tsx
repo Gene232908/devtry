@@ -46,6 +46,22 @@ export function ValuationForm({ registerCapture, mode = "valuation", verificatio
     registerCapture?.(() => capturePartial("close", step));
   }, [registerCapture, capturePartial, step]);
 
+  // The modal callback covers X, backdrop, and Escape. Browser lifecycle
+  // events cover tab close, Alt+F4, navigation, and shutdown as far as the
+  // browser permits, using capturePartial's beacon exit path.
+  useEffect(() => {
+    const captureOnExit = () => capturePartial("close", step);
+    const captureWhenHidden = () => {
+      if (document.visibilityState === "hidden") captureOnExit();
+    };
+    window.addEventListener("pagehide", captureOnExit);
+    document.addEventListener("visibilitychange", captureWhenHidden);
+    return () => {
+      window.removeEventListener("pagehide", captureOnExit);
+      document.removeEventListener("visibilitychange", captureWhenHidden);
+    };
+  }, [capturePartial, step]);
+
   // Ticking the consent box is a strong signal of intent, so it captures too.
   // Driven from an effect rather than the click handler because setField is
   // asynchronous — reading values in the handler would send the pre-click
