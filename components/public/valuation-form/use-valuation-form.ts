@@ -73,6 +73,11 @@ async function fetchWithTimeout(input: string, init: RequestInit): Promise<Respo
 // triggers an OTP send on its own — only the final step's submit button does.
 export function useValuationForm(mode: ValuationModalMode, verificationMode: PublicLeadVerificationMode) {
   const [values, setValues] = useState<ValuationFormValues>(emptyValues);
+  // React state updates are asynchronous. Exit handlers can run in the same
+  // browser tick as the final keystroke (X/backdrop/Escape), or without
+  // another render at all (pagehide/Alt+F4). This synchronous copy ensures an
+  // abandoned-form capture always sees the newest field values.
+  const valuesRef = useRef<ValuationFormValues>(emptyValues);
   const [errors, setErrors] = useState<FormErrors>({});
   const [state, setState] = useState<FormState>("filling");
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -91,12 +96,15 @@ export function useValuationForm(mode: ValuationModalMode, verificationMode: Pub
 
   const setField = useCallback(<K extends keyof ValuationFormValues>(key: K, value: ValuationFormValues[K]) => {
     submissionIdRef.current = null;
-    setValues((v) => {
-      // Trim is connected to make + model, so reset it when either changes.
-      if (key === "make") return { ...v, make: value as string, model: "", trim: "" };
-      if (key === "model") return { ...v, model: value as string, trim: "" };
-      return { ...v, [key]: value };
-    });
+    const current = valuesRef.current;
+    // Trim is connected to make + model, so reset it when either changes.
+    const next = key === "make"
+      ? { ...current, make: value as string, model: "", trim: "" }
+      : key === "model"
+        ? { ...current, model: value as string, trim: "" }
+        : { ...current, [key]: value };
+    valuesRef.current = next;
+    setValues(next);
     // Skip the state update entirely when there's nothing to clear — avoids
     // a wasted re-render on every keystroke of a clean (no-error) field.
     setErrors((e) => (e[key] === undefined ? e : { ...e, [key]: undefined }));
@@ -110,6 +118,15 @@ export function useValuationForm(mode: ValuationModalMode, verificationMode: Pub
         return emptyPhoneVerification;
       });
     }
+  }, []);
+
+  const validatePhoneField = useCallback(() => {
+    const phone = valuesRef.current.whatsapp;
+    if (!phone.trim()) return;
+    setErrors((current) => ({
+      ...current,
+      whatsapp: normalizeWhatsappPhone(phone) ? undefined : "Use 0501234567 or +971501234567",
+    }));
   }, []);
 
   const validate = useCallback(() => {
@@ -360,28 +377,30 @@ export function useValuationForm(mode: ValuationModalMode, verificationMode: Pub
     (trigger: "close" | "consent" | "next" | "input", furthestStep: number) => {
       if (submittedRef.current || state === "success") return;
 
+      const currentValues = valuesRef.current;
+
       // The phone number is the dedupe key and the only way to follow up, so
       // there is nothing to capture without a usable one.
-      if (!normalizeWhatsappPhone(values.whatsapp)) return;
-      if (values.honeypot.trim().length > 0) return;
+      if (!normalizeWhatsappPhone(currentValues.whatsapp)) return;
+      if (currentValues.honeypot.trim().length > 0) return;
 
       const payload = {
-        fullName: values.fullName,
-        whatsapp: values.whatsapp,
-        consent: values.consent,
+        fullName: currentValues.fullName,
+        whatsapp: currentValues.whatsapp,
+        consent: currentValues.consent,
         furthestStep,
         trigger,
-        honeypot: values.honeypot,
-        make: values.make,
-        model: values.model,
-        year: values.year,
-        mileageKm: values.mileageKm,
-        mileageUnit: values.mileageUnit,
-        specification: values.specification,
-        description: values.description,
+        honeypot: currentValues.honeypot,
+        make: currentValues.make,
+        model: currentValues.model,
+        year: currentValues.year,
+        mileageKm: currentValues.mileageKm,
+        mileageUnit: currentValues.mileageUnit,
+        specification: currentValues.specification,
+        description: currentValues.description,
         inquiryType: mode,
-        scrapCondition: values.scrapCondition,
-        scrapAskingPriceAed: values.scrapAskingPriceAed,
+        scrapCondition: currentValues.scrapCondition,
+        scrapAskingPriceAed: currentValues.scrapAskingPriceAed,
       };
 
       // Trigger is excluded from the signature on purpose: the same details
@@ -422,10 +441,11 @@ export function useValuationForm(mode: ValuationModalMode, verificationMode: Pub
         // Ignored — see above.
       }
     },
-    [mode, state, values],
+    [mode, state],
   );
 
   const reset = useCallback(() => {
+    valuesRef.current = emptyValues;
     setValues(emptyValues);
     setErrors({});
     setSubmitError(null);
@@ -445,6 +465,7 @@ export function useValuationForm(mode: ValuationModalMode, verificationMode: Pub
     submitError,
     phoneVerification,
     setField,
+    validatePhoneField,
     submit,
     validateStep,
     verifyPhoneOtp,

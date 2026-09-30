@@ -443,6 +443,11 @@ Use reverse chronological order.
 - **Inventory role commission view.** Added an owner-only checkbox dropdown for Call Centre, Purchaser, and Developer commission columns, with all roles selected by default and amounts calculated from the existing inventory profit and assignment data.
 # Unreleased
 
+- Fixed a race in both Free Valuation and Scrap Inquiry where immediately
+  closing Step 1 could capture stale pre-keystroke values. X, backdrop, Escape,
+  consent, and browser-exit paths now read the latest synchronous form values.
+- Added clear UAE phone-format feedback on blur while preserving server-side
+  rejection of invalid or unusable numbers.
 - Added automatic abandoned-form retention: unconverted incomplete valuation and Scrap records archive after 30 inactive days and permanently delete after 90 days in bounded daily batches. Returning activity restores an archived form; confirmed leads and operational/financial records are excluded.
 - Updated locked Axios and Nodemailer patch versions to resolve the dependency audit findings without changing their application APIs.
 

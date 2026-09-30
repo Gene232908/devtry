@@ -2,6 +2,18 @@
 
 Record unresolved bugs, risks, and technical debt.
 
+## ISSUE-012 — Immediate Step 1 exit could read stale contact values
+
+**Severity:** High
+**Status:** Resolved in code 2026-10-01; Vercel preview verification pending
+
+When a visitor typed a valid phone and immediately used X, backdrop, Escape,
+or closed the browser, the capture callback could run before React committed
+the newest state. Both Valuation and Scrap now update a synchronous values ref
+on every field change, and every abandoned-form path reads that ref. Invalid
+phone numbers remain intentionally unsaved and now receive visible format
+feedback on blur.
+
 ## ISSUE-011 — Catalog add appeared to stop after extended editing
 
 **Severity:** Medium

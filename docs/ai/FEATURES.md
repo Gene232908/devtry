@@ -120,6 +120,18 @@ Replace examples with actual implemented features.
   the same type remain protected from duplicate capture and OTP sends.
 - Requires migration `0035_incomplete_scrap_inquiries.sql` after `0034`.
 
+## 2026-10-01 reliable Step 1 incomplete-form capture
+
+- Valuation and Scrap forms share one synchronous latest-values snapshot, so
+  X, backdrop, Escape, consent changes, and browser exit read the final typed
+  name and phone even when React has not rendered again yet.
+- Valid UAE numbers continue to be required before creating an incomplete
+  record. Invalid numbers now show the accepted format when the field loses
+  focus; malformed contact data is not stored.
+- Page exit still uses `sendBeacon` with a keepalive fetch fallback. Ordinary
+  input capture remains debounced and database writes remain idempotent by
+  phone plus inquiry type.
+
 ## Feature template
 
 ### Feature name

@@ -7,9 +7,10 @@ type Props = {
   errors: FormErrors;
   phoneVerification: PhoneVerification;
   setField: <K extends keyof ValuationFormValues>(key: K, value: ValuationFormValues[K]) => void;
+  validatePhoneField: () => void;
 };
 
-export function StepContact({ values, errors, phoneVerification, setField }: Props) {
+export function StepContact({ values, errors, phoneVerification, setField, validatePhoneField }: Props) {
   const isVerified = phoneVerification.status === "verified" && phoneVerification.verifiedPhone === values.whatsapp;
 
   return (
@@ -32,6 +33,7 @@ export function StepContact({ values, errors, phoneVerification, setField }: Pro
             inputMode="tel"
             value={values.whatsapp}
             onChange={(e) => setField("whatsapp", e.target.value)}
+            onBlur={validatePhoneField}
             error={errors.whatsapp}
           />
           {isVerified && (

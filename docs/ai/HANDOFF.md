@@ -2,7 +2,14 @@
 
 ## Current state
 
-- 2026-10-01 update: incomplete-form retention is implemented locally on `almostdone`, and migration `0040_partial_lead_retention.sql` was applied to the production Supabase project. Verification found 2 active incomplete forms, 0 archived forms, and 4 preserved converted forms; only `service_role` can execute cleanup. The matching application commit/push/deployment remains pending.
+- 2026-10-01 update: the Step 1 abandoned-form race is fixed locally on
+  `almostdone` for both Valuation and Scrap. Every exit/consent path reads a
+  synchronous latest-values ref, and invalid UAE numbers show format feedback
+  on blur. TypeScript, ESLint, 259 tests, and the production build check pass;
+  the branch still needs push plus Vercel preview verification with a valid
+  non-production number.
+
+- 2026-10-01 update: incomplete-form retention is implemented on `almostdone`, and migration `0040_partial_lead_retention.sql` was applied to the production Supabase project. Verification found 2 active incomplete forms, 0 archived forms, and 4 preserved converted forms; only `service_role` can execute cleanup. Commit `82f8aa1` was pushed to both GitHub remotes.
 
 - 2026-09-27 update: temporary no-OTP public valuation/Scrap mode is implemented and locally tested, **not deployed**. The code defaults to `PUBLIC_LEAD_VERIFICATION_MODE=unverified`; read `docs/ai/OTP_TEMPORARY_BYPASS/README.md` before any release or later restoration. No migration was needed and no test customer record was inserted. Staging E2E, responsive browser check, and persistent/edge abuse-limit review remain.
 

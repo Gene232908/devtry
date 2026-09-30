@@ -39,8 +39,8 @@ export function ValuationForm({ registerCapture, mode = "valuation", verificatio
 
   // Hands the modal a way to capture an abandoned form on its way out. Kept in
   // a ref by the parent, so closing the modal records what was typed before
-  // this component unmounts. Re-registered whenever the captured data or the
-  // current step changes, so the closure never captures stale values.
+  // this component unmounts. capturePartial itself reads a synchronous values
+  // ref, so even a close in the same tick as the last keystroke is current.
   const { capturePartial } = form;
   useEffect(() => {
     registerCapture?.(() => capturePartial("close", step));
@@ -154,6 +154,7 @@ export function ValuationForm({ registerCapture, mode = "valuation", verificatio
               errors={form.errors}
               phoneVerification={form.phoneVerification}
               setField={form.setField}
+              validatePhoneField={form.validatePhoneField}
             />
           )}
           {step === 2 && (

@@ -1698,3 +1698,13 @@ log's history.
 - Updated the dependency lock to Axios 1.20.0 and Nodemailer 10.0.13 after the production dependency audit identified patched advisories.
 - Verified the final dependency graph with TypeScript, ESLint, 259 Vitest tests, the isolated production build, `git diff --check`, and `npm audit --omit=dev` (zero known vulnerabilities).
 - Applied migration `0040` to production Supabase and verified all six schema objects, 2 active/0 archived incomplete forms, preservation of 4 converted forms, and execution access limited to `service_role` (`anon` and `authenticated` are denied).
+
+## 2026-10-01 — Step 1 abandoned-form race fix
+
+- Fixed Valuation and Scrap incomplete capture so immediate X, backdrop,
+  Escape, consent, pagehide, and Alt+F4 paths read the latest typed values from
+  a synchronous ref instead of a possibly stale React render.
+- Added phone-format feedback on blur and regression coverage for the invalid
+  12-digit number used during preview testing.
+- Verified with focused tests (22), TypeScript, ESLint, all 259 Vitest tests,
+  the production build check, and `git diff --check`.

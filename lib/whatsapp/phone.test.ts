@@ -22,6 +22,7 @@ describe("normalizeWhatsappPhone — always recognizes both shapes (mode-indepen
 
   it("rejects an invalid UAE-shaped number", () => {
     expect(normalizeWhatsappPhone("12345")).toBeNull();
+    expect(normalizeWhatsappPhone("051231231231")).toBeNull();
   });
 
   it("normalizes a local 09... PH number regardless of WHATSAPP_TEST_MODE", () => {
