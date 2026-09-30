@@ -2,7 +2,7 @@
 
 ## Current objective
 
-- [x] 2026-10-01 Added zoom controls to the inspection photo viewer: zoom in, zoom out, reset, mouse-wheel zoom, and automatic reset when changing photos. Photo navigation remains available.
+- [x] 2026-10-01 Added a pan-and-zoom inspection photo viewer: zoom in, zoom out, reset, mouse-wheel zoom, and drag-to-inspect a specific area. Photo navigation remains available and resets the view between photos.
 
 - [x] 2026-10-01 Inspection photos are compressed in the browser to JPEG files under 1 MB before upload, with a server-side 1 MB enforcement as a second storage guard. The upload progress now shows compression, upload, and secure-save stages.
 
