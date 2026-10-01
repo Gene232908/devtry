@@ -57,7 +57,7 @@ type LeadsContextValue = {
   isLive: boolean;
   /** True until the first live/mock resolution completes — avoids flashing mock data before live data arrives. */
   isLoading: boolean;
-  /** Re-fetches live leads from the server. No-op in demo/mock mode. */
+  /** Re-fetches leads from the server. No-op only in explicit preview mode or when disabled. */
   refresh: () => Promise<void>;
   isRefreshing: boolean;
 };
@@ -207,7 +207,12 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
       isLoading,
       isRefreshing,
       refresh: async () => {
-        if (!isLiveRef.current) return;
+        // A manual refresh must also be able to recover after the provider's
+        // first request fell back to stored/demo data. This is especially
+        // important immediately after an incomplete form is converted: the
+        // database insert may be successful even when the provider has not
+        // established its live state yet.
+        if (ADMIN_PREVIEW || !enabled) return;
         setIsRefreshing(true);
         try {
           await loadLive();
@@ -270,7 +275,7 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
       },
       getLead: (id) => visibleLeads.find((l) => l.id === id) ?? allLeads.find((l) => l.id === id),
     }),
-    [visibleLeads, allLeads, isLive, isLoading, isRefreshing, loadLive],
+    [visibleLeads, allLeads, isLive, isLoading, isRefreshing, loadLive, enabled],
   );
 
   return <LeadsContext.Provider value={value}>{children}</LeadsContext.Provider>;

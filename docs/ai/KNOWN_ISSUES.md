@@ -2,6 +2,17 @@
 
 Record unresolved bugs, risks, and technical debt.
 
+## ISSUE-014 — Converted incomplete form appeared missing from Leads
+
+**Severity:** High
+**Status:** Resolved in code 2026-10-01; Vercel preview verification pending
+
+The conversion API correctly created a regular or Scrap lead, but the persistent
+client Leads store was not reloaded before navigation. Customer Service also
+landed on a New-only filter while converted forms become Inspection Scheduled.
+Conversion now awaits a live Leads reload, manual refresh can recover from an
+earlier fallback, and Customer Service starts with all assigned statuses visible.
+
 ## ISSUE-013 — Valid-looking phone correction created a second incomplete row
 
 **Severity:** High

@@ -1729,3 +1729,10 @@ log's history.
   permissions all passed; the temporary tool and script were removed afterward.
 - Pushed application/migration commit `c011d64` to `origin/almostdone` and
   `production/almostdone`, triggering the protected Vercel preview build.
+
+## 2026-10-01 — Converted incomplete-form visibility
+
+- Fixed successful incomplete-form conversions opening against a stale persistent Leads store by awaiting an authorized live reload before navigation.
+- Allowed manual refresh to recover when the provider's initial live request previously fell back to stored/demo data.
+- Removed the Customer Service New-only default list filter so assigned converted Inspection Scheduled records remain visible in both Regular Leads and Scrap Inquiries.
+- Verified the focused filter suite (9 tests), TypeScript, ESLint, all 271 Vitest tests, the isolated production build, and `git diff --check`.

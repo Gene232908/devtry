@@ -2,6 +2,13 @@
 
 ## Current state
 
+- 2026-10-01 update: converted incomplete Valuation and Scrap records now
+  reload the persistent authorized Leads store before navigation. Customer
+  Service no longer lands on a New-only filter that hid the resulting
+  Inspection Scheduled record. Local verification passed 271 tests,
+  TypeScript, ESLint, and the isolated production build; protected Vercel
+  preview verification with authenticated CSR and Super Admin sessions remains.
+
 - 2026-10-01 update: five-second incomplete autosave and same-session phone
   correction dedupe are implemented and pushed as `c011d64` to both
   `almostdone` remotes for Valuation and Scrap. Migration

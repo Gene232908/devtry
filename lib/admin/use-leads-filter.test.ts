@@ -1,5 +1,17 @@
 import { describe, it, expect } from "vitest";
-import { filterStatusOptionsForRole, queuePriority } from "./use-leads-filter";
+import { defaultStatusesForRole, filterStatusOptionsForRole, queuePriority } from "./use-leads-filter";
+
+describe("defaultStatusesForRole", () => {
+  it("does not hide converted incomplete forms from Customer Service or owners", () => {
+    expect(defaultStatusesForRole("call_center")).toEqual([]);
+    expect(defaultStatusesForRole("admin")).toEqual([]);
+    expect(defaultStatusesForRole("manager")).toEqual([]);
+  });
+
+  it("keeps purchasers focused on newly scheduled inspections", () => {
+    expect(defaultStatusesForRole("purchaser")).toEqual(["inspection_scheduled"]);
+  });
+});
 
 describe("queuePriority", () => {
   it("puts an agent's New leads first and anything handed to a purchaser last", () => {

@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/Select";
 import { StatusPill } from "@/components/ui/Pill";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useUnsavedGuard } from "@/lib/admin/use-unsaved-guard";
+import { useLeads } from "@/lib/admin/leads-store";
 import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 import {
   formatPartialDate,
@@ -58,6 +59,7 @@ function nextDayDateTimeInput(): string {
 
 export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
   const router = useRouter();
+  const { refresh: refreshLeads } = useLeads();
   const { staffOptions, loading: staffLoading } = useStaffOptions();
   const { makes, specifications } = useVehicleCatalog();
   const isScrap = partialInquiryType(partial) === "scrap";
@@ -241,7 +243,12 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
       }
 
       if (isConversion && body.data?.leadId) {
-        router.refresh();
+        // LeadsProvider is mounted at the persistent admin layout, so a
+        // server-component refresh does not replace its client-side list.
+        // Re-read the authorized lead collection before opening the newly
+        // converted record so both its detail and the Leads/Scrap directory
+        // can find it immediately.
+        await refreshLeads();
         router.push(`/admin/leads/${body.data.leadId}`);
         return;
       }

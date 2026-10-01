@@ -44,20 +44,16 @@ export function filterStatusOptionsForRole(role: StaffRole | undefined): readonl
 }
 
 /**
- * The status filter an operational role lands on, so the first thing they see
- * is what actually needs doing — a brand new lead for an agent, a freshly
- * scheduled one for a purchaser — rather than their whole history including
- * work that is already finished.
+ * The status filter an operational role lands on. Purchasers start with their
+ * freshly scheduled queue. Customer Service starts with its complete assigned
+ * directory because recovered incomplete forms are converted directly to
+ * Inspection Scheduled; defaulting that role to New would make a successful
+ * conversion appear to disappear.
  *
- * Deliberately a single preset status, not "everything except done": the
- * status filter itself (see `filterStatusOptionsForRole`) is how they widen
- * this back out, to review Contacted leads still being worked or to backtrack
- * through what they already closed — ticking more boxes there, including the
- * role's own "done" status, is the whole point of it being a filter and not a
- * permanent view.
+ * Purchaser keeps a single preset status rather than "everything except done";
+ * its status control remains available for widening the historical view.
  */
-function defaultStatusesForRole(role: StaffRole | undefined): LeadStatus[] {
-  if (role === "call_center") return ["new"];
+export function defaultStatusesForRole(role: StaffRole | undefined): LeadStatus[] {
   if (role === "purchaser") return ["inspection_scheduled"];
   return [];
 }

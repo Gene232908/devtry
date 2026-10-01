@@ -2,6 +2,8 @@
 
 ## Current objective
 
+- [x] 2026-10-01 Fixed converted incomplete forms disappearing from the admin workflow: the live Leads store now reloads before opening the converted record, manual refresh can recover from an earlier fallback, and Customer Service no longer defaults to a New-only filter that hid converted Inspection Scheduled regular and Scrap leads.
+
 - [x] 2026-10-01 Replaced the 700 ms incomplete-form autosave with a five-second stable-input delay and added session/revision idempotency for both Valuation and Scrap. Migration `0041_partial_lead_capture_sessions.sql` is tracked but must be applied before full preview verification.
 
 - [x] 2026-10-01 Added automated incomplete-form retention: unconverted records with no activity for 30 days are archived, records inactive for 90 days are deleted in bounded daily batches, converted records are excluded, and returning customers automatically reactivate the existing capture. Migration `0040_partial_lead_retention.sql` was applied and verified on the production Supabase project; application code is pushed to the protected `almostdone` preview branch.
