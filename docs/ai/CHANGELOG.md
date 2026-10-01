@@ -449,6 +449,7 @@ Use reverse chronological order.
 - **Inventory role commission view.** Added an owner-only checkbox dropdown for Call Centre, Purchaser, and Developer commission columns, with all roles selected by default and amounts calculated from the existing inventory profit and assignment data.
 # Unreleased
 
+- Simplified Incomplete Forms so Vehicle Specification is hidden during ordinary New/Contacted follow-up and appears only inside the Inspection Scheduled conversion fields. A hidden specification is no longer included in non-conversion saves.
 - Fixed converted incomplete Valuation and Scrap forms not appearing immediately in Leads. Conversion now refreshes the persistent live Leads store before navigation, failed initial live loads can recover on manual refresh, and Customer Service can see assigned converted Inspection Scheduled records without first clearing a hidden New-only default filter.
 - Fixed a race in both Free Valuation and Scrap Inquiry where immediately
   closing Step 1 could capture stale pre-keystroke values. X, backdrop, Escape,

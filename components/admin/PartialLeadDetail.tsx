@@ -128,8 +128,8 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
     () =>
       draft.status !== saved.status ||
       draft.notes !== saved.notes ||
-      deal.specification !== (partial.specification ?? ""),
-    [draft, saved, deal.specification, partial.specification],
+      (isConversion && deal.specification !== (partial.specification ?? "")),
+    [draft, saved, isConversion, deal.specification, partial.specification],
   );
 
   const guard = useUnsavedGuard(dirty);
@@ -232,7 +232,7 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
                     }
                   : { inspection_scheduled_at: new Date(deal.inspectionScheduledAt).toISOString() }),
               }
-            : { status: draft.status, notes: draft.notes, specification: deal.specification },
+            : { status: draft.status, notes: draft.notes },
         ),
       });
 
@@ -253,7 +253,6 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
         return;
       }
 
-      partial.specification = deal.specification || null;
       setSaved(draft);
       setStatus(draft.status);
       setJustSaved(true);
@@ -383,18 +382,6 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
               value={SELECTABLE.has(draft.status) ? draft.status : ""}
               onChange={(v) => setDraft((d) => ({ ...d, status: v }))}
             />
-
-            {!isConversion && (
-              <Select
-                label="Vehicle Specification"
-                placeholder={deal.specification ? deal.specification : "Select specification (e.g. GCC Specs)"}
-                options={specificationOptions}
-                value={deal.specification}
-                onChange={(specification) => {
-                  setDeal((d) => ({ ...d, specification }));
-                }}
-              />
-            )}
 
             {isConversion && (
               <PartialLeadConversionFields

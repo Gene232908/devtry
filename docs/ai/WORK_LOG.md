@@ -1736,3 +1736,10 @@ log's history.
 - Allowed manual refresh to recover when the provider's initial live request previously fell back to stored/demo data.
 - Removed the Customer Service New-only default list filter so assigned converted Inspection Scheduled records remain visible in both Regular Leads and Scrap Inquiries.
 - Verified the focused filter suite (9 tests), TypeScript, ESLint, all 271 Vitest tests, the isolated production build, and `git diff --check`.
+
+## 2026-10-01 — Conversion-only vehicle specification
+
+- Removed Vehicle Specification from ordinary New/Contacted incomplete-form follow-up.
+- Kept it inside the existing Inspection Scheduled conversion panel alongside Make, Model, Year, and inspection details.
+- Prevented a hidden specification value from affecting dirty state or being sent in a non-conversion save.
+- Verified TypeScript, ESLint, all 271 Vitest tests, the isolated production build, and `git diff --check`.

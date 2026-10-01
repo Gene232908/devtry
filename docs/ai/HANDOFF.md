@@ -2,6 +2,11 @@
 
 ## Current state
 
+- 2026-10-01 update: Incomplete Forms now hide Vehicle Specification for New
+  and Contacted follow-up. It appears only inside the Inspection Scheduled
+  conversion fields, and ordinary saves do not persist a hidden value. Local
+  verification passed 271 tests, TypeScript, ESLint, and production build.
+
 - 2026-10-01 update: converted incomplete Valuation and Scrap records now
   reload the persistent authorized Leads store before navigation. Customer
   Service no longer lands on a New-only filter that hid the resulting
