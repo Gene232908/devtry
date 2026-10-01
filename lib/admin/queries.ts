@@ -20,6 +20,7 @@ import {
   type SessionRow,
 } from "@/lib/admin/visitor-count";
 import {
+  canViewCommissionFinancialReview,
   isCarriedForward,
   mapDbStatement,
   monthsToBuild,
@@ -783,6 +784,7 @@ export async function fetchStaffCommission(
 
   const supabase = getSupabaseAdmin();
   const isOwner = identity.role === "admin" || identity.role === "manager";
+  const canViewFinancialReview = canViewCommissionFinancialReview(identity.role);
 
   let staffQuery = supabase
     .from("profiles")
@@ -852,9 +854,10 @@ export async function fetchStaffCommission(
   // blank" instead of losing the commission row entirely.
   const inventoryIds = Array.from(new Set([...entries.map((e) => e.inventory_id), ...referralRows.map((e) => e.inventory_id)]));
   type CommissionInventory = { id: string; lead_id: string; make: string; model: string; year: number; sale_price_aed: number | string | null; expense_total_aed: number | string | null; net_profit_aed: number | string | null };
-  const { data: invRows } = inventoryIds.length
+  const { data: invRows, error: inventoryError } = inventoryIds.length
     ? await supabase.from("inventory").select("id, lead_id, make, model, year, sale_price_aed, expense_total_aed, net_profit_aed").in("id", inventoryIds)
-    : { data: [] as CommissionInventory[] };
+    : { data: [] as CommissionInventory[], error: null };
+  if (inventoryError) return { ok: false, message: inventoryError.message, status: 500 };
 
   const invById = new Map(
     ((invRows ?? []) as CommissionInventory[]).map((r) => [
@@ -870,30 +873,31 @@ export async function fetchStaffCommission(
   const leadNameById = new Map(((leadRows ?? []) as { id: string; full_name: string }[]).map((r) => [r.id, r.full_name]));
 
   const financialReviewByInventory = new Map<string, StaffCommissionEntry["financialReview"]>();
-  if (isOwner && inventoryIds.length > 0) {
-    const { data: financialEvents } = await supabase
-      .from("inventory_financial_events")
-      .select("inventory_id, action, reason, actor_id, created_at")
-      .in("inventory_id", inventoryIds)
-      .order("created_at", { ascending: false });
-    const eventActorIds = Array.from(new Set((financialEvents ?? []).map((event) => event.actor_id).filter(Boolean)));
-    const { data: eventActors } = eventActorIds.length
+  if (canViewFinancialReview && inventoryIds.length > 0) {
+    const financialEvents = isOwner
+      ? await supabase
+        .from("inventory_financial_events")
+        .select("inventory_id, action, reason, actor_id, created_at")
+        .in("inventory_id", inventoryIds)
+        .order("created_at", { ascending: false })
+      : { data: [], error: null };
+    if (financialEvents.error) return { ok: false, message: financialEvents.error.message, status: 500 };
+    const eventActorIds = Array.from(new Set((financialEvents.data ?? []).map((event) => event.actor_id).filter(Boolean)));
+    const { data: eventActors, error: eventActorsError } = eventActorIds.length
       ? await supabase.from("profiles").select("id, display_name").in("id", eventActorIds)
-      : { data: [] as { id: string; display_name: string | null }[] };
+      : { data: [] as { id: string; display_name: string | null }[], error: null };
+    if (eventActorsError) return { ok: false, message: eventActorsError.message, status: 500 };
     const actorNames = new Map((eventActors ?? []).map((profile) => [profile.id, profile.display_name ?? "Staff member"]));
-    const expensesResult = await supabase.from("inventory_expenses").select("inventory_id, amount_aed").in("inventory_id", inventoryIds);
-    const expensesByInventory = new Map<string, number>();
-    for (const expense of expensesResult.data ?? []) expensesByInventory.set(expense.inventory_id, (expensesByInventory.get(expense.inventory_id) ?? 0) + Number(expense.amount_aed));
     for (const inventoryId of inventoryIds) {
       const inventory = invById.get(inventoryId);
       financialReviewByInventory.set(inventoryId, {
         salePrice: inventory?.sale_price_aed == null ? null : Number(inventory.sale_price_aed),
-        expenses: inventory ? Number(inventory.expense_total_aed ?? 0) : expensesByInventory.get(inventoryId) ?? 0,
+        expenses: Number(inventory?.expense_total_aed ?? 0),
         netProfit: inventory?.net_profit_aed == null ? null : Number(inventory.net_profit_aed),
         margin: inventory?.sale_price_aed && inventory?.net_profit_aed != null
           ? (Number(inventory.net_profit_aed) / Number(inventory.sale_price_aed)) * 100
           : null,
-        corrections: (financialEvents ?? [])
+        corrections: (financialEvents.data ?? [])
           .filter((event) => event.inventory_id === inventoryId && event.action === "financial_review_reopened")
           .map((event) => ({ reason: event.reason ?? "No reason provided", actorName: actorNames.get(event.actor_id) ?? "Staff member", at: event.created_at })),
       });
@@ -941,7 +945,7 @@ export async function fetchStaffCommission(
         kind: entry.kind,
         profit: redactAgentProfit || entry.kind !== "role_commission" ? null : Number(entry.profit_aed),
         commission: entry.kind === "role_commission" ? Number(entry.commission_aed) : Number(entry.incentive_aed),
-        ...(isOwner && entry.kind === "role_commission" ? { financialReview: financialReviewByInventory.get(entry.inventory_id) } : {}),
+        ...(canViewFinancialReview && entry.kind === "role_commission" ? { financialReview: financialReviewByInventory.get(entry.inventory_id) } : {}),
       };
     };
     const paymentHistory = (paymentsByStaff.get(s.id) ?? []).map((payment) => ({

@@ -2,6 +2,8 @@
 
 ## Current objective
 
+- [x] 2026-10-01 Fixed Purchaser My Commission financial columns showing AED 0 despite linked sold Inventory values. Purchasers now receive Sold for, Expenses, Net profit, and Margin only for their own server-scoped commission entries; Call Centre profit remains redacted.
+
 - [x] 2026-10-01 Made Vehicle Specification conversion-only in Incomplete Forms: it stays hidden for New/Contacted records and appears with the required vehicle fields only after selecting Inspection Scheduled; hidden values are not persisted by an ordinary follow-up save.
 
 - [x] 2026-10-01 Fixed converted incomplete forms disappearing from the admin workflow: the live Leads store now reloads before opening the converted record, manual refresh can recover from an earlier fallback, and Customer Service no longer defaults to a New-only filter that hid converted Inspection Scheduled regular and Scrap leads.

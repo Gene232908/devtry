@@ -2,6 +2,13 @@
 
 ## Current state
 
+- 2026-10-01 update: Purchaser My Commission now receives Sold for, Expenses,
+  Net profit, and Margin for only the signed-in Purchaser's own commission
+  entries. The previous owner-only projection caused valid totals to render as
+  AED 0. Call Centre profit and correction audits remain redacted. Verified
+  against the three live Purchaser1 entries plus 273 tests, TypeScript, ESLint,
+  and production build; protected preview browser verification remains.
+
 - 2026-10-01 update: Incomplete Forms now hide Vehicle Specification for New
   and Contacted follow-up. It appears only inside the Inspection Scheduled
   conversion fields, and ordinary saves do not persist a hidden value. Local

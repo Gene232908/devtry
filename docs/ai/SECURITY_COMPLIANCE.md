@@ -262,6 +262,14 @@ Never commit:
 - Call Centre commission responses redact aggregate and per-sale profit before
   the payload reaches the browser. Their PDF invoice follows the same rule.
 
+## 2026-10-01 purchaser commission financial basis
+
+- A Purchaser may receive Sold for, Expenses, Net profit, and Margin only for
+  commission entries already scoped to their authenticated staff ID. This is
+  the same assigned-car financial basis available in their Inventory view.
+- Call Centre self-service responses still omit business profit. Financial
+  correction reasons, actors, and audit history remain owner-only.
+
 ## 2026-09-24 Scrap inquiry integrity
 
 - Public Scrap submissions use the same signed OTP proof as valuations; the

@@ -51,6 +51,17 @@ export type StaffCommissionEntry = {
   };
 };
 
+/**
+ * Roles allowed to receive the sale-price/expense/net-profit basis behind a
+ * staff commission. Purchasers need this for their own 10% statement and
+ * already receive the same assigned-car figures in Inventory. Call Centre
+ * remains excluded because its self-service commission view deliberately
+ * redacts business profit.
+ */
+export function canViewCommissionFinancialReview(role: string): boolean {
+  return role === "admin" || role === "manager" || role === "purchaser";
+}
+
 export type StaffCommissionPayment = {
   id: string;
   totalAmount: number;

@@ -2,6 +2,18 @@
 
 Record unresolved bugs, risks, and technical debt.
 
+## ISSUE-015 — Purchaser commission financial columns displayed zero
+
+**Severity:** High
+**Status:** Resolved in code 2026-10-01; Vercel preview verification pending
+
+The Purchaser My Commission UI rendered Sold for, Expenses, Net profit, and
+Margin, but the server attached each entry's `financialReview` only for owner
+roles. The summary therefore reduced an empty financial set to AED 0 even while
+commission amounts were correct. Purchasers now receive the financial basis
+only for their own server-scoped commission entries. Call Centre profit and
+owner-only correction audit details remain excluded.
+
 ## ISSUE-014 — Converted incomplete form appeared missing from Leads
 
 **Severity:** High

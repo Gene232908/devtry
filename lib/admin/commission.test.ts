@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  canViewCommissionFinancialReview,
   formatMonth,
   groupIntoQuarters,
   isCarriedForward,
@@ -9,6 +10,18 @@ import {
   unpaidDeveloperStatements,
   type CommissionStatement,
 } from "./commission";
+
+describe("canViewCommissionFinancialReview", () => {
+  it("shows the payout basis to owners and to a purchaser viewing their own scoped entries", () => {
+    expect(canViewCommissionFinancialReview("admin")).toBe(true);
+    expect(canViewCommissionFinancialReview("manager")).toBe(true);
+    expect(canViewCommissionFinancialReview("purchaser")).toBe(true);
+  });
+
+  it("keeps business profit redacted from Call Centre self-service data", () => {
+    expect(canViewCommissionFinancialReview("call_center")).toBe(false);
+  });
+});
 
 function stmt(periodMonth: string, over: Partial<CommissionStatement> = {}): CommissionStatement {
   return {

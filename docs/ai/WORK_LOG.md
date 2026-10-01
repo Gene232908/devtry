@@ -1743,3 +1743,10 @@ log's history.
 - Kept it inside the existing Inspection Scheduled conversion panel alongside Make, Model, Year, and inspection details.
 - Prevented a hidden specification value from affecting dirty state or being sent in a non-conversion save.
 - Verified TypeScript, ESLint, all 271 Vitest tests, the isolated production build, and `git diff --check`.
+
+## 2026-10-01 — Purchaser commission financial summary
+
+- Fixed Purchaser My Commission showing AED 0 for Sold for, Expenses, and Net profit because the server emitted financial review data only to owner roles.
+- Limited the added financial basis to the authenticated Purchaser's already-scoped commission entries; Call Centre profit and owner-only correction audit details remain redacted.
+- Read-only verification of Purchaser1's three unpaid rows confirmed AED 233,000 sold, AED 3,700 expenses, AED 34,300 net profit, about 14.7% aggregate margin, and AED 3,430 commission.
+- Verified 22 focused tests, TypeScript, ESLint, all 273 Vitest tests, the isolated production build, and `git diff --check`.
