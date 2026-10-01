@@ -13,6 +13,7 @@ import {
 } from "./form.types";
 import type { ValuationModalMode } from "../open-valuation-modal";
 import type { PublicLeadVerificationMode } from "@/lib/server/public-lead-verification";
+import { randomUuid } from "@/lib/random-id";
 
 const RESEND_COOLDOWN_MS = 60 * 1000;
 const FETCH_TIMEOUT_MS = 15 * 1000;
@@ -93,9 +94,15 @@ export function useValuationForm(mode: ValuationModalMode, verificationMode: Pub
   // capturePartial, which cannot wait for the `state` re-render.
   const submittedRef = useRef(false);
   const submissionIdRef = useRef<string | null>(null);
+  // Stable only for this opened form. The database uses it to update the same
+  // incomplete record if the visitor corrects a valid-looking phone typo.
+  const captureSessionIdRef = useRef<string | null>(null);
+  // Prevents a slower, older request from overwriting a newer correction.
+  const captureRevisionRef = useRef(0);
 
   const setField = useCallback(<K extends keyof ValuationFormValues>(key: K, value: ValuationFormValues[K]) => {
     submissionIdRef.current = null;
+    captureRevisionRef.current += 1;
     const current = valuesRef.current;
     // Trim is connected to make + model, so reset it when either changes.
     const next = key === "make"
@@ -252,7 +259,7 @@ export function useValuationForm(mode: ValuationModalMode, verificationMode: Pub
   const submitLead = useCallback(
     async (proof: string | null) => {
       setState("submitting");
-      if (!submissionIdRef.current) submissionIdRef.current = crypto.randomUUID();
+      if (!submissionIdRef.current) submissionIdRef.current = randomUuid();
 
       try {
         const res = await fetchWithTimeout("/api/leads", {
@@ -383,8 +390,11 @@ export function useValuationForm(mode: ValuationModalMode, verificationMode: Pub
       // there is nothing to capture without a usable one.
       if (!normalizeWhatsappPhone(currentValues.whatsapp)) return;
       if (currentValues.honeypot.trim().length > 0) return;
+      if (!captureSessionIdRef.current) captureSessionIdRef.current = randomUuid();
 
       const payload = {
+        captureSessionId: captureSessionIdRef.current,
+        captureRevision: captureRevisionRef.current,
         fullName: currentValues.fullName,
         whatsapp: currentValues.whatsapp,
         consent: currentValues.consent,
@@ -455,6 +465,8 @@ export function useValuationForm(mode: ValuationModalMode, verificationMode: Pub
     exitSignatureRef.current = null;
     submittedRef.current = false;
     submissionIdRef.current = null;
+    captureSessionIdRef.current = null;
+    captureRevisionRef.current = 0;
     setState("filling");
   }, []);
 

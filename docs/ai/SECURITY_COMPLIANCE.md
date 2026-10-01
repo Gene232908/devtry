@@ -1,5 +1,16 @@
 # SECURITY_COMPLIANCE.md
 
+## 2026-10-01 incomplete-form capture-session boundary
+
+- The browser-generated UUID is an idempotency key, not authentication or an
+  authorization grant. The public endpoint still validates phone, trigger,
+  inquiry type, revision bounds, honeypot, rate limit, and open-lead state.
+- Only the server-held Supabase service role can execute the capture RPC;
+  `public`, `anon`, and `authenticated` retain no execute permission.
+- Revisions prevent delayed browser requests from restoring an older typo.
+  No new customer field is collected and the existing 30/90-day incomplete
+  retention policy remains unchanged.
+
 ## 2026-10-01 incomplete-form retention boundary
 
 - Unverified, unconverted incomplete forms are hidden after 30 inactive days and permanently deleted after 90 inactive days. The job cannot select converted rows and has no SQL delete path to confirmed leads or operational/financial tables.

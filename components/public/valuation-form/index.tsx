@@ -16,6 +16,8 @@ import type { ValuationModalMode } from "../open-valuation-modal";
 import type { PublicLeadVerificationMode } from "@/lib/server/public-lead-verification";
 import { trackMetaEvent } from "@/lib/track-click";
 
+const PARTIAL_CAPTURE_DEBOUNCE_MS = 5_000;
+
 const STEPS: Array<{
   n: 1 | 2 | 3;
   label: string;
@@ -82,7 +84,7 @@ export function ValuationForm({ registerCapture, mode = "valuation", verificatio
   const whatsapp = form.values.whatsapp;
   useEffect(() => {
     if (!fullName.trim() || !whatsapp.trim()) return;
-    const timer = window.setTimeout(() => capturePartial("input", step), 700);
+    const timer = window.setTimeout(() => capturePartial("input", step), PARTIAL_CAPTURE_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [fullName, whatsapp, capturePartial, step]);
 
@@ -90,7 +92,7 @@ export function ValuationForm({ registerCapture, mode = "valuation", verificatio
   const scrapAskingPriceAed = form.values.scrapAskingPriceAed;
   useEffect(() => {
     if (mode !== "scrap" || !fullName.trim() || !whatsapp.trim()) return;
-    const timer = window.setTimeout(() => capturePartial("input", step), 700);
+    const timer = window.setTimeout(() => capturePartial("input", step), PARTIAL_CAPTURE_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [mode, fullName, whatsapp, scrapCondition, scrapAskingPriceAed, capturePartial, step]);
 

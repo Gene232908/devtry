@@ -27,3 +27,23 @@ export function randomId(): string {
 
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
 }
+
+/**
+ * UUID-shaped browser id for database idempotency keys.
+ *
+ * This is not an authentication credential. The non-cryptographic fallback
+ * exists only for old/insecure browsers where Web Crypto is unavailable; the
+ * server still validates the shape and never grants access from this value.
+ */
+export function randomUuid(): string {
+  const c = typeof crypto !== "undefined" ? crypto : undefined;
+  if (typeof c?.randomUUID === "function") return c.randomUUID();
+
+  const bytes = typeof c?.getRandomValues === "function"
+    ? c.getRandomValues(new Uint8Array(16))
+    : Uint8Array.from({ length: 16 }, () => Math.floor(Math.random() * 256));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}

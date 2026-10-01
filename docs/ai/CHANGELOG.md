@@ -6,6 +6,12 @@ Use reverse chronological order.
 
 ### Added
 
+- **Incomplete-form typo dedupe.** Each opened Valuation/Scrap form now carries
+  a UUID and revision so correcting a valid-looking phone number updates the
+  same incomplete record and delayed older requests cannot restore the typo.
+  Background autosave now waits five seconds after the latest change. Migration
+  `0041_partial_lead_capture_sessions.sql` is required.
+
 - **Temporary no-OTP public submissions (local, not deployed).** Free Valuation and Scrap Inquiry can submit directly with server-side validation, unverified-number marking, blocked/open-lead checks, and retry idempotency. The WhatsApp OTP path remains reversible. No schema migration or customer-data reset was needed; staging/mobile checks remain before release.
 
 ### Fixed

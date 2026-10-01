@@ -6,6 +6,7 @@ import { getClientIp } from "@/lib/server/ip";
 import { isRateLimited } from "@/lib/rate-limit";
 import { hasOpenLead } from "@/lib/server/enquiry";
 import { pickNextAssignee } from "@/lib/server/lead-assignment";
+import { canRetryLegacyCapture, parseCaptureRevision, parseCaptureSessionId } from "@/lib/server/partial-lead-capture";
 
 // Captures a valuation form that was started but never submitted, so a visitor
 // who types their name and number and then leaves is still reachable.
@@ -72,6 +73,10 @@ export async function POST(req: NextRequest) {
   // one hard requirement: it is also the dedupe key. Anything else is optional.
   const phone = typeof body.whatsapp === "string" ? normalizeWhatsappPhone(body.whatsapp) : null;
   if (!phone) return ok(false);
+  const captureSessionId = parseCaptureSessionId(body.captureSessionId);
+  if (body.captureSessionId !== undefined && !captureSessionId) return ok(false);
+  const captureRevision = parseCaptureRevision(body.captureRevision);
+  if (captureRevision === null) return ok(false);
 
   const ip = getClientIp(req);
   if (ip && isRateLimited(`partial-lead:${ip}`, MAX_CAPTURES_PER_IP, CAPTURE_WINDOW_MS)) {
@@ -134,13 +139,15 @@ export async function POST(req: NextRequest) {
       p_inquiry_type: inquiryType,
       p_scrap_condition: inquiryType === "scrap" ? scrapCondition : null,
       p_scrap_asking_price_aed: inquiryType === "scrap" ? scrapAskingPrice : null,
+      p_capture_session_id: captureSessionId,
+      p_capture_revision: captureRevision,
     });
     if (error) {
-      // Preserve existing valuation recovery during the short window between a
-      // code deployment and migration 0035. Scrap deliberately has no fallback:
-      // saving it as a valuation would violate its permanent classification.
-      const missingNewSignature = /p_inquiry_type|p_scrap_condition|p_scrap_asking_price_aed|p_mileage_value|p_mileage_unit|capture_partial_lead/i.test(error.message ?? "");
-      if (inquiryType !== "valuation" || !missingNewSignature) return ok(false);
+      // Deployment-order compatibility for migration 0041: the previous RPC
+      // already understands both inquiry types, so only omit the two new
+      // session arguments and retry. The older pre-0035 fallback remains
+      // valuation-only because that schema cannot preserve Scrap provenance.
+      if (!canRetryLegacyCapture(error.message ?? "", inquiryType)) return ok(false);
       const { error: legacyError } = await getSupabaseAdmin().rpc("capture_partial_lead", legacyPayload);
       if (legacyError) return ok(false);
     }

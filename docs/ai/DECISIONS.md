@@ -473,3 +473,26 @@ used for Regular and Scrap leads.
   assigned lead originated as Scrap.
 - Call Centre still cannot record Deal, and lead ownership checks remain active.
 - No database migration is required.
+
+## ADR-015 - Incomplete forms use session and revision idempotency
+
+**Date:** 2026-10-01
+**Status:** Accepted; migration required before full activation
+
+### Decision
+
+Keep phone plus inquiry type as the cross-session dedupe key, and add a random
+form-session UUID plus monotonic revision for captures from one opened modal.
+Autosave waits five seconds after the last contact-field change. A corrected
+phone moves or merges the same unconverted record; a lower delayed revision is
+ignored.
+
+### Consequences
+
+- Valid-looking phone typos no longer leave a second incomplete row after the
+  customer corrects them in the same form session.
+- X, backdrop, consent, and browser-exit capture remain immediate and use the
+  same session/revision ordering.
+- Migration `0041_partial_lead_capture_sessions.sql` must be applied before the
+  new dedupe behavior is relied on. The API temporarily falls back to the old
+  RPC signature so deployment order cannot break capture.

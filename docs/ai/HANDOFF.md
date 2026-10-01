@@ -2,6 +2,32 @@
 
 ## Current state
 
+- 2026-10-01 update: five-second incomplete autosave and same-session phone
+  correction dedupe are implemented locally for Valuation and Scrap. Migration
+  `0041_partial_lead_capture_sessions.sql` must be applied after `0040` before
+  the behavior is relied on in preview. The API safely falls back to the old
+  RPC signature during deployment ordering. Local verification passed 269
+  tests, TypeScript, ESLint, production build, dependency audit, and an
+  in-memory PostgreSQL execution of migration `0041` covering phone correction,
+  stale request ordering, existing-phone merge, inquiry-type separation, and
+  function permissions.
+
+Migration verification query after applying `0041`:
+
+```sql
+select
+  exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'partial_leads' and column_name = 'capture_session_id') as session_column_exists,
+  exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'partial_leads' and column_name = 'capture_revision') as revision_column_exists,
+  to_regclass('public.partial_leads_capture_session_idx') is not null as session_index_exists,
+  count(*) filter (where p.pronargs = 20) = 1 as capture_function_exists,
+  bool_or(has_function_privilege('service_role', p.oid, 'EXECUTE')) as service_role_can_run,
+  bool_or(has_function_privilege('anon', p.oid, 'EXECUTE')) as anon_can_run,
+  bool_or(has_function_privilege('authenticated', p.oid, 'EXECUTE')) as authenticated_can_run
+from pg_proc p
+where p.pronamespace = 'public'::regnamespace
+  and p.proname = 'capture_partial_lead';
+```
+
 - 2026-10-01 update: the Step 1 abandoned-form race is fixed locally on
   `almostdone` for both Valuation and Scrap. Every exit/consent path reads a
   synchronous latest-values ref, and invalid UAE numbers show format feedback

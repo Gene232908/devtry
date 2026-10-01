@@ -206,3 +206,13 @@ After `FINISH THE PRODUCT`:
   internal workflows. The original whole-number value and unit are retained for
   staff-facing display and exports, so a customer-entered Miles value is never
   silently presented as KM.
+
+## Incomplete-form capture sessions - 2026-10-01
+
+- Migration `0041_partial_lead_capture_sessions.sql` adds nullable
+  `capture_session_id` and non-negative `capture_revision` to
+  `partial_leads`, plus a partial unique session/type index.
+- The service-role-only capture RPC moves the same unconverted row when a
+  visitor corrects their phone, merges into an existing phone/type row when
+  necessary, and ignores out-of-order lower revisions.
+- Legacy clients without a session id retain the existing phone/type upsert.

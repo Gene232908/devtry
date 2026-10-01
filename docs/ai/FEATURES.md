@@ -129,8 +129,12 @@ Replace examples with actual implemented features.
   record. Invalid numbers now show the accepted format when the field loses
   focus; malformed contact data is not stored.
 - Page exit still uses `sendBeacon` with a keepalive fetch fallback. Ordinary
-  input capture remains debounced and database writes remain idempotent by
-  phone plus inquiry type.
+  input capture waits five seconds after the latest change.
+- Migration `0041_partial_lead_capture_sessions.sql` assigns one UUID and a
+  monotonic revision to each opened form. Correcting a valid-looking phone
+  typo moves/merges the same incomplete record, and delayed older requests
+  cannot overwrite the correction. Phone plus inquiry type remains the
+  cross-session dedupe key.
 
 ## Feature template
 

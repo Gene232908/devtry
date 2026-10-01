@@ -1,5 +1,23 @@
 # RELEASE_OPERATIONS.md
 
+## 2026-10-01 capture-session release order
+
+1. Back up the target database and apply
+   `0041_partial_lead_capture_sessions.sql` after migration `0040`.
+2. Run the migration verification query documented in the handoff: confirm
+   both columns, the unique index, the 20-argument function, and execute access
+   limited to `service_role`.
+3. Deploy the matching `almostdone` application commit. The API has a temporary
+   legacy-signature fallback, but session typo dedupe is not active before the
+   migration.
+4. With controlled non-production numbers, test Valuation and Scrap separately:
+   wait five seconds on one valid-looking number, correct one digit, close the
+   modal, and confirm there is one row containing only the corrected number.
+
+Rollback: roll back application code first. Leave the additive columns and
+index in place; the legacy RPC call remains compatible and no customer row
+needs to be deleted.
+
 ## 2026-10-01 incomplete-form retention release order
 
 1. Back up the target Supabase database and apply `0040_partial_lead_retention.sql` before deploying the application code.

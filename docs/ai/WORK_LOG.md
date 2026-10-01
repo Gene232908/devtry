@@ -1711,3 +1711,19 @@ log's history.
 - Pushed fix commit `dd156d0` to both `origin/almostdone` and
   `production/almostdone`; Vercel preview access remains SSO-protected for the
   final authenticated browser test.
+
+## 2026-10-01 — Five-second autosave and phone-correction dedupe
+
+- Changed Valuation and Scrap background incomplete capture from 700 ms to
+  five seconds after the latest input.
+- Added a per-opened-form UUID and revision. Migration `0041` moves the same
+  partial row when a valid-looking phone typo is corrected, merges an existing
+  phone/type row, and ignores lower out-of-order revisions.
+- Kept the public endpoint validated/rate-limited and the RPC service-role-only;
+  legacy signature fallback prevents a deployment-order outage.
+- Verified 24 focused tests, TypeScript, ESLint, all 269 tests, production build,
+  `git diff --check`, and `npm audit --omit=dev` with zero vulnerabilities.
+- Compiled and executed migration `0041` against a temporary in-memory
+  PostgreSQL-compatible engine. Phone correction, stale-order rejection,
+  existing-phone merge, valuation/Scrap separation, and service-role-only
+  permissions all passed; the temporary tool and script were removed afterward.

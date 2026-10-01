@@ -2,6 +2,17 @@
 
 Record unresolved bugs, risks, and technical debt.
 
+## ISSUE-013 — Valid-looking phone correction created a second incomplete row
+
+**Severity:** High
+**Status:** Resolved in code 2026-10-01; migration and preview verification pending
+
+The 700 ms phone-keyed autosave could persist a syntactically valid typo before
+the visitor corrected it, leaving the corrected phone as another row. Autosave
+now waits five seconds and every opened form has a UUID plus monotonic revision.
+Migration `0041_partial_lead_capture_sessions.sql` moves/merges the same row and
+rejects delayed stale revisions for both Valuation and Scrap.
+
 ## ISSUE-012 — Immediate Step 1 exit could read stale contact values
 
 **Severity:** High
