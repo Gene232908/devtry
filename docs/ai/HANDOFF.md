@@ -3,7 +3,8 @@
 ## Current state
 
 - 2026-10-01 update: five-second incomplete autosave and same-session phone
-  correction dedupe are implemented locally for Valuation and Scrap. Migration
+  correction dedupe are implemented and pushed as `c011d64` to both
+  `almostdone` remotes for Valuation and Scrap. Migration
   `0041_partial_lead_capture_sessions.sql` must be applied after `0040` before
   the behavior is relied on in preview. The API safely falls back to the old
   RPC signature during deployment ordering. Local verification passed 269

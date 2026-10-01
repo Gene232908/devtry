@@ -1727,3 +1727,5 @@ log's history.
   PostgreSQL-compatible engine. Phone correction, stale-order rejection,
   existing-phone merge, valuation/Scrap separation, and service-role-only
   permissions all passed; the temporary tool and script were removed afterward.
+- Pushed application/migration commit `c011d64` to `origin/almostdone` and
+  `production/almostdone`, triggering the protected Vercel preview build.
