@@ -135,8 +135,15 @@ export default function CommissionClient({
   // Detail view
   const [detailTarget, setDetailTarget] = useState<StaffCommission | null>(null);
 
+  type StaffPayTarget = {
+    staff: StaffCommission;
+    entryIds?: string[];
+    amount: number;
+    count: number;
+  };
+
   // Pay confirmation
-  const [payTarget, setPayTarget] = useState<StaffCommission | null>(null);
+  const [payTarget, setPayTarget] = useState<StaffPayTarget | null>(null);
   const [payBusy, setPayBusy] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
 
@@ -201,15 +208,57 @@ export default function CommissionClient({
 
     if (ADMIN_PREVIEW) {
       const now = new Date().toISOString();
-      const updateFn = (prev: StaffCommission[]) =>
-        prev.map((s) =>
-          s.id === payTarget.id
-            ? { ...s, isPaidThisMonth: true, paidAt: now, totalCarsSold: 0, totalProfit: 0, totalCommission: 0 }
-            : s,
-        );
+      const paidEntryIds = new Set(payTarget.entryIds ?? payTarget.staff.entries.map((e) => e.id));
+      const paidEntries = payTarget.staff.entries.filter((e) => paidEntryIds.has(e.id));
+      const remainingEntries = payTarget.staff.entries.filter((e) => !paidEntryIds.has(e.id));
 
-      if (payTarget.role === "call_center") setAgents(updateFn);
-      else setPurchasers(updateFn);
+      const newPaymentRecord = {
+        id: "pay-" + Date.now().toString(36),
+        totalAmount: payTarget.amount,
+        entryCount: paidEntries.length,
+        paidAt: now,
+        paidByName: "Super Admin",
+        entries: paidEntries,
+      };
+
+      const updateFn = (prev: StaffCommission[]) =>
+        prev.map((s) => {
+          if (s.id !== payTarget.staff.id) return s;
+          const newTotalCommission = remainingEntries.reduce((sum, e) => sum + e.commission, 0);
+          const newTotalCarsSold = remainingEntries.filter((e) => e.kind === "role_commission").length;
+          const newTotalProfit = remainingEntries.reduce((sum, e) => sum + (e.profit ?? 0), 0);
+          return {
+            ...s,
+            isPaidThisMonth: remainingEntries.length === 0,
+            paidAt: remainingEntries.length === 0 ? now : s.paidAt,
+            totalCarsSold: newTotalCarsSold,
+            totalProfit: newTotalProfit,
+            totalCommission: newTotalCommission,
+            entries: remainingEntries,
+            paymentHistory: [newPaymentRecord, ...(s.paymentHistory ?? [])],
+          };
+        });
+
+      if (payTarget.staff.role === "call_center") setAgents(updateFn);
+      else if (payTarget.staff.role === "purchaser") setPurchasers(updateFn);
+      else setReferralRecipients(updateFn);
+
+      setDetailTarget((current) => {
+        if (!current || current.id !== payTarget.staff.id) return current;
+        const newTotalCommission = remainingEntries.reduce((sum, e) => sum + e.commission, 0);
+        const newTotalCarsSold = remainingEntries.filter((e) => e.kind === "role_commission").length;
+        const newTotalProfit = remainingEntries.reduce((sum, e) => sum + (e.profit ?? 0), 0);
+        return {
+          ...current,
+          isPaidThisMonth: remainingEntries.length === 0,
+          paidAt: remainingEntries.length === 0 ? now : current.paidAt,
+          totalCarsSold: newTotalCarsSold,
+          totalProfit: newTotalProfit,
+          totalCommission: newTotalCommission,
+          entries: remainingEntries,
+          paymentHistory: [newPaymentRecord, ...(current.paymentHistory ?? [])],
+        };
+      });
 
       setPayBusy(false);
       setPayTarget(null);
@@ -220,7 +269,10 @@ export default function CommissionClient({
       const res = await fetch("/api/admin/commission/staff/pay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ staffId: payTarget.id }),
+        body: JSON.stringify({
+          staffId: payTarget.staff.id,
+          entryIds: payTarget.entryIds,
+        }),
       });
       const body = await res.json();
       if (!res.ok || !body.ok) {
@@ -490,13 +542,22 @@ export default function CommissionClient({
       {/* ─── Detail modal ─────────────────────────────────────────────── */}
       {detailTarget && (
         <StaffDetailModal
-          staff={detailTarget}
+          staff={
+            [...agents, ...purchasers, ...referralRecipients].find((s) => s.id === detailTarget.id) ?? detailTarget
+          }
           canPay={!isStaffSelfViewer}
           hideProfit={isAgentViewer}
           onClose={() => setDetailTarget(null)}
-          onMarkPaid={() => {
+          onMarkPaid={(selectedEntryIds, selectedAmount, selectedCount) => {
+            const currentStaff =
+              [...agents, ...purchasers, ...referralRecipients].find((s) => s.id === detailTarget.id) ?? detailTarget;
             setPayError(null);
-            setPayTarget(detailTarget);
+            setPayTarget({
+              staff: currentStaff,
+              entryIds: selectedEntryIds && selectedEntryIds.length > 0 ? selectedEntryIds : undefined,
+              amount: selectedAmount ?? currentStaff.totalCommission,
+              count: selectedCount ?? currentStaff.entries.length,
+            });
           }}
         />
       )}
@@ -504,17 +565,21 @@ export default function CommissionClient({
       {/* ─── Staff pay confirmation ───────────────────────────────────── */}
       <ConfirmDialog
         open={payTarget !== null}
-        title="Mark as Paid?"
+        title={payTarget?.entryIds && payTarget.entryIds.length > 0 ? "Record advance payment?" : "Mark all as paid?"}
         description={
           payTarget ? (
             <>
-              This will record <span className="text-text">{payTarget.displayName}</span>&apos;s commission of{" "}
-              <span className="text-gold">{formatAed(payTarget.totalCommission)}</span> as paid. A permanent payment
-              history will keep the amount, included sales, UAE date/time, and confirmer.
+              This will record an advance payment of{" "}
+              <span className="text-gold">{formatAed(payTarget.amount)}</span> for {payTarget.count}{" "}
+              {payTarget.count === 1 ? "sale" : "sales"} to{" "}
+              <span className="text-text">{payTarget.staff.displayName}</span>.{" "}
+              {payTarget.entryIds && payTarget.entryIds.length > 0
+                ? "The remaining unpaid sales will stay on their statement."
+                : "A permanent payment history will keep the amount, included sales, UAE date/time, and confirmer."}
             </>
           ) : null
         }
-        confirmLabel="Mark as Paid"
+        confirmLabel={payTarget?.entryIds && payTarget.entryIds.length > 0 ? "Record advance payment" : "Mark as Paid"}
         cancelLabel="Cancel"
         busy={payBusy}
         onConfirm={() => void handlePayStaff()}
@@ -715,12 +780,37 @@ function StaffDetailModal({
   canPay: boolean;
   hideProfit?: boolean;
   onClose: () => void;
-  onMarkPaid: () => void;
+  onMarkPaid: (selectedEntryIds?: string[], selectedAmount?: number, selectedCount?: number) => void;
 }) {
+  const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string>>(new Set());
+
   const roleEntries = staff.entries.filter((entry) => entry.kind === "role_commission");
   const hasFinancialReview = roleEntries.some((entry) => entry.financialReview);
   const referralEntries = staff.entries.filter((entry) => entry.kind === "referral_incentive");
   const referralTotal = referralEntries.reduce((total, entry) => total + entry.commission, 0);
+
+  const selectedEntries = roleEntries.filter((entry) => selectedEntryIds.has(entry.id));
+  const selectedAmount = selectedEntries.reduce((total, entry) => total + entry.commission, 0);
+  const selectedCount = selectedEntries.length;
+  const allSelected = roleEntries.length > 0 && roleEntries.every((entry) => selectedEntryIds.has(entry.id));
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedEntryIds(new Set());
+    } else {
+      setSelectedEntryIds(new Set(roleEntries.map((entry) => entry.id)));
+    }
+  };
+
+  const toggleEntry = (id: string) => {
+    setSelectedEntryIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const [showReferralBreakdown, setShowReferralBreakdown] = useState(false);
   const [referralSearch, setReferralSearch] = useState("");
   const [visibleReferrals, setVisibleReferrals] = useState(10);
@@ -796,10 +886,31 @@ function StaffDetailModal({
         {/* Closed-sale commission table */}
         {roleEntries.length > 0 && (
           <div className="px-5 pb-2">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-text-faint">Closed car sales</p>
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-text-faint">Closed car sales</p>
+              {canPay && selectedCount > 0 && (
+                <span className="text-xs font-medium text-gold">
+                  {selectedCount} of {roleEntries.length} selected ({formatAed(selectedAmount)})
+                </span>
+              )}
+            </div>
             <div className="flex flex-col gap-3 md:hidden">
               {roleEntries.map((entry) => (
                 <div key={`mobile-${entry.id}`} className="rounded-card border border-border bg-surface-2 p-4">
+                  {canPay && (
+                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border/50">
+                      <input
+                        type="checkbox"
+                        id={`mobile-check-${entry.id}`}
+                        checked={selectedEntryIds.has(entry.id)}
+                        onChange={() => toggleEntry(entry.id)}
+                        className="h-4 w-4 rounded border-border bg-surface-2 text-gold focus:ring-gold accent-gold cursor-pointer"
+                      />
+                      <label htmlFor={`mobile-check-${entry.id}`} className="text-xs font-medium text-text-muted cursor-pointer">
+                        Select for advance payment
+                      </label>
+                    </div>
+                  )}
                   <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
                     <div className="min-w-0">
                       <p className="font-medium text-text">{entry.leadName}</p>
@@ -824,6 +935,17 @@ function StaffDetailModal({
               <table className="w-full min-w-[980px] text-left text-fluid--1">
                 <thead>
                   <tr className="border-b border-border text-text-faint">
+                    {canPay && (
+                      <th className="py-2 pl-3 pr-2 w-10 font-normal">
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          onChange={toggleSelectAll}
+                          aria-label="Select all deals"
+                          className="h-4 w-4 rounded border-border bg-surface-2 text-gold focus:ring-gold accent-gold cursor-pointer"
+                        />
+                      </th>
+                    )}
                     <th className="py-2 pr-4 font-normal">Customer</th>
                     <th className="py-2 pr-4 font-normal">Car</th>
                     <th className="py-2 pr-4 font-normal">Sold Date</th>
@@ -839,7 +961,24 @@ function StaffDetailModal({
                 </thead>
                 <tbody>
                   {roleEntries.map((entry) => (
-                    <tr key={entry.id} className="border-b border-border last:border-0">
+                    <tr
+                      key={entry.id}
+                      onClick={() => canPay && toggleEntry(entry.id)}
+                      className={`border-b border-border last:border-0 transition-colors ${
+                        canPay ? "cursor-pointer hover:bg-surface-2/60" : ""
+                      } ${selectedEntryIds.has(entry.id) ? "bg-gold/5" : ""}`}
+                    >
+                      {canPay && (
+                        <td className="py-2.5 pl-3 pr-2 w-10" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={selectedEntryIds.has(entry.id)}
+                            onChange={() => toggleEntry(entry.id)}
+                            aria-label={`Select ${entry.leadName} deal`}
+                            className="h-4 w-4 rounded border-border bg-surface-2 text-gold focus:ring-gold accent-gold cursor-pointer"
+                          />
+                        </td>
+                      )}
                       <td className="py-2.5 pr-4 text-text">{entry.leadName}</td>
                       <td className="py-2.5 pr-4 text-text-muted">{entry.carDetails}</td>
                       <td className="py-2.5 pr-4 text-text-muted">{formatDate(entry.soldAt)}</td>
@@ -885,9 +1024,19 @@ function StaffDetailModal({
               Close
             </Button>
             {canPay && !staff.isPaidThisMonth && staff.totalCommission > 0 && (
-              <Button onClick={onMarkPaid} size="sm">
-                <CheckCircle2 className="h-4 w-4" /> Mark as Paid
-              </Button>
+              selectedCount > 0 ? (
+                <Button
+                  onClick={() => onMarkPaid(Array.from(selectedEntryIds), selectedAmount, selectedCount)}
+                  size="sm"
+                  className="bg-gold text-zinc-950 hover:bg-gold/90 font-semibold"
+                >
+                  <CheckCircle2 className="h-4 w-4" /> Pay Selected ({selectedCount} · {formatAed(selectedAmount)})
+                </Button>
+              ) : (
+                <Button onClick={() => onMarkPaid()} size="sm">
+                  <CheckCircle2 className="h-4 w-4" /> Mark All as Paid ({formatAed(staff.totalCommission)})
+                </Button>
+              )
             )}
           </div>
         </div>

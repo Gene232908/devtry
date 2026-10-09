@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: { message: "Database is not configured." } }, { status: 503 });
   }
 
-  let body: { staffId?: unknown };
+  let body: { staffId?: unknown; entryIds?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -35,6 +35,10 @@ export async function POST(req: NextRequest) {
   if (typeof body.staffId !== "string" || body.staffId.trim() === "") {
     return NextResponse.json({ ok: false, error: { message: "Choose who to pay." } }, { status: 400 });
   }
+
+  const entryIds = Array.isArray(body.entryIds) && body.entryIds.every((id) => typeof id === "string" && id.trim().length > 0)
+    ? (body.entryIds as string[])
+    : null;
 
   const supabase = getSupabaseAdmin();
 
@@ -57,6 +61,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await supabase.rpc("pay_staff_commission", {
     p_staff_id: body.staffId,
     p_paid_by: auth.userId,
+    p_entry_ids: entryIds,
   });
 
   if (error) {
