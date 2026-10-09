@@ -95,11 +95,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   if (existing?.status !== "completed") {
-    const { data: photos, error: photosError } = await access.supabase.from("inspection_photos").select("angle, note").eq("inspection_report_id", report.id);
+    const { data: photos, error: photosError } = await access.supabase.from("inspection_photos").select("angle").eq("inspection_report_id", report.id);
     if (photosError) return fail(photosError.message, 500);
-    const documentedPhotos = (photos ?? []).filter((photo: { angle: string; note: string | null }) => photo.note?.trim()).map((photo: { angle: string }) => photo.angle);
-    if (!isCompleteInspectionReport(parsed.data, documentedPhotos)) {
-      return fail("Complete the vehicle details, every condition check, tyre year and failure note, and all 24 photos with notes before saving the inspection.", 400);
+    const uploadedAngles = (photos ?? []).map((photo: { angle: string }) => photo.angle);
+    if (!isCompleteInspectionReport(parsed.data, uploadedAngles)) {
+      return fail("Complete the vehicle details, every condition check, tyre year and failure note, and all 24 photos before saving the inspection.", 400);
     }
 
     const { error: completeError } = await access.supabase.rpc("complete_inspection_report", {

@@ -2,6 +2,7 @@
 
 ## Current objective
 
+- [x] 2026-10-09 Updated the inspection photo workflow for Valuation and Scrap inquiries: users can capture or upload photos immediately with phone camera or file upload without a prerequisite note. Notes remain optional for parts in good condition and are used to document dents, scratches, or defects.
 - [x] 2026-10-01 Fixed Purchaser My Commission financial columns showing AED 0 despite linked sold Inventory values. Purchasers now receive Sold for, Expenses, Net profit, and Margin only for their own server-scoped commission entries; Call Centre profit remains redacted.
 
 - [x] 2026-10-01 Made Vehicle Specification conversion-only in Incomplete Forms: it stays hidden for New/Contacted records and appears with the required vehicle fields only after selecting Inspection Scheduled; hidden values are not persisted by an ordinary follow-up save.

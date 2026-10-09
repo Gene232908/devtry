@@ -21,7 +21,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const note = typeof form?.get("note") === "string" ? String(form.get("note")).trim() : "";
   const file = form?.get("file");
   if (!PHOTO_ANGLES.includes(angle as (typeof PHOTO_ANGLES)[number])) return fail("Invalid required photo angle.", 400);
-  if (!note || note.length > 600) return fail("Add a photo note between 1 and 600 characters.", 400);
+  if (note.length > 600) return fail("Photo note must be 600 characters or less.", 400);
   if (!(file instanceof File) || file.size === 0) return fail("Choose a photo to upload.", 400);
   if (!ALLOWED_TYPES.has(file.type) || file.size > MAX_BYTES) return fail("Use a JPG or PNG photo up to 1 MB.", 400);
 
