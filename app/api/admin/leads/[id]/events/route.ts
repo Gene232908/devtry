@@ -55,7 +55,7 @@ function messageFor(event: DbLeadEvent, actor?: ActorSnapshot): string {
     case "status_change": {
       const from = STATUS_LABEL[String(meta.from)] ?? String(meta.from ?? "");
       const to = STATUS_LABEL[String(meta.to)] ?? String(meta.to ?? "");
-      return `Status changed${actionBy(meta, actor)}: ${from} ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ ${to}.`;
+      return `Status changed${actionBy(meta, actor)}: ${from} → ${to}.`;
     }
     case "value_updated": return meta.value != null ? `Estimated value set${actionBy(meta, actor)} to AED ${Number(meta.value).toLocaleString()}.` : `Estimated value cleared${actionBy(meta, actor)}.`;
     case "note_updated": {
@@ -64,8 +64,8 @@ function messageFor(event: DbLeadEvent, actor?: ActorSnapshot): string {
     }
     case "car_purchased": return meta.purchase_price_aed != null ? `Car bought${actionBy(meta, actor)} for AED ${Number(meta.purchase_price_aed).toLocaleString()} and added to Inventory.` : `Car added to Inventory${actionBy(meta, actor)}.`;
     case "financial_review_reopened": return `Financial review reopened${actionBy(meta, actor)}. Reason: ${String(meta.reason ?? "No reason provided")}`;
-    case "expense_added": return `Expense ${meta.action === "updated" ? "updated" : "added"}${actionBy(meta, actor)}: ${String(meta.description ?? "Expense")} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â AED ${Number(meta.amount_aed ?? 0).toLocaleString()}.`;
-    case "expense_deleted": return `Expense deleted${actionBy(meta, actor)}: ${String(meta.description ?? "Expense")} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â AED ${Number(meta.amount_aed ?? 0).toLocaleString()}.`;
+    case "expense_added": return `Expense ${meta.action === "updated" ? "updated" : "added"}${actionBy(meta, actor)}: ${String(meta.description ?? "Expense")} — AED ${Number(meta.amount_aed ?? 0).toLocaleString()}.`;
+    case "expense_deleted": return `Expense deleted${actionBy(meta, actor)}: ${String(meta.description ?? "Expense")} — AED ${Number(meta.amount_aed ?? 0).toLocaleString()}.`;
     case "marked_spam": return meta.is_spam === false ? `Unmarked as spam${actionBy(meta, actor)}.` : `Marked as spam${actionBy(meta, actor)}.`;
     case "assigned": return `Lead assignment updated${actionBy(meta, actor)}.`;
     case "arrival_confirmed": return `Customer arrival confirmed${actionBy(meta, actor)}.`;
@@ -77,7 +77,7 @@ function messageFor(event: DbLeadEvent, actor?: ActorSnapshot): string {
     case "inspection_rescheduled": {
       const previous = typeof meta.previous_scheduled_at === "string" ? formatScheduledInspection(meta.previous_scheduled_at) : "the previous appointment";
       const next = typeof meta.scheduled_at === "string" ? formatScheduledInspection(meta.scheduled_at) : "the new appointment";
-      return `Inspection rescheduled${actionBy(meta, actor)}: ${previous} ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ ${next}.`;
+      return `Inspection rescheduled${actionBy(meta, actor)}: ${previous} → ${next}.`;
     }
     case "inspection_completed": return `Inspection report completed${actionBy(meta, actor)}.`;
     case "inspection_card_updated": {
