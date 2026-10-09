@@ -12,7 +12,7 @@ export const brand = {
   hours: "Sat-Thu, 9:00 AM - 9:00 PM",
   credit: "Developed by CREServices Beyond Strategy",
   socials: {
-    facebook: "https://www.facebook.com/carvibedubai",
+    facebook: "https://www.facebook.com/profile.php?id=100063529091833",
     instagram: "https://www.instagram.com/carvibedubai",
   },
 };
