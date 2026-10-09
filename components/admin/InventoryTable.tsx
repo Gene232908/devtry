@@ -48,9 +48,9 @@ export function InventoryTable({ items, roleFilter, viewerRole, onSell }: Props)
           <tr className="border-b border-border text-text-faint">
             <th className="py-2 pr-4 font-normal">Car</th>
             <th className="py-2 pr-4 font-normal">Chassis / VIN Number</th>
-            <th className="py-2 pr-4 font-normal">Bought</th>
+            <th className="py-2 pr-4 font-normal">Sold date</th>
             <th className="py-2 pr-4 text-right font-normal">Paid</th>
-            <th className="py-2 pr-4 text-right font-normal">Sold for</th>
+            <th className="py-2 pr-4 text-right font-normal">Paid amount</th>
             <th className="py-2 pr-4 text-right font-normal">Expenses</th>
             <th className="py-2 pr-4 text-right font-normal">Net profit</th>
             {showCallCenter && (
