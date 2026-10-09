@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { BadgeDollarSign, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { formatAed, formatDate } from "@/lib/format";
+import { formatAed, formatDate, formatNumber } from "@/lib/format";
 import { ScrapInquiryBadge } from "@/components/admin/ScrapInquiryBadge";
 import {
   INVENTORY_STATUS_LABEL,
@@ -53,15 +53,14 @@ export function InventoryTable({ items, roleFilter, viewerRole, onSell }: Props)
             <th className="py-2 pr-4 text-right font-normal">Sold for</th>
             <th className="py-2 pr-4 text-right font-normal">Expenses</th>
             <th className="py-2 pr-4 text-right font-normal">Net profit</th>
-            <th className="py-2 pr-4 text-right font-normal">Margin</th>
             {showCallCenter && (
-              <th className="py-2 pr-4 text-right font-normal">Call Centre 2%</th>
+              <th className="py-2 pr-4 text-right font-normal">Call Centre AED</th>
             )}
             {showPurchaser && (
-              <th className="py-2 pr-4 text-right font-normal">Purchaser 10%</th>
+              <th className="py-2 pr-4 text-right font-normal">Purchaser AED</th>
             )}
             {showDeveloper && (
-              <th className="py-2 pr-4 text-right font-normal">Developer 2%</th>
+              <th className="py-2 pr-4 text-right font-normal">Developer AED</th>
             )}
             <th className="py-2 pr-4 font-normal">Status</th>
             <th className="py-2 pr-1 text-right font-normal">Actions</th>
@@ -108,24 +107,19 @@ export function InventoryTable({ items, roleFilter, viewerRole, onSell }: Props)
                     ? formatAed(item.netProfitAed)
                     : item.commission ? formatAed(item.commission.profitAed) : "—"}
               </td>
-              <td className="py-3 pr-4 text-right tabular-nums text-text-muted whitespace-nowrap">
-                {item.netProfitAed !== null && item.salePriceAed && item.salePriceAed > 0
-                  ? `${((item.netProfitAed / item.salePriceAed) * 100).toFixed(1)}%`
-                  : "—"}
-              </td>
               {showCallCenter && (
                 <td className="py-3 pr-4 text-right tabular-nums text-gold whitespace-nowrap">
-                  {item.callCenterCommissionAed === null ? "—" : formatAed(item.callCenterCommissionAed)}
+                  {item.callCenterCommissionAed === null ? "—" : formatNumber(item.callCenterCommissionAed)}
                 </td>
               )}
               {showPurchaser && (
                 <td className="py-3 pr-4 text-right tabular-nums text-gold whitespace-nowrap">
-                  {item.purchaserCommissionAed === null ? "—" : formatAed(item.purchaserCommissionAed)}
+                  {item.purchaserCommissionAed === null ? "—" : formatNumber(item.purchaserCommissionAed)}
                 </td>
               )}
               {showDeveloper && (
                 <td className="py-3 pr-4 text-right tabular-nums text-gold whitespace-nowrap">
-                  {item.commission ? formatAed(item.commission.commissionAed) : "—"}
+                  {item.commission ? formatNumber(item.commission.commissionAed) : "—"}
                 </td>
               )}
               <td className="py-3 pr-4 whitespace-nowrap">

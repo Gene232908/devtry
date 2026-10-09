@@ -2,7 +2,8 @@ export function formatAed(value: number | null | undefined) {
   if (value == null) return "—";
   return `AED ${value.toLocaleString("en-US")}`;
 }
-export function formatNumber(value: number) {
+export function formatNumber(value: number | null | undefined) {
+  if (value == null) return "—";
   return value.toLocaleString("en-US");
 }
 export function formatMileage(value: number, unit: "km" | "miles" = "km") {
