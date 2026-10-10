@@ -123,7 +123,7 @@ export function SubmissionsChart({
   const currentTotalSubmissions = data.reduce((sum, v) => sum + (v.submissions || 0), 0);
   const currentValuationSubmissions = data.reduce((sum, v) => sum + (v.valuationSubmissions || 0), 0);
   const currentScrapSubmissions = data.reduce((sum, v) => sum + (v.scrapSubmissions || 0), 0);
-  const isSingleDay = data.length === 1;
+  const isSingleDay = data.length === 1 || periodLabel.toLowerCase().includes("today");
   const comparisonSubmissions = comparisonData?.reduce((sum, item) => sum + item.submissions, 0);
 
   const activeCount =
@@ -132,6 +132,8 @@ export function SubmissionsChart({
       : filterType === "scrap"
         ? currentScrapSubmissions
         : currentTotalSubmissions;
+
+  const displayCount = isSingleDay ? currentTotalSubmissions : activeCount;
 
   const activeDataKey =
     filterType === "valuation"
@@ -169,19 +171,23 @@ export function SubmissionsChart({
         </div>
 
         <div className="flex items-center gap-2">
-          <label htmlFor="submissions-filter" className="sr-only">Filter Submissions</label>
-          <select
-            id="submissions-filter"
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value as "all" | "valuation" | "scrap")}
-            className="h-7 rounded-md border border-white/15 bg-[#1a1a20] px-2 text-xs font-semibold text-gray-200 shadow-sm focus:border-white/40 focus:outline-none cursor-pointer transition-colors"
-          >
-            <option value="all" className="bg-[#141418] text-white">All Submissions</option>
-            <option value="valuation" className="bg-[#141418] text-white">Regular Leads</option>
-            <option value="scrap" className="bg-[#141418] text-white">Scrap Inquiries</option>
-          </select>
+          {!isSingleDay && (
+            <>
+              <label htmlFor="submissions-filter" className="sr-only">Filter Submissions</label>
+              <select
+                id="submissions-filter"
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value as "all" | "valuation" | "scrap")}
+                className="h-7 rounded-md border border-white/15 bg-[#1a1a20] px-2 text-xs font-semibold text-gray-200 shadow-sm focus:border-white/40 focus:outline-none cursor-pointer transition-colors"
+              >
+                <option value="all" className="bg-[#141418] text-white">All Submissions</option>
+                <option value="valuation" className="bg-[#141418] text-white">Regular Leads</option>
+                <option value="scrap" className="bg-[#141418] text-white">Scrap Inquiries</option>
+              </select>
+            </>
+          )}
           <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-400 border border-amber-500/25">
-            {activeCount} {activeCount === 1 ? "lead" : "leads"}
+            {displayCount} {displayCount === 1 ? "lead" : "leads"}
           </span>
           {comparisonSubmissions !== undefined && (
             <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-medium text-slate-300 border border-white/10">
