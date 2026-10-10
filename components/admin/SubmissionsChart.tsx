@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   BarChart,
   Bar,
@@ -11,7 +12,7 @@ import {
   Tooltip,
   YAxis,
 } from "recharts";
-import { CarFront, CheckCircle2 } from "lucide-react";
+import { CarFront, CheckCircle2, Recycle } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
@@ -51,6 +52,8 @@ export function SubmissionsChart({
   const comparisonSubmissions = comparisonData?.reduce((sum, item) => sum + item.submissions, 0);
 
   const todaySubmissions = data[0]?.submissions ?? 0;
+  const todayValuations = data[0]?.valuationSubmissions ?? 0;
+  const todayScrap = data[0]?.scrapSubmissions ?? 0;
   const todayVisitors = data[0]?.visitors ?? 0;
   const conversionRate = todayVisitors > 0 ? ((todaySubmissions / todayVisitors) * 100).toFixed(1) : "0.0";
   const compSubmissions = comparisonData?.[0]?.submissions;
@@ -64,7 +67,7 @@ export function SubmissionsChart({
           </div>
           <div>
             <h3 className="font-semibold text-fluid-0 text-text tracking-tight">Car Submissions</h3>
-            <span className="text-xs text-gray-400">Completed valuation requests</span>
+            <span className="text-xs text-gray-400">Completed valuation & scrap inquiries</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -91,37 +94,55 @@ export function SubmissionsChart({
           // HIGH-IMPACT EXECUTIVE 2-CARD LAYOUT FOR SINGLE-DAY / TODAY
           <div className="flex h-full flex-col justify-center">
             <div className="grid grid-cols-2 gap-3 h-full">
-              {/* Card 1: New Submissions Volume */}
+              {/* Card 1: New Submissions Volume with Valuation vs Scrap Breakdown */}
               <div className="flex flex-col justify-between rounded-xl border border-amber-500/25 bg-amber-500/5 p-3.5 relative overflow-hidden">
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-400">
                     <CarFront className="h-3.5 w-3.5 text-amber-400" />
-                    New Inquiries
+                    New Inquiries ({todaySubmissions})
                   </span>
                   <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] font-semibold text-amber-300 border border-white/10">
                     {data[0].day}
                   </span>
                 </div>
 
-                <div className="my-auto flex flex-col items-center justify-center py-1">
-                  <div className="flex items-baseline justify-center gap-1.5 font-sans">
-                    <span className="text-3xl font-semibold tracking-tight tabular-nums text-amber-400">
-                      {todaySubmissions}
+                <div className="my-auto flex flex-col gap-1.5 py-1">
+                  <Link
+                    href="/admin/leads"
+                    className="group flex items-center justify-between rounded-lg border border-amber-500/20 bg-black/30 px-3 py-1.5 transition-all hover:border-amber-500/50 hover:bg-amber-500/10"
+                    title="View Regular Valuation Leads"
+                  >
+                    <div className="flex items-center gap-2">
+                      <CarFront className="h-3.5 w-3.5 text-amber-400" />
+                      <span className="text-xs font-medium text-gray-200 group-hover:text-amber-300">
+                        Valuation Requests
+                      </span>
+                    </div>
+                    <span className="text-sm font-semibold tabular-nums text-amber-400">
+                      {todayValuations}
                     </span>
-                    <span className="text-xs text-amber-300/80">
-                      {todaySubmissions === 1 ? "valuation request" : "valuation requests"}
+                  </Link>
+
+                  <Link
+                    href="/admin/leads?origin=scrap"
+                    className="group flex items-center justify-between rounded-lg border border-gold/25 bg-black/30 px-3 py-1.5 transition-all hover:border-gold/50 hover:bg-gold/10"
+                    title="View Scrap Inquiries"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Recycle className="h-3.5 w-3.5 text-gold" />
+                      <span className="text-xs font-medium text-gray-200 group-hover:text-gold">
+                        Scrap Inquiries
+                      </span>
+                    </div>
+                    <span className="text-sm font-semibold tabular-nums text-gold">
+                      {todayScrap}
                     </span>
-                  </div>
-                  {compSubmissions !== undefined && (
-                    <p className="text-[11px] text-gray-400 mt-0.5">
-                      vs <strong className="text-gray-200">{compSubmissions}</strong> prior
-                    </p>
-                  )}
-                  <p className="text-[11px] text-gray-300 mt-0.5">Direct seller submissions</p>
+                  </Link>
                 </div>
 
-                <div className="text-center text-[10px] text-gray-400 border-t border-white/10 pt-1.5">
-                  Completed customer car valuations
+                <div className="flex items-center justify-between border-t border-white/10 pt-1.5 text-[10px] text-gray-400">
+                  <span>Direct website submissions</span>
+                  <span className="text-amber-400/80">Click to filter →</span>
                 </div>
               </div>
 
@@ -139,7 +160,7 @@ export function SubmissionsChart({
 
                 <div className="my-auto flex flex-col items-center justify-center py-1">
                   <div className="flex items-baseline justify-center gap-1.5 font-sans">
-                    <span className="text-3xl font-semibold tracking-tight tabular-nums text-emerald-400">
+                    <span className="text-2xl font-semibold tracking-tight tabular-nums text-emerald-400">
                       {todaySubmissions > 0 ? "Active" : "Quiet"}
                     </span>
                     <span className="text-xs text-emerald-300/80">
@@ -153,7 +174,7 @@ export function SubmissionsChart({
                       style={{ width: `${Math.min(100, Math.max(8, Number(conversionRate) * 2))}%` }}
                     />
                   </div>
-                  <p className="text-[11px] text-emerald-300/80 mt-1.5">
+                  <p className="text-[11px] text-emerald-300/80 mt-1.5 text-center">
                     {todaySubmissions} lead{todaySubmissions === 1 ? "" : "s"} from {todayVisitors} visitor{todayVisitors === 1 ? "" : "s"}
                   </p>
                 </div>

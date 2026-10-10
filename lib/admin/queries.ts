@@ -211,7 +211,7 @@ export async function fetchAdminStats(
   };
 }
 
-export type ChartPoint = { day: string; visitors?: number; submissions?: number };
+export type ChartPoint = { day: string; visitors?: number; submissions?: number; valuationSubmissions?: number; scrapSubmissions?: number };
 
 function countByDay(
   rows: { created_at: string }[],

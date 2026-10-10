@@ -23,7 +23,16 @@ export type ExecutiveOverview = {
   /** Complete historical data used only when the user explicitly turns on comparison mode. */
   comparisonOverview?: Omit<ExecutiveOverview, "comparisonOverview">;
   pipeline: Array<{ key: string; label: string; value: number; conversion: number | null }>;
-  trend: Array<{ day: string; visitors: number; submissions: number; revenue: number; profit: number; sold: number }>;
+  trend: Array<{
+    day: string;
+    visitors: number;
+    submissions: number;
+    valuationSubmissions?: number;
+    scrapSubmissions?: number;
+    revenue: number;
+    profit: number;
+    sold: number;
+  }>;
   inventoryAging: Array<{ label: string; count: number }>;
   staff: Array<{
     id: string;
@@ -224,10 +233,31 @@ export async function fetchExecutiveOverview(
     { label: "90+ days", count: stockAges.filter((daysOld) => daysOld > 90).length },
   ];
 
-  const byDay = new Map(days.map((day) => [day.key, { day: day.label, visitors: new Set<string>(), submissions: 0, revenue: 0, profit: 0, sold: 0 }]));
+  const byDay = new Map(
+    days.map((day) => [
+      day.key,
+      {
+        day: day.label,
+        visitors: new Set<string>(),
+        submissions: 0,
+        valuationSubmissions: 0,
+        scrapSubmissions: 0,
+        revenue: 0,
+        profit: 0,
+        sold: 0,
+      },
+    ])
+  );
   for (const lead of leads) {
     const bucket = byDay.get(uaeDayKey(new Date(lead.created_at)));
-    if (bucket) bucket.submissions += 1;
+    if (bucket) {
+      bucket.submissions += 1;
+      if (lead.inquiry_type === "scrap") {
+        bucket.scrapSubmissions += 1;
+      } else {
+        bucket.valuationSubmissions += 1;
+      }
+    }
   }
   for (const visit of visitorsRes.data ?? []) {
     const bucket = byDay.get(uaeDayKey(new Date(visit.created_at)));
@@ -255,6 +285,8 @@ export async function fetchExecutiveOverview(
         day: first.day,
         visitors: chunk.reduce((sum, c) => sum + c.visitors, 0),
         submissions: chunk.reduce((sum, c) => sum + c.submissions, 0),
+        valuationSubmissions: chunk.reduce((sum, c) => sum + (c.valuationSubmissions ?? 0), 0),
+        scrapSubmissions: chunk.reduce((sum, c) => sum + (c.scrapSubmissions ?? 0), 0),
         revenue: chunk.reduce((sum, c) => sum + c.revenue, 0),
         profit: chunk.reduce((sum, c) => sum + c.profit, 0),
         sold: chunk.reduce((sum, c) => sum + c.sold, 0),
