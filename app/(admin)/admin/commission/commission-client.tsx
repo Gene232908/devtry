@@ -687,7 +687,7 @@ function StaffCommissionView({
                   <th className="w-[15%] py-2 pr-4 font-normal">Name</th>
                   <th className="w-[8%] py-2 pr-4 text-right font-normal">Unpaid Sales</th>
                   {showFinancialColumns && <>
-                    <th className="w-[10%] py-2 pr-4 text-right font-normal">Sold for</th>
+                    <th className="w-[10%] py-2 pr-4 text-right font-normal">Paid amount</th>
                     <th className="w-[9%] py-2 pr-4 text-right font-normal">Expenses</th>
                     <th className="w-[11%] py-2 pr-4 text-right font-normal">Net profit</th>
                     <th className="w-[7%] py-2 pr-4 text-right font-normal">Margin</th>
@@ -921,7 +921,7 @@ function StaffDetailModal({
                   <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
                     <DetailMetric label="Sold date" value={formatDate(entry.soldAt)} />
                     {hasFinancialReview && <>
-                      <DetailMetric label="Sold for" value={entry.financialReview?.salePrice == null ? "—" : formatAed(entry.financialReview.salePrice)} />
+                      <DetailMetric label="Paid amount" value={entry.financialReview?.salePrice == null ? "—" : formatAed(entry.financialReview.salePrice)} />
                       <DetailMetric label="Expenses" value={entry.financialReview ? formatAed(entry.financialReview.expenses) : "—"} />
                       <DetailMetric label="Net profit" value={entry.financialReview?.netProfit == null ? "Pending review" : formatAed(entry.financialReview.netProfit)} />
                       <DetailMetric label="Margin" value={entry.financialReview?.margin == null ? "—" : `${entry.financialReview.margin.toFixed(1)}%`} />
@@ -950,7 +950,7 @@ function StaffDetailModal({
                     <th className="py-2 pr-4 font-normal">Car</th>
                     <th className="py-2 pr-4 font-normal">Sold Date</th>
                     {hasFinancialReview && <>
-                      <th className="py-2 pr-4 text-right font-normal">Sold for</th>
+                      <th className="py-2 pr-4 text-right font-normal">Paid amount</th>
                       <th className="py-2 pr-4 text-right font-normal">Expenses</th>
                       <th className="py-2 pr-4 text-right font-normal">Net profit</th>
                       <th className="py-2 pr-4 text-right font-normal">Margin</th>

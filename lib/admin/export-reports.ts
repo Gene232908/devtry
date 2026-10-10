@@ -119,9 +119,9 @@ export function inventoryExportRows(items: InventoryItem[]): ExportRow[] {
     "Chassis / VIN Number": item.chassisNumber,
     Trim: item.trim,
     Year: item.year,
-    Bought: formatExportDate(item.purchasedAt),
+    "Sold date": formatExportDate(item.purchasedAt),
     Paid: item.purchasePriceAed,
-    "Sold for": item.salePriceAed ?? "",
+    "Paid amount": item.salePriceAed ?? "",
     Profit: item.commission?.profitAed ?? "",
     Status: item.status,
   }));

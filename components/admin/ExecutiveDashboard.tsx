@@ -387,7 +387,7 @@ function DashboardData({
 function ScrapOverview({ data, isLoading }: { data: NonNullable<ReturnType<typeof useExecutiveOverview>["data"]>["scrap"]; isLoading: boolean }) {
   const figures = [
     { label: "Cars sold", value: data.sold.toLocaleString("en-AE") },
-    { label: "Sold for", value: formatAed(data.revenue) },
+    { label: "Paid amount", value: formatAed(data.revenue) },
     { label: "Expenses", value: formatAed(data.expenses) },
     { label: "Confirmed net profit", value: formatAed(data.netProfit) },
   ];

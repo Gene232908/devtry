@@ -31,11 +31,7 @@ yarn-debug.log*
 yarn-error.log*
 dev-*.log
 .tmp/
-/tmp/*.log
-/tmp/docxcheck*/
-/tmp/pdf-read-tools/
-/tmp/pdf-tools/
-/tmp/pdfs/
+/tmp/
 .next-stale-*/
 
 # local env files

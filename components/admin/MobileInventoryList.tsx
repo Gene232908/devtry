@@ -100,7 +100,7 @@ export function MobileInventoryList({
                     VIN: {item.chassisNumber}
                   </span>
                 )}
-                <span>Bought: {formatDate(item.purchasedAt)}</span>
+                <span>Sold date: {formatDate(item.purchasedAt)}</span>
                 {item.fromUnverifiedLead && (
                   <span className="inline-flex items-center gap-1 text-[11px] text-warning">
                     <ShieldAlert className="h-3 w-3" /> Unverified number
@@ -116,7 +116,7 @@ export function MobileInventoryList({
                   </span>
                   {isSold && item.salePriceAed != null && (
                     <span className="text-text-muted">
-                      Sold: <strong className="font-semibold text-emerald-400">{formatAed(item.salePriceAed)}</strong>
+                      Paid amount: <strong className="font-semibold text-emerald-400">{formatAed(item.salePriceAed)}</strong>
                     </span>
                   )}
                   {isSold && <span className="text-text-muted">Expenses: <strong className="font-semibold text-text">{formatAed(item.expenseTotalAed)}</strong></span>}

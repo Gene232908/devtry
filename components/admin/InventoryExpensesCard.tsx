@@ -133,9 +133,9 @@ export function InventoryExpensesCard({ car, onChanged }: { car: InventoryItem; 
 
       {car.status === "sold" && car.salePriceAed !== null && (
         <div className={`grid gap-x-4 gap-y-2 rounded-card bg-surface-2 p-3 text-xs ${isCustomerService ? "grid-cols-1" : "grid-cols-2 sm:grid-cols-4"}`}>
-          {!isCustomerService && <Metric label="Bought" value={formatAed(car.purchasePriceAed)} />}
+          {!isCustomerService && <Metric label="Paid" value={formatAed(car.purchasePriceAed)} />}
           <Metric label="Expenses" value={formatAed(car.expenseTotalAed)} />
-          {!isCustomerService && <Metric label="Sold" value={formatAed(car.salePriceAed)} />}
+          {!isCustomerService && <Metric label="Paid amount" value={formatAed(car.salePriceAed)} />}
           {!isCustomerService && <Metric label="Net profit" value={car.netProfitAed === null ? "Pending review" : formatAed(car.netProfitAed)} />}
         </div>
       )}
