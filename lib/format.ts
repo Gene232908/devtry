@@ -60,6 +60,7 @@ export const DETAIL_STATUS_OPTIONS = [
   "inspected",
   "negotiating",
   "deal",
+  "closed",
 ] as const;
 
 /**
@@ -73,6 +74,7 @@ export const STATUS_HINT: Record<string, string> = {
   inspected: "You met the customer and saw the car in person.",
   negotiating: "You have seen the car and are still agreeing a price.",
   deal: "The customer agreed to sell — you bought the car.",
+  closed: "The discussion ended without buying the car.",
 };
 
 /** Statuses offered in the Leads Directory filter. */
@@ -84,6 +86,7 @@ export const FILTER_STATUS_OPTIONS = [
   "inspected",
   "negotiating",
   "deal",
+  "closed",
 ] as const;
 
 /**

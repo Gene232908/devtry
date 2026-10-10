@@ -42,6 +42,7 @@ export type ExecutiveOverview = {
     noShow: number;
     underNegotiation: number;
     deals: number;
+    notPurchased: number;
   };
   alerts: Array<{ key: string; title: string; detail: string; count: number; tone: "warning" | "danger" | "neutral"; href: string }>;
   dataQuality: { score: number; issues: Array<{ label: string; count: number; href: string }> };
@@ -312,6 +313,7 @@ export async function fetchExecutiveOverview(
     noShow: leads.filter((lead) => lead.status === "no_show").length,
     underNegotiation: leads.filter((lead) => lead.status === "negotiating").length,
     deals: leads.filter((lead) => lead.status === "deal").length,
+    notPurchased: leads.filter((lead) => lead.status === "closed").length,
   };
 
   const latestActivity = new Map<string, number>();

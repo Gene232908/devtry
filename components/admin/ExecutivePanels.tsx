@@ -8,6 +8,7 @@ import {
   CircleAlert,
   Clock3,
   UsersRound,
+  XCircle,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -125,6 +126,13 @@ export function FollowUpPanel({
       tone: "text-gold",
       href: stageHref("deal"),
     },
+    {
+      label: "Not Purchased",
+      value: data.notPurchased,
+      icon: XCircle,
+      tone: "text-zinc-400",
+      href: stageHref("closed"),
+    },
   ];
 
   return (
@@ -137,7 +145,7 @@ export function FollowUpPanel({
         <CheckCircle2 className="h-4 w-4 text-emerald-400" />
       </div>
       {isLoading ? (
-        <Skeleton className="h-52 w-full" />
+        <Skeleton className="h-60 w-full" />
       ) : (
         <div className="flex flex-col divide-y divide-white/5">
           {rows.map(({ label, value, icon: Icon, tone, href }) => (

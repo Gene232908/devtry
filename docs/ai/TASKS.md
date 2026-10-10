@@ -2,6 +2,7 @@
 
 ## Current objective
 
+- [x] 2026-10-10 Added "Not Purchased" (`closed` status) to the Super Admin Dashboard Lead Pipeline panel (`ExecutivePanels.tsx`, `executive-overview.ts`), and enabled "Not Purchased" filtering and selection in the Leads Directory (`format.ts`).
 - [x] 2026-10-10 Aligned Dashboard Scrap Overview metric label from "Sold for" to "Paid amount", and harmonized related admin UI labels across Mobile Inventory List, Commission views, and report exports to match the Inventory table naming convention ("Sold date", "Paid", "Paid amount").
 - [x] 2026-10-10 Updated the Inspection Form accessed through the Scrap Inquiry tab to contain exactly the 10 approved inspection items in the required order (Front of car, Full left side, Full right side, Rear of car, Bonnet, Roof, Dashboard and mileage, Front seats, Rear seats, Engine bay). Removed all other inspection checklist items from the Scrap Inspection Form while preserving Valuation Inspection Form 100% unchanged. Updated progress, completion counts, and server submission validation to reflect exactly 10 items.
 - [x] 2026-10-10 Made Trim optional in both Valuation and Scrap Inquiry public landing page forms (`lead.schema.ts`, `step-trim-location.tsx`, `app/api/leads/route.ts`). Users can submit without choosing a Trim while Location and Option Level remain mandatory.
