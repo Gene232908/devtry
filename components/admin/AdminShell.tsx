@@ -50,9 +50,9 @@ export function AdminShell({ children, identity }: Props) {
             </div>
             <div className="flex min-w-0 flex-1 relative">
               {/* Desktop Sidebar Spacer to reserve layout width */}
-              <div className="hidden lg:block w-64 shrink-0" aria-hidden="true" />
+              <div className="hidden lg:block w-72 shrink-0" aria-hidden="true" />
               <Sidebar
-                className="hidden lg:flex fixed top-16 left-0 bottom-0 z-20"
+                className="hidden lg:flex fixed top-16 left-0 bottom-0 z-20 w-72"
                 capabilities={capabilities}
               />
 

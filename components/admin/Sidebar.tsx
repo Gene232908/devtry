@@ -74,7 +74,7 @@ export function Sidebar({ className, capabilities, onNavigate, isMobile }: Props
   return (
     <aside
       className={cn(
-        "flex w-64 shrink-0 flex-col border-r border-white/[0.08] bg-[#09090d]/95 backdrop-blur-2xl px-3.5 py-4 shadow-[4px_0_24px_rgba(0,0,0,0.5)] select-none overflow-y-auto",
+        "flex w-72 shrink-0 flex-col border-r border-white/[0.08] bg-[#09090d]/95 backdrop-blur-2xl px-3.5 py-4 shadow-[4px_0_24px_rgba(0,0,0,0.5)] select-none overflow-y-auto",
         "[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent",
         className,
       )}
@@ -94,7 +94,7 @@ export function Sidebar({ className, capabilities, onNavigate, isMobile }: Props
         </div>
       )}
 
-      {/* Navigation Items (Clean, Flat, Modern List Without Title Headers) */}
+      {/* Navigation Items (Crisp, Refined Modern Spacing) */}
       <nav className="flex flex-col gap-1.5 pt-1">
         {items.map((item) => {
           const active =
@@ -133,7 +133,7 @@ export function Sidebar({ className, capabilities, onNavigate, isMobile }: Props
                 )}
               />
 
-              <span className="truncate">{item.label}</span>
+              <span className="whitespace-nowrap">{item.label}</span>
 
               {/* Micro Pill Badge (e.g. Scrap) */}
               {item.badge && (
