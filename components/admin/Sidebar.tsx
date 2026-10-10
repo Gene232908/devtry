@@ -33,43 +33,23 @@ type SidebarItem = {
   badgeTone?: "gold" | "blue";
 };
 
-type NavigationGroup = {
-  title: string;
-  items: SidebarItem[];
-};
-
-const NAVIGATION_GROUPS: NavigationGroup[] = [
+const NAV_ITEMS: SidebarItem[] = [
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, gate: "viewDashboard" },
+  { href: "/admin/leads", label: "Leads", icon: ListChecks },
   {
-    title: "Main Workflow",
-    items: [
-      { href: "/admin", label: "Dashboard", icon: LayoutDashboard, gate: "viewDashboard" },
-      { href: "/admin/leads", label: "Leads", icon: ListChecks },
-      {
-        href: "/admin/leads?origin=scrap",
-        label: "Scrap Inquiries",
-        icon: Recycle,
-        gate: "viewScrapInquiries",
-        badge: "Scrap",
-      },
-      { href: "/admin/inventory", label: "Inventory", icon: CarFront, gate: "viewInventory" },
-    ],
+    href: "/admin/leads?origin=scrap",
+    label: "Scrap Inquiries",
+    icon: Recycle,
+    gate: "viewScrapInquiries",
+    badge: "Scrap",
   },
-  {
-    title: "Finance & Team",
-    items: [
-      { href: "/admin/commission", label: "Commission", icon: Percent, gate: "viewCommissions" },
-      { href: "/admin/staff", label: "Staff Accounts", icon: Users, gate: "manageStaff" },
-    ],
-  },
-  {
-    title: "System & Tools",
-    items: [
-      { href: "/admin/incomplete", label: "Incomplete Forms", icon: FileClock, gate: "viewIncompleteForms" },
-      { href: "/admin/catalog", label: "Vehicle Catalog", icon: Database, gate: "viewCatalog" },
-      { href: "/admin/blocked", label: "Blocked Numbers", icon: Ban, gate: "viewBlockedNumbers" },
-      { href: "/admin/settings", label: "Settings", icon: Settings, gate: "viewSettings" },
-    ],
-  },
+  { href: "/admin/inventory", label: "Inventory", icon: CarFront, gate: "viewInventory" },
+  { href: "/admin/commission", label: "Commission", icon: Percent, gate: "viewCommissions" },
+  { href: "/admin/staff", label: "Staff Accounts", icon: Users, gate: "manageStaff" },
+  { href: "/admin/incomplete", label: "Incomplete Forms", icon: FileClock, gate: "viewIncompleteForms" },
+  { href: "/admin/catalog", label: "Vehicle Catalog", icon: Database, gate: "viewCatalog" },
+  { href: "/admin/blocked", label: "Blocked Numbers", icon: Ban, gate: "viewBlockedNumbers" },
+  { href: "/admin/settings", label: "Settings", icon: Settings, gate: "viewSettings" },
 ];
 
 type Props = {
@@ -87,12 +67,9 @@ export function Sidebar({ className, capabilities, onNavigate, isMobile }: Props
   const searchParams = useSearchParams();
   const isScrapRoute = pathname === "/admin/leads" && searchParams.get("origin") === "scrap";
 
-  const groups = NAVIGATION_GROUPS.map((group) => ({
-    ...group,
-    items: capabilities
-      ? group.items.filter((item) => !item.gate || capabilities.includes(item.gate))
-      : group.items,
-  })).filter((group) => group.items.length > 0);
+  const items = capabilities
+    ? NAV_ITEMS.filter((item) => !item.gate || capabilities.includes(item.gate))
+    : NAV_ITEMS;
 
   return (
     <aside
@@ -117,63 +94,56 @@ export function Sidebar({ className, capabilities, onNavigate, isMobile }: Props
         </div>
       )}
 
-      {/* Navigation Group Sections */}
-      <nav className="flex flex-col gap-3.5 pt-1">
-        {groups.map((group) => (
-          <div key={group.title} className="flex flex-col gap-1">
-            <span className="px-3 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 select-none">
-              {group.title}
-            </span>
-            {group.items.map((item) => {
-              const active =
-                item.href === "/admin/leads?origin=scrap"
-                  ? isScrapRoute
-                  : item.href === "/admin/leads"
-                    ? pathname === "/admin/leads" && !isScrapRoute
-                    : pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
-              const Icon = item.icon;
+      {/* Navigation Items (Clean, Flat, Modern List Without Title Headers) */}
+      <nav className="flex flex-col gap-1.5 pt-1">
+        {items.map((item) => {
+          const active =
+            item.href === "/admin/leads?origin=scrap"
+              ? isScrapRoute
+              : item.href === "/admin/leads"
+                ? pathname === "/admin/leads" && !isScrapRoute
+                : pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
+          const Icon = item.icon;
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => onNavigate?.()}
-                  className={cn(
-                    "group relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all duration-150",
-                    active
-                      ? "bg-amber-400/10 text-white font-semibold border border-amber-400/25 shadow-[0_2px_12px_rgba(245,158,11,0.15)]"
-                      : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-100 border border-transparent",
-                  )}
-                >
-                  {/* Left Active Glow Indicator */}
-                  {active && (
-                    <span className="absolute left-1.5 top-1/2 -translate-y-1/2 h-5 w-1 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.7)]" />
-                  )}
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => onNavigate?.()}
+              className={cn(
+                "group relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all duration-150",
+                active
+                  ? "bg-amber-400/10 text-white font-semibold border border-amber-400/25 shadow-[0_2px_12px_rgba(245,158,11,0.15)]"
+                  : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-100 border border-transparent",
+              )}
+            >
+              {/* Left Active Glow Indicator */}
+              {active && (
+                <span className="absolute left-1.5 top-1/2 -translate-y-1/2 h-5 w-1 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.7)]" />
+              )}
 
-                  <Icon
-                    className={cn(
-                      "h-4 w-4 shrink-0 transition-colors",
-                      active
-                        ? item.badgeTone === "gold" || item.href.includes("scrap")
-                          ? "text-gold"
-                          : "text-amber-400"
-                        : "text-zinc-400 group-hover:text-zinc-200",
-                    )}
-                  />
+              <Icon
+                className={cn(
+                  "h-4 w-4 shrink-0 transition-colors",
+                  active
+                    ? item.badgeTone === "gold" || item.href.includes("scrap")
+                      ? "text-gold"
+                      : "text-amber-400"
+                    : "text-zinc-400 group-hover:text-zinc-200",
+                )}
+              />
 
-                  <span className="truncate">{item.label}</span>
+              <span className="truncate">{item.label}</span>
 
-                  {/* Micro Pill Badge (e.g. Scrap) */}
-                  {item.badge && (
-                    <span className="ml-auto shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-gold/15 text-gold border border-gold/30">
-                      {item.badge}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        ))}
+              {/* Micro Pill Badge (e.g. Scrap) */}
+              {item.badge && (
+                <span className="ml-auto shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-gold/15 text-gold border border-gold/30">
+                  {item.badge}
+                </span>
+              )}
+            </Link>
+          );
+        })}
       </nav>
 
       {/* Modern Status Footer */}
