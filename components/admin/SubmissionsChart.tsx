@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   BarChart,
@@ -31,11 +32,13 @@ function SubmissionsDayTooltip({
   payload,
   selectedLabel,
   comparisonLabel,
+  filterType,
 }: {
   active?: boolean;
   payload?: ReadonlyArray<{ payload?: Record<string, unknown> }>;
   selectedLabel: string;
   comparisonLabel?: string;
+  filterType: "all" | "valuation" | "scrap";
 }) {
   const point = payload?.[0]?.payload;
   if (!active || !point) return null;
@@ -47,6 +50,20 @@ function SubmissionsDayTooltip({
   const selectedDay = String(point.day ?? "Selected day");
   const comparisonDay = point.comparisonDay ? String(point.comparisonDay) : undefined;
 
+  const displayCount =
+    filterType === "valuation"
+      ? valuations
+      : filterType === "scrap"
+        ? scrap
+        : total;
+
+  const filterLabel =
+    filterType === "valuation"
+      ? "Regular Leads"
+      : filterType === "scrap"
+        ? "Scrap Inquiries"
+        : "Total Submissions";
+
   return (
     <div className="min-w-[200px] rounded-xl border border-white/15 bg-[#121216] p-3 text-xs text-gray-200 shadow-2xl">
       <p className="font-semibold text-white">{selectedDay}</p>
@@ -57,13 +74,13 @@ function SubmissionsDayTooltip({
       )}
       <div className="mt-2.5 grid gap-2">
         <div className="rounded-lg border border-amber-400/20 bg-amber-400/10 px-2.5 py-2 text-amber-300">
-          <p className="font-medium text-[11px] text-amber-400/80">Selected: {selectedLabel}</p>
+          <p className="font-medium text-[11px] text-amber-400/80">{filterLabel} ({selectedLabel})</p>
           <p className="mt-0.5 text-sm font-semibold text-white">
-            {total.toLocaleString("en-AE")} {total === 1 ? "submission" : "submissions"}
+            {displayCount.toLocaleString("en-AE")} {displayCount === 1 ? "lead" : "leads"}
           </p>
-          {(valuations > 0 || scrap > 0) && (
+          {filterType === "all" && (valuations > 0 || scrap > 0) && (
             <p className="mt-1 text-[11px] text-gray-300 border-t border-white/10 pt-1">
-              {valuations} valuation{valuations === 1 ? "" : "s"} · {scrap} scrap
+              {valuations} regular · {scrap} scrap
             </p>
           )}
         </div>
@@ -93,6 +110,8 @@ export function SubmissionsChart({
   periodLabel?: string;
   comparisonPeriodLabel?: string;
 }) {
+  const [filterType, setFilterType] = useState<"all" | "valuation" | "scrap">("all");
+
   const chartData = data.map((point, index) => ({
     ...point,
     valuationSubmissions: point.valuationSubmissions ?? 0,
@@ -100,10 +119,35 @@ export function SubmissionsChart({
     comparisonSubmissions: comparisonData?.[index]?.submissions ?? 0,
     comparisonDay: comparisonData?.[index]?.day,
   }));
-  const values = chartData.flatMap((d) => [d.submissions ?? 0, d.comparisonSubmissions ?? 0]);
+
   const currentTotalSubmissions = data.reduce((sum, v) => sum + (v.submissions || 0), 0);
+  const currentValuationSubmissions = data.reduce((sum, v) => sum + (v.valuationSubmissions || 0), 0);
+  const currentScrapSubmissions = data.reduce((sum, v) => sum + (v.scrapSubmissions || 0), 0);
   const isSingleDay = data.length === 1;
   const comparisonSubmissions = comparisonData?.reduce((sum, item) => sum + item.submissions, 0);
+
+  const activeCount =
+    filterType === "valuation"
+      ? currentValuationSubmissions
+      : filterType === "scrap"
+        ? currentScrapSubmissions
+        : currentTotalSubmissions;
+
+  const activeDataKey =
+    filterType === "valuation"
+      ? "valuationSubmissions"
+      : filterType === "scrap"
+        ? "scrapSubmissions"
+        : "submissions";
+
+  const activeSeriesName =
+    filterType === "valuation"
+      ? "Regular Leads"
+      : filterType === "scrap"
+        ? "Scrap Inquiries"
+        : `Selected: ${periodLabel}`;
+
+  const values = chartData.flatMap((d) => [Number(d[activeDataKey] ?? 0), d.comparisonSubmissions ?? 0]);
 
   const todaySubmissions = data[0]?.submissions ?? 0;
   const todayValuations = data[0]?.valuationSubmissions ?? 0;
@@ -125,8 +169,19 @@ export function SubmissionsChart({
         </div>
 
         <div className="flex items-center gap-2">
+          <label htmlFor="submissions-filter" className="sr-only">Filter Submissions</label>
+          <select
+            id="submissions-filter"
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value as "all" | "valuation" | "scrap")}
+            className="h-7 rounded-md border border-white/15 bg-[#1a1a20] px-2 text-xs font-semibold text-gray-200 shadow-sm focus:border-white/40 focus:outline-none cursor-pointer transition-colors"
+          >
+            <option value="all" className="bg-[#141418] text-white">All Submissions</option>
+            <option value="valuation" className="bg-[#141418] text-white">Regular Leads</option>
+            <option value="scrap" className="bg-[#141418] text-white">Scrap Inquiries</option>
+          </select>
           <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-400 border border-amber-500/25">
-            {currentTotalSubmissions} {currentTotalSubmissions === 1 ? "lead" : "leads"}
+            {activeCount} {activeCount === 1 ? "lead" : "leads"}
           </span>
           {comparisonSubmissions !== undefined && (
             <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-medium text-slate-300 border border-white/10">
@@ -263,18 +318,19 @@ export function SubmissionsChart({
                     {...props}
                     selectedLabel={periodLabel}
                     comparisonLabel={comparisonPeriodLabel}
+                    filterType={filterType}
                   />
                 )}
               />
               <Bar
-                dataKey="submissions"
-                name={`Selected: ${periodLabel}`}
+                dataKey={activeDataKey}
+                name={activeSeriesName}
                 fill="url(#submissionBarGrad)"
                 maxBarSize={comparisonData ? 24 : 48}
                 radius={[6, 6, 0, 0]}
                 isAnimationActive={false}
               >
-                <LabelList dataKey="submissions" content={lastValueLabel(data.length)} />
+                <LabelList dataKey={activeDataKey} content={lastValueLabel(data.length)} />
               </Bar>
               {comparisonData && (
                 <Bar

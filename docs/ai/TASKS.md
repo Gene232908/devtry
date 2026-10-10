@@ -2,6 +2,7 @@
 
 ## Current objective
 
+- [x] 2026-10-10 Added clean dropdown filter (All Submissions [default], Regular Leads, Scrap Inquiries) to "Car Submissions" Bar Chart (`SubmissionsChart.tsx`): preserves 100% of the sleek amber-gradient bar aesthetics while allowing Super Admin to isolate regular leads or scrap inquiries at will.
 - [x] 2026-10-10 Restored clean, premium amber-gradient styling to "Car Submissions" Bar Chart (`SubmissionsChart.tsx`): removed split bars, filter buttons, and floating legends; integrated clean and subtle daily hover tooltips detailing exact valuation vs scrap counts without any UI clutter.
 - [x] 2026-10-10 Made Scrap Inquiry form submissions clearly visible and interactive in the Super Admin Executive Dashboard "Car Submissions" panel (`SubmissionsChart.tsx`, `executive-overview.ts`, `queries.ts`): separated Valuation Requests and Scrap Inquiries counts with functional drill-down links to their respective Leads Directory views (`/admin/leads` and `/admin/leads?origin=scrap`).
 - [x] 2026-10-10 Simplified Staff Performance display on Super Admin Executive Dashboard (`ExecutiveDashboard.tsx`, `ExecutivePanels.tsx`): removed the wide Bar Chart and upgraded the "Staff Results" table with role filter tabs (All, Call Centre, Purchasers) and a staff search input to cleanly support teams of any size.
