@@ -81,8 +81,7 @@ export function FollowUpPanel({
   range: OverviewRange;
   isLoading?: boolean;
 }) {
-  const stageHref = (status: string) =>
-    `/admin/leads?status=${status}&from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`;
+  const stageHref = (status: string) => `/admin/leads?status=${status}`;
   const rows = [
     {
       label: "New leads",
@@ -140,7 +139,7 @@ export function FollowUpPanel({
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h3 className="font-semibold text-fluid-0 text-text tracking-tight">Lead Pipeline</h3>
-          <p className="mt-1 text-xs text-gray-400">Where leads from this period are now.</p>
+          <p className="mt-1 text-xs text-gray-400">Leads actioned and progressed in this period.</p>
         </div>
         <CheckCircle2 className="h-4 w-4 text-emerald-400" />
       </div>

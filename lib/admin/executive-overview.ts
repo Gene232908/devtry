@@ -306,14 +306,22 @@ export async function fetchExecutiveOverview(
     };
   });
 
+  const leadsInStage = (stage: string) => {
+    const fromCreated = leads.filter((lead) => lead.status === stage).map((lead) => lead.id);
+    const fromStatusChange = events
+      .filter((event) => event.type === "status_change" && event.meta?.to === stage)
+      .map((event) => event.lead_id);
+    return new Set([...fromCreated, ...fromStatusChange]).size;
+  };
+
   const pipelineSnapshot = {
-    newLeads: leads.filter((lead) => lead.status === "new").length,
-    contacted: leads.filter((lead) => lead.status === "contacted").length,
-    inspectionScheduled: leads.filter((lead) => lead.status === "inspection_scheduled").length,
-    noShow: leads.filter((lead) => lead.status === "no_show").length,
-    underNegotiation: leads.filter((lead) => lead.status === "negotiating").length,
-    deals: leads.filter((lead) => lead.status === "deal").length,
-    notPurchased: leads.filter((lead) => lead.status === "closed").length,
+    newLeads: leadsInStage("new"),
+    contacted: leadsInStage("contacted"),
+    inspectionScheduled: leadsInStage("inspection_scheduled"),
+    noShow: leadsInStage("no_show"),
+    underNegotiation: leadsInStage("negotiating"),
+    deals: leadsInStage("deal"),
+    notPurchased: leadsInStage("closed"),
   };
 
   const latestActivity = new Map<string, number>();
