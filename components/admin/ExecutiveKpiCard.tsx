@@ -6,7 +6,8 @@ import { cn } from "@/lib/utils";
 type Props = {
   label: string;
   value: string;
-  detail: string;
+  detail: React.ReactNode;
+  subDetail?: React.ReactNode;
   change?: number | null;
   comparisonValue?: string;
   isLoading?: boolean;
@@ -42,6 +43,7 @@ export function ExecutiveKpiCard({
   label,
   value,
   detail,
+  subDetail,
   change,
   comparisonValue,
   isLoading,
@@ -94,25 +96,32 @@ export function ExecutiveKpiCard({
       </div>
 
       {/* Primary Value: Natural, human-proportioned typography */}
-      <div className="my-1.5 flex items-baseline gap-1.5 font-sans">
-        {hasCurrency && (
+      <div>
+        <div className="my-1.5 flex items-baseline gap-1.5 font-sans">
+          {hasCurrency && (
+            <span
+              className={cn(
+                "text-xs sm:text-sm font-semibold tracking-wider select-none",
+                accent === "emerald" ? "text-emerald-400/70" : "text-[#a39c90]",
+              )}
+            >
+              AED
+            </span>
+          )}
           <span
             className={cn(
-              "text-xs sm:text-sm font-semibold tracking-wider select-none",
-              accent === "emerald" ? "text-emerald-400/70" : "text-[#a39c90]",
+              "text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums",
+              accent === "emerald" ? "text-emerald-400" : "text-[#f5f3ef]",
             )}
           >
-            AED
+            {displayAmount}
           </span>
+        </div>
+        {subDetail && (
+          <div className="text-[11px] text-[#a39c90] -mt-1 mb-1.5 flex items-center gap-1.5 flex-wrap">
+            {subDetail}
+          </div>
         )}
-        <span
-          className={cn(
-            "text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums",
-            accent === "emerald" ? "text-emerald-400" : "text-[#f5f3ef]",
-          )}
-        >
-          {displayAmount}
-        </span>
       </div>
 
       {/* Bottom Subtitle / Comparison */}

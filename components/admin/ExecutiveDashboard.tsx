@@ -9,7 +9,6 @@ import {
   RefreshCw,
   TrendingUp,
   WalletCards,
-  Recycle,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -179,6 +178,9 @@ function DashboardData({
       ? ((data.financial.grossProfit / data.financial.revenue) * 100).toFixed(1)
       : null;
 
+  const regularCarsSold = Math.max(0, data.financial.carsSold - (data.scrap?.sold ?? 0));
+  const scrapCarsSold = data.scrap?.sold ?? 0;
+
   const [chartsReady, setChartsReady] = useState(false);
   useEffect(() => {
     const handle = requestAnimationFrame(() => {
@@ -193,6 +195,7 @@ function DashboardData({
         <ExecutiveKpiCard
           label="Revenue"
           value={formatAed(data.financial.revenue)}
+          subDetail={<span className="text-amber-400/90 font-medium tracking-wide">Overall (Regular + Scrap)</span>}
           detail={comparisonActive ? "vs selected comparison" : label}
           comparisonValue={previous ? formatAed(previous.revenue) : undefined}
           change={previous ? financialChange(previous.revenue, data.financial.revenue) : undefined}
@@ -203,7 +206,8 @@ function DashboardData({
         <ExecutiveKpiCard
           label="Gross Profit"
           value={formatAed(data.financial.grossProfit)}
-          detail="Sale price minus what the car cost"
+          subDetail={<span className="text-emerald-400/90 font-medium tracking-wide">Overall (Regular + Scrap)</span>}
+          detail="Sale price minus acquisition cost"
           comparisonValue={previous ? formatAed(previous.grossProfit) : undefined}
           change={previous ? financialChange(previous.grossProfit, data.financial.grossProfit) : undefined}
           isLoading={isLoading}
@@ -214,7 +218,14 @@ function DashboardData({
         <ExecutiveKpiCard
           label="Cars Sold"
           value={data.financial.carsSold.toLocaleString()}
-          detail="Completed sales"
+          subDetail={
+            <span className="inline-flex items-center gap-1.5 font-medium">
+              <span className="text-blue-300">{regularCarsSold} regular</span>
+              <span className="text-white/20">·</span>
+              <span className="text-amber-400">{scrapCarsSold} scrap</span>
+            </span>
+          }
+          detail="Completed sales (Overall)"
           comparisonValue={previous ? `${previous.carsSold.toLocaleString()} cars` : undefined}
           change={previous ? financialChange(previous.carsSold, data.financial.carsSold) : undefined}
           isLoading={isLoading}
@@ -224,7 +235,8 @@ function DashboardData({
         <ExecutiveKpiCard
           label="Staff Commission to Pay"
           value={formatAed(data.financial.staffCommissionOwed)}
-          detail="Commission that has not been paid yet"
+          subDetail={<span className="text-purple-400/90 font-medium tracking-wide">All sales (Regular + Scrap)</span>}
+          detail="Commission not yet paid"
           comparisonValue={previous ? formatAed(previous.staffCommissionOwed) : undefined}
           change={previous ? financialChange(previous.staffCommissionOwed, data.financial.staffCommissionOwed) : undefined}
           isLoading={isLoading}
@@ -232,8 +244,6 @@ function DashboardData({
           accent="purple"
         />
       </section>
-
-      <ScrapOverview data={data.scrap} isLoading={isLoading} />
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-[1.25fr_1fr]">
         {chartsReady ? (
@@ -270,34 +280,6 @@ function DashboardData({
       </section>
       <StaffSummaryTable staff={data.staff} isLoading={isLoading} />
     </>
-  );
-}
-
-function ScrapOverview({ data, isLoading }: { data: NonNullable<ReturnType<typeof useExecutiveOverview>["data"]>["scrap"]; isLoading: boolean }) {
-  const figures = [
-    { label: "Cars sold", value: data.sold.toLocaleString("en-AE") },
-    { label: "Paid amount", value: formatAed(data.revenue) },
-    { label: "Expenses", value: formatAed(data.expenses) },
-    { label: "Confirmed net profit", value: formatAed(data.netProfit) },
-  ];
-  return (
-    <section className="rounded-card border border-white/10 bg-[#141417] p-4 sm:p-5">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="flex items-center gap-2 text-base font-semibold text-text"><Recycle className="h-4 w-4 text-gold" /> Scrap Sales</h2>
-          <p className="mt-1 text-xs text-text-muted">Sales completed in the selected date range.</p>
-        </div>
-        <Link href="/admin/leads?origin=scrap" className="text-sm font-medium text-gold hover:text-text">View scrap inquiries →</Link>
-      </div>
-      <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4 border-t border-white/10 pt-4 sm:grid-cols-4">
-        {figures.map((figure) => (
-          <div key={figure.label} className="min-w-0">
-            <p className="text-xs text-text-muted">{figure.label}</p>
-            <p className="mt-1 text-lg font-semibold tabular-nums text-text sm:text-xl">{isLoading ? "—" : figure.value}</p>
-          </div>
-        ))}
-      </div>
-    </section>
   );
 }
 
