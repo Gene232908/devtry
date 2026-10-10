@@ -17,6 +17,7 @@ import {
   MECHANICAL_ITEMS,
   PHOTO_ANGLES,
   PHOTO_REQUIREMENTS,
+  SCRAP_PHOTO_REQUIREMENTS,
   type InspectionReportData,
   type InspectionResult,
   inspectionReportSchema,
@@ -26,7 +27,21 @@ import { InspectionActivityDrawer } from "@/components/admin/InspectionActivityD
 import { useLeads } from "@/lib/admin/leads-store";
 
 type Photo = { angle: string; url: string | null; note: string };
-type Loaded = { lead: { full_name: string; make: string; model: string; trim: string | null; year: number; mileage_km: number | null; specification: string | null; arrival_status?: "not_arrived" | "arrived" }; report: { data: InspectionReportData; status: "draft" | "completed" }; photos: Photo[] };
+type Loaded = {
+  lead: {
+    full_name: string;
+    make: string;
+    model: string;
+    trim: string | null;
+    year: number;
+    mileage_km: number | null;
+    specification: string | null;
+    arrival_status?: "not_arrived" | "arrived";
+    inquiry_type?: "valuation" | "scrap" | null;
+  };
+  report: { data: InspectionReportData; status: "draft" | "completed" };
+  photos: Photo[];
+};
 type UploadPhotoResponse = { ok?: boolean; data?: { note: string; url: string }; error?: { message?: string } };
 type Choice = "yes" | "no" | "unknown";
 
@@ -76,6 +91,8 @@ export function InspectionWorkspace({ leadId }: { leadId: string }) {
   const { refresh: refreshLeads } = useLeads();
   const { makes, specifications } = useVehicleCatalog();
   const [data, setData] = useState<InspectionReportData>(EMPTY_INSPECTION_REPORT);
+  const [leadInquiryType, setLeadInquiryType] = useState<"valuation" | "scrap">("valuation");
+  const [leadCustomerName, setLeadCustomerName] = useState<string>("");
   const [arrivalStatus, setArrivalStatus] = useState<"not_arrived" | "arrived" | undefined>(undefined);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [ready, setReady] = useState(false);
@@ -102,11 +119,16 @@ export function InspectionWorkspace({ leadId }: { leadId: string }) {
   const photoSwipeStartX = useRef<number | null>(null);
   const photoDragRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
 
+  const isScrap = leadInquiryType === "scrap";
+  const currentRequirements = useMemo(() => isScrap ? SCRAP_PHOTO_REQUIREMENTS : PHOTO_REQUIREMENTS, [isScrap]);
   const photoByAngle = useMemo(() => new Map(photos.map((photo) => [photo.angle, photo])), [photos]);
-  const previewablePhotos = useMemo(() => PHOTO_REQUIREMENTS.flatMap((requirement) => {
+  const previewablePhotos = useMemo(() => currentRequirements.flatMap((requirement) => {
     const photo = photoByAngle.get(requirement.angle);
     return photo?.url ? [{ angle: requirement.angle, title: requirement.title, url: photo.url, note: photo.note }] : [];
-  }), [photoByAngle]);
+  }), [currentRequirements, photoByAngle]);
+  const capturedCount = useMemo(() => {
+    return currentRequirements.filter((req) => photoByAngle.get(req.angle)?.url).length;
+  }, [currentRequirements, photoByAngle]);
   const selectedModels = modelsFor(makes, data.carMake);
   const selectedTrims = trimsFor(makes, data.carMake, data.carModel);
   const previewIndex = previewPhoto ? previewablePhotos.findIndex((photo) => photo.angle === previewPhoto.angle) : -1;
@@ -169,6 +191,8 @@ export function InspectionWorkspace({ leadId }: { leadId: string }) {
     const body = await response.json().catch(() => null);
     if (!response.ok || !body?.ok) throw new Error(body?.error?.message ?? "Couldn't load the inspection.");
     const loaded = body.data as Loaded;
+    setLeadInquiryType(loaded.lead.inquiry_type === "scrap" ? "scrap" : "valuation");
+    setLeadCustomerName(loaded.lead.full_name || "");
     const initial = loaded.report.data;
     setData({
       ...initial,
@@ -229,7 +253,7 @@ export function InspectionWorkspace({ leadId }: { leadId: string }) {
     if (failedWithoutNote.length) issues.push({ section: "external", message: `External/Mechanical failure notes: add a reason for ${failedWithoutNote.slice(0, 3).join(", ")}${failedWithoutNote.length > 3 ? ` and ${failedWithoutNote.length - 3} more` : ""}.` });
     const tyresMissing = ([['driverFront', 'Driver front tyre'], ['driverRear', 'Driver rear tyre'], ['passengerFront', 'Passenger front tyre'], ['passengerRear', 'Passenger rear tyre']] as const).filter(([key]) => !data.tyres[key].result || !/^\d{4}$/.test(data.tyres[key].year) || (data.tyres[key].result === "fail" && !data.tyres[key].note.trim())).map(([, label]) => label);
     if (tyresMissing.length) issues.push({ section: "tyres", message: `Tyres and interior: complete ${tyresMissing.join(", ")}, including the four-digit year and any failure note.` });
-    const missingPhotos = PHOTO_REQUIREMENTS.filter((requirement) => {
+    const missingPhotos = currentRequirements.filter((requirement) => {
       const photo = photoByAngle.get(requirement.angle);
       return !photo?.url;
     }).map((requirement) => requirement.title);
@@ -381,14 +405,25 @@ export function InspectionWorkspace({ leadId }: { leadId: string }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="font-display text-fluid-3 text-text">Vehicle Inspection</h1>
+            <h1 className="font-display text-fluid-3 text-text">
+              {isScrap ? "Scrap Inquiry Inspection" : "Vehicle Inspection"}
+            </h1>
+            {isScrap && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/15 px-3 py-1 text-xs font-semibold text-gold">
+                Scrap Inquiry
+              </span>
+            )}
             {arrivalStatus === "arrived" && (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-400">
                 <Check className="h-3.5 w-3.5" /> Customer Arrived
               </span>
             )}
           </div>
-          <p className="mt-1 text-fluid--1 text-text-muted">Save a draft while checking the car. Save Inspection marks the lead as Inspected; Purchasers and Super Admin can edit it later.</p>
+          <p className="mt-1 text-fluid--1 text-text-muted">
+            {isScrap
+              ? "Complete the 10 approved inspection items for this scrap inquiry. Save inspection marks the lead as Inspected."
+              : "Save a draft while checking the car. Save Inspection marks the lead as Inspected; Purchasers and Super Admin can edit it later."}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2"><InspectionActivityDrawer leadId={leadId} refreshKey={activityRefreshKey} />{completed ? <Button variant="outline" disabled={downloading} loading={downloading} onClick={() => void downloadPdf()}><Download className="h-4 w-4" />{downloading ? "Preparing PDF" : "Download PDF"}</Button> : <Button variant="outline" disabled title="Save the inspection first to enable the PDF download"><Download className="h-4 w-4" /> PDF after completion</Button>}</div>
       </div>
@@ -426,11 +461,73 @@ export function InspectionWorkspace({ leadId }: { leadId: string }) {
 
       <Card id="inspection-photos" className={`p-5 ${highlightedSections.includes("photos") ? "ring-2 ring-danger/70" : ""}`}>
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div><h2 className="text-lg font-semibold text-text">Required vehicle photos</h2><p className="mt-1 text-xs text-text-muted">{photos.length} of {PHOTO_ANGLES.length} captured</p></div>
-          <Button size="sm" variant="outline" disabled={photos.length === 0} onClick={() => setGalleryOpen(true)}><FolderOpen className="h-4 w-4" /> View photo folder</Button>
+          <div>
+            <h2 className="text-lg font-semibold text-text">
+              {isScrap ? "Approved Inspection Items — 10 Total" : "Required vehicle photos"}
+            </h2>
+            <p className="mt-1 text-xs text-text-muted">
+              {capturedCount} of {currentRequirements.length} captured
+            </p>
+          </div>
+          <Button size="sm" variant="outline" disabled={capturedCount === 0} onClick={() => setGalleryOpen(true)}>
+            <FolderOpen className="h-4 w-4" /> View photo folder
+          </Button>
         </div>
-        <p className="mb-4 text-xs text-text-muted">Select <strong className="text-text">Add photo</strong>, then choose whether to use the phone camera or upload an existing JPG/PNG. Notes are optional when the part is in good condition; describe any dents, scratches, or damage.</p>
-        <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">{PHOTO_REQUIREMENTS.map((requirement, index) => { const photo = photoByAngle.get(requirement.angle); return <li key={requirement.angle} className="flex min-h-40 flex-col justify-between gap-3 rounded-card border border-border bg-surface-2 p-4 sm:min-h-0 sm:flex-row sm:items-center"><div className="min-w-0 flex-1"><p className="text-sm font-medium text-text">{index + 1}. {requirement.title}</p><p className="mt-1 max-w-md text-xs leading-5 text-text-muted">{requirement.guide}</p>{photo ? <><p className="mt-2 inline-flex items-center gap-1 text-xs text-emerald-400"><Check className="h-3.5 w-3.5" /> {photo.note?.trim() && photo.note !== "Good condition." ? "Saved with note" : "Photo saved"}</p>{photo.note?.trim() && photo.note !== "Good condition." ? <div className="mt-2 rounded-card border border-gold/30 bg-gold/5 p-3"><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gold">Inspector note</p><p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-text">{photo.note}</p></div> : null}</> : <p className="mt-2 text-xs text-text-faint">Photo required</p>}</div><div className="flex shrink-0 items-center justify-end gap-2">{photo?.url && <button type="button" onClick={() => openPhotoPreview(requirement, photo)} aria-label={`Preview ${requirement.title}`} className="min-h-11 min-w-11 rounded p-2 text-text-muted hover:text-gold"><Eye className="mx-auto h-4 w-4" /></button>}<Button size="sm" variant="outline" disabled={uploading === requirement.angle} loading={uploading === requirement.angle} onClick={() => { setPhotoTarget(requirement); setPhotoNote(photo?.note && photo.note !== "Good condition." ? photo.note : ""); }}>{photo ? "Replace" : "Add photo"}</Button></div></li>; })}</ul>
+        <p className="mb-4 text-xs text-text-muted">
+          Select <strong className="text-text">Add photo</strong>, then choose whether to use the phone camera or upload an existing JPG/PNG. Notes are optional when the part is in good condition; describe any dents, scratches, or damage.
+        </p>
+        <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {currentRequirements.map((requirement, index) => {
+            const photo = photoByAngle.get(requirement.angle);
+            return (
+              <li key={requirement.angle} className="flex min-h-40 flex-col justify-between gap-3 rounded-card border border-border bg-surface-2 p-4 sm:min-h-0 sm:flex-row sm:items-center">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-text">{index + 1}. {requirement.title}</p>
+                  <p className="mt-1 max-w-md text-xs leading-5 text-text-muted">{requirement.guide}</p>
+                  {photo ? (
+                    <>
+                      <p className="mt-2 inline-flex items-center gap-1 text-xs text-emerald-400">
+                        <Check className="h-3.5 w-3.5" /> {photo.note?.trim() && photo.note !== "Good condition." ? "Saved with note" : "Photo saved"}
+                      </p>
+                      {photo.note?.trim() && photo.note !== "Good condition." ? (
+                        <div className="mt-2 rounded-card border border-gold/30 bg-gold/5 p-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gold">Inspector note</p>
+                          <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6 text-text">{photo.note}</p>
+                        </div>
+                      ) : null}
+                    </>
+                  ) : (
+                    <p className="mt-2 text-xs text-text-faint">Photo required</p>
+                  )}
+                </div>
+                <div className="flex shrink-0 items-center justify-end gap-2">
+                  {photo?.url && (
+                    <button
+                      type="button"
+                      onClick={() => openPhotoPreview(requirement, photo)}
+                      aria-label={`Preview ${requirement.title}`}
+                      className="min-h-11 min-w-11 rounded p-2 text-text-muted hover:text-gold"
+                    >
+                      <Eye className="mx-auto h-4 w-4" />
+                    </button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={uploading === requirement.angle}
+                    loading={uploading === requirement.angle}
+                    onClick={() => {
+                      setPhotoTarget(requirement);
+                      setPhotoNote(photo?.note && photo.note !== "Good condition." ? photo.note : "");
+                    }}
+                  >
+                    {photo ? "Replace" : "Add photo"}
+                  </Button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
         <input ref={cameraInputRef} className="sr-only" type="file" accept="image/jpeg,image/png" capture="environment" disabled={!photoTarget || Boolean(uploading)} onChange={(event) => void uploadChosenPhoto(event)} />
         <input ref={uploadInputRef} className="sr-only" type="file" accept="image/jpeg,image/png" disabled={!photoTarget || Boolean(uploading)} onChange={(event) => void uploadChosenPhoto(event)} />
       </Card>
@@ -442,7 +539,7 @@ export function InspectionWorkspace({ leadId }: { leadId: string }) {
         <p className="mb-4 text-sm text-text-muted">All saved inspection photos are together here. Select a photo to open the full-size image.</p>
         <div className="max-h-[65vh] overflow-y-auto pr-1">
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {PHOTO_REQUIREMENTS.map((requirement, index) => {
+            {currentRequirements.map((requirement, index) => {
               const photo = photoByAngle.get(requirement.angle);
               return <li key={requirement.angle} className="overflow-hidden rounded-card border border-border bg-surface-2">
                 {photo?.url ? <button type="button" onClick={() => { setGalleryOpen(false); openPhotoPreview(requirement, photo); }} aria-label={`Preview ${requirement.title}`} className="group relative block h-40 w-full bg-black text-left"><img src={photo.url} alt={requirement.title} className="h-40 w-full object-contain" /><span className="absolute inset-0 flex items-end bg-gradient-to-t from-black/80 via-transparent to-transparent p-3 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">Preview photo</span></button> : <div className="flex h-40 items-center justify-center bg-bg px-4 text-center text-xs text-text-faint">Not added yet</div>}

@@ -8,6 +8,8 @@ import {
   normalizeInspectionDraft,
   MECHANICAL_ITEMS,
   PHOTO_ANGLES,
+  SCRAP_PHOTO_REQUIREMENTS,
+  SCRAP_PHOTO_ANGLES,
 } from "@/lib/inspection/report-schema";
 
 function completedData() {
@@ -67,5 +69,38 @@ describe("isCompleteInspectionReport", () => {
     const data = completedData();
     data.tyres.driverFront.year = "";
     expect(isCompleteInspectionReport(data, PHOTO_ANGLES.slice(1))).toBe(false);
+  });
+
+  describe("Scrap Inquiry 10 inspection items", () => {
+    it("contains exactly the 10 approved inspection items in the exact specified order", () => {
+      const titles = SCRAP_PHOTO_REQUIREMENTS.map((req) => req.title);
+      expect(titles).toEqual([
+        "Front of car",
+        "Full left side",
+        "Full right side",
+        "Rear of car",
+        "Bonnet",
+        "Roof",
+        "Dashboard and mileage",
+        "Front seats",
+        "Rear seats",
+        "Engine bay",
+      ]);
+      expect(SCRAP_PHOTO_REQUIREMENTS).toHaveLength(10);
+      expect(SCRAP_PHOTO_ANGLES).toHaveLength(10);
+    });
+
+    it("completes a scrap inquiry inspection when all 10 scrap photos are present and checks are satisfied", () => {
+      expect(isCompleteInspectionReport(completedData(), SCRAP_PHOTO_ANGLES, "scrap")).toBe(true);
+    });
+
+    it("rejects a scrap inquiry inspection if any of the 10 items is missing", () => {
+      expect(isCompleteInspectionReport(completedData(), SCRAP_PHOTO_ANGLES.slice(0, 9), "scrap")).toBe(false);
+    });
+
+    it("keeps valuation inspection requirement intact (requires 24 photos)", () => {
+      expect(isCompleteInspectionReport(completedData(), SCRAP_PHOTO_ANGLES, "valuation")).toBe(false);
+      expect(isCompleteInspectionReport(completedData(), PHOTO_ANGLES, "valuation")).toBe(true);
+    });
   });
 });

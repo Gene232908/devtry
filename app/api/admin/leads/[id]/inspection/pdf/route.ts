@@ -1,7 +1,7 @@
 import { authorizeInspectionLead } from "@/lib/inspection/access";
 import { buildInspectionPdf, type InspectionPdfPhoto } from "@/lib/inspection/pdf-report";
 import { inspectionReportFilename } from "@/lib/inspection/report-filename";
-import { inspectionReportSchema, PHOTO_ANGLES } from "@/lib/inspection/report-schema";
+import { inspectionReportSchema, PHOTO_ANGLES, SCRAP_PHOTO_ANGLES } from "@/lib/inspection/report-schema";
 
 export const dynamic = "force-dynamic";
 
@@ -38,11 +38,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   ]);
   if (photosError) return fail(photosError.message, 500);
 
+  const isScrap = access.lead.inquiry_type === "scrap";
+  const requiredAngles = isScrap ? SCRAP_PHOTO_ANGLES : PHOTO_ANGLES;
   const photoByAngle = new Map((photos ?? []).map((photo: { angle: string; storage_path: string; content_type: string; note: string }) => [photo.angle, photo]));
-  if (!report.photos_purged_at && !PHOTO_ANGLES.every((angle) => photoByAngle.has(angle))) return fail("The completed report is missing a required photo.", 409);
+  if (!report.photos_purged_at && !requiredAngles.every((angle) => photoByAngle.has(angle))) return fail("The completed report is missing a required photo.", 409);
 
   const downloadedPhotos: InspectionPdfPhoto[] = [];
-  const availableAngles = PHOTO_ANGLES.filter((angle) => photoByAngle.has(angle));
+  const availableAngles = requiredAngles.filter((angle) => photoByAngle.has(angle));
   for (let start = 0; start < availableAngles.length; start += 4) {
     const batch = await Promise.all(availableAngles.slice(start, start + 4).map(async (angle) => {
       const photo = photoByAngle.get(angle) as { storage_path: string; content_type: string; note: string };

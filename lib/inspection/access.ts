@@ -16,6 +16,7 @@ export type InspectionLead = {
   mileage_km: number | null;
   specification: string | null;
   arrival_status?: "not_arrived" | "arrived";
+  inquiry_type?: "valuation" | "scrap" | null;
 };
 
 export async function authorizeInspectionLead(id: string, mode: "read" | "write") {
@@ -26,7 +27,7 @@ export async function authorizeInspectionLead(id: string, mode: "read" | "write"
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("leads")
-    .select("id, status, purchaser_id, call_center_id, full_name, make, model, trim, year, mileage_km, specification, arrival_status")
+    .select("id, status, purchaser_id, call_center_id, full_name, make, model, trim, year, mileage_km, specification, arrival_status, inquiry_type")
     .eq("id", id)
     .maybeSingle();
   if (error || !data) return { ok: false as const, status: 404, message: "Lead not found." };

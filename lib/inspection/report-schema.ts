@@ -63,6 +63,32 @@ export const PHOTO_REQUIREMENTS: ReadonlyArray<{ angle: PhotoAngle; title: strin
   { angle: "Passenger rear wheel and tyre", title: "Passenger-side rear wheel and tyre", guide: "Photograph the full wheel, rim and tyre tread from close range." },
 ];
 
+// Approved 10 inspection items specifically for Scrap Inquiry inspections in exact order:
+// 1. Front of car
+// 2. Full left side
+// 3. Full right side
+// 4. Rear of car
+// 5. Bonnet
+// 6. Roof
+// 7. Dashboard and mileage
+// 8. Front seats
+// 9. Rear seats
+// 10. Engine bay
+export const SCRAP_PHOTO_REQUIREMENTS: ReadonlyArray<{ angle: PhotoAngle; title: string; guide: string }> = [
+  { angle: "Front of vehicle", title: "Front of car", guide: "Stand directly in front. Include the bumper, grille, headlights and number plate." },
+  { angle: "Left side", title: "Full left side", guide: "Step back far enough to show the whole left side from bumper to bumper." },
+  { angle: "Right side", title: "Full right side", guide: "Step back far enough to show the whole right side from bumper to bumper." },
+  { angle: "Rear of vehicle", title: "Rear of car", guide: "Stand directly behind. Include the boot, rear bumper, lights and number plate." },
+  { angle: "Bonnet", title: "Bonnet", guide: "Photograph the closed bonnet from the front, showing its full surface." },
+  { angle: "Roof", title: "Roof", guide: "Show the full roof surface. Include the sunroof if the car has one." },
+  { angle: "Driver dashboard and odometer", title: "Dashboard and mileage", guide: "Turn on the display and make sure the odometer reading is readable." },
+  { angle: "Front seats", title: "Front seats", guide: "Open a front door and show both front seats, upholstery and centre console." },
+  { angle: "Rear seats", title: "Rear seats", guide: "Open a rear door and show the full rear seat area and upholstery." },
+  { angle: "Engine bay", title: "Engine bay", guide: "Open the bonnet and show the full engine bay in good light." },
+];
+
+export const SCRAP_PHOTO_ANGLES: ReadonlyArray<PhotoAngle> = SCRAP_PHOTO_REQUIREMENTS.map((r) => r.angle);
+
 const optionalText = z.string().trim().max(300).optional().default("");
 const optionalDate = z.string().trim().max(30).optional().default("");
 const checkMap = () => z.record(z.string(), z.enum(RESULT_VALUES).optional());
@@ -185,8 +211,13 @@ export function normalizeInspectionDraft(value: unknown) {
   };
 }
 
-export function isCompleteInspectionReport(data: InspectionReportData, uploadedAngles: Iterable<string>) {
+export function isCompleteInspectionReport(
+  data: InspectionReportData,
+  uploadedAngles: Iterable<string>,
+  inquiryType: "valuation" | "scrap" = "valuation",
+) {
   const photos = new Set(uploadedAngles);
+  const requiredAngles = inquiryType === "scrap" ? SCRAP_PHOTO_ANGLES : PHOTO_ANGLES;
   const allChecksAnswered = [...EXTERNAL_BODY_ITEMS, ...MECHANICAL_ITEMS].every(
     (item) => data.externalBody[item] || data.mechanical[item],
   );
@@ -201,5 +232,5 @@ export function isCompleteInspectionReport(data: InspectionReportData, uploadedA
   const vehicleIdentified = Boolean(
     data.carMake && data.carModel && /^\d{4}$/.test(data.modelYear) && data.carSpecification && data.mileageKm,
   );
-  return vehicleIdentified && allChecksAnswered && failuresExplained && tyresComplete && PHOTO_ANGLES.every((angle) => photos.has(angle));
+  return vehicleIdentified && allChecksAnswered && failuresExplained && tyresComplete && requiredAngles.every((angle) => photos.has(angle));
 }

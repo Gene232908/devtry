@@ -2,6 +2,7 @@
 
 ## Current objective
 
+- [x] 2026-10-10 Updated the Inspection Form accessed through the Scrap Inquiry tab to contain exactly the 10 approved inspection items in the required order (Front of car, Full left side, Full right side, Rear of car, Bonnet, Roof, Dashboard and mileage, Front seats, Rear seats, Engine bay). Removed all other inspection checklist items from the Scrap Inspection Form while preserving Valuation Inspection Form 100% unchanged. Updated progress, completion counts, and server submission validation to reflect exactly 10 items.
 - [x] 2026-10-10 Made Trim optional in both Valuation and Scrap Inquiry public landing page forms (`lead.schema.ts`, `step-trim-location.tsx`, `app/api/leads/route.ts`). Users can submit without choosing a Trim while Location and Option Level remain mandatory.
 - [x] 2026-10-10 Resolved photo upload failure without notes by relaxing database constraints (migration `0043_optional_inspection_photo_notes.sql`) and adding seamless backend fallback so uploads succeed on both current and unmigrated databases.
 - [x] 2026-10-09 Updated the inspection photo workflow for Valuation and Scrap inquiries: users can capture or upload photos immediately with phone camera or file upload without a prerequisite note. Notes remain optional for parts in good condition and are used to document dents, scratches, or defects.
