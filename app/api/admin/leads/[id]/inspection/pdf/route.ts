@@ -48,7 +48,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       const photo = photoByAngle.get(angle) as { storage_path: string; content_type: string; note: string };
       const downloaded = await access.supabase.storage.from("inspection-photos").download(photo.storage_path);
       if (downloaded.error) throw new Error(`Couldn't retrieve ${angle}.`);
-      return { angle, note: photo.note, contentType: photo.content_type, bytes: await downloaded.data.arrayBuffer() };
+      return { angle, note: photo.note === "Good condition." ? "" : photo.note, contentType: photo.content_type, bytes: await downloaded.data.arrayBuffer() };
     })).catch((reason: unknown) => reason instanceof Error ? reason : new Error("Couldn't retrieve a required inspection photo."));
     if (batch instanceof Error) return fail(batch.message, 500);
     downloadedPhotos.push(...batch);

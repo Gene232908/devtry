@@ -52,7 +52,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         : { id: null, data: EMPTY_INSPECTION_REPORT, status: "draft", completedAt: null, updatedAt: null },
       photos: (photoRows.data ?? []).map((photo: { angle: string; note?: string | null; created_at: string }) => ({
         angle: photo.angle,
-        note: photo.note ?? (legacyPhotoSchema ? "Legacy photo. Add a note when replacing this image after migration 0028." : ""),
+        note: photo.note === "Good condition." ? "" : (photo.note ?? (legacyPhotoSchema ? "Legacy photo. Add a note when replacing this image after migration 0028." : "")),
         url: `/api/admin/leads/${encodeURIComponent(resolvedParams.id)}/inspection/photos/${encodeURIComponent(photo.angle)}`,
         createdAt: photo.created_at,
       })),

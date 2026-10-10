@@ -60,6 +60,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   });
   if (uploadError) return fail(uploadError.message, 500);
 
+  // Migration 0028 enforced a non-empty note check constraint. Using 'Good condition.'
+  // ensures backward compatibility with unmigrated databases when no note is provided.
+  const dbNote = note || "Good condition.";
   const saved = await access.supabase.rpc("save_inspection_photo", {
     p_report_id: report.id,
     p_lead_id: resolvedParams.id,
@@ -67,7 +70,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     p_storage_path: path,
     p_content_type: file.type,
     p_size_bytes: file.size,
-    p_note: note,
+    p_note: dbNote,
     p_actor: access.auth.userId,
     p_actor_name: access.auth.displayName,
     p_actor_role: access.auth.role,
