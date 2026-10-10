@@ -42,8 +42,10 @@ export function AdminShell({ children, identity }: Props) {
           children
         ) : (
           <div className="flex min-h-screen flex-col bg-bg overflow-x-hidden max-w-full">
-            {/* Keep the header visible while the document, not a nested main, scrolls. */}
-            <div className="sticky top-0 z-30">
+            {/* Layout spacer for fixed Topbar */}
+            <div className="h-16 shrink-0" aria-hidden="true" />
+            {/* Pinned Topbar that stays permanently visible when scrolling */}
+            <div className="fixed top-0 left-0 right-0 z-30">
               <Topbar onMenuClick={() => setMobileSidebarOpen(true)} identity={identity} />
             </div>
             <div className="flex min-w-0 flex-1 relative">
