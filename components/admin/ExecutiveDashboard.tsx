@@ -3,8 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  AlertTriangle,
-  CalendarDays,
   CalendarRange,
   CarFront,
   Coins,
@@ -30,7 +28,7 @@ import { useExecutiveOverview, type ExecutiveOverviewSeed } from "@/lib/admin/us
 import { cn } from "@/lib/utils";
 
 import { FinancialTrendChart } from "@/components/admin/FinancialTrendChart";
-import { PipelineFunnelChart, InventoryAgingChart } from "@/components/admin/ExecutiveCharts";
+import { PipelineFunnelChart } from "@/components/admin/ExecutiveCharts";
 import { VisitorsChart } from "@/components/admin/VisitorsChart";
 import { SubmissionsChart } from "@/components/admin/SubmissionsChart";
 import { StaffPerformanceChart } from "@/components/admin/StaffPerformanceChart";
@@ -181,7 +179,6 @@ function DashboardData({
     data.financial.revenue > 0
       ? ((data.financial.grossProfit / data.financial.revenue) * 100).toFixed(1)
       : null;
-  const watchCount = data.inventoryAging[3]?.count ?? 0;
 
   const [chartsReady, setChartsReady] = useState(false);
   useEffect(() => {
@@ -265,108 +262,8 @@ function DashboardData({
         )}
       </section>
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {/* Current stock value */}
-        <Card className="flex flex-col justify-between p-5 border-white/10 bg-[#141417] shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200 hover:border-emerald-500/30">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <span className="text-xs font-medium uppercase tracking-[0.06em] text-[#a39c90]">
-                Money in Cars for Sale
-              </span>
-              <p className="mt-0.5 text-xs text-[#a39c90]/80">Money spent on cars that are still for sale</p>
-            </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
-              <WalletCards className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="my-2 flex items-baseline gap-1.5 font-sans">
-            <span className="text-xs sm:text-sm font-semibold tracking-wider text-[#a39c90] select-none">AED</span>
-            <span className="text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums text-[#f5f3ef]">
-              {Math.round(data.financial.cashInStock).toLocaleString("en-AE")}
-            </span>
-          </div>
-          <div className="flex items-center justify-between border-t border-white/[0.08] pt-2.5 text-xs text-[#a39c90]">
-            <span>Cars waiting to be sold</span>
-            <span className="font-semibold text-white">{data.financial.stockCount} cars</span>
-          </div>
-        </Card>
 
-        {/* Average time in stock */}
-        <Card className="flex flex-col justify-between p-5 border-white/10 bg-[#141417] shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200 hover:border-sky-500/30">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <span className="text-xs font-medium uppercase tracking-[0.06em] text-[#a39c90]">
-                Average Time in Stock
-              </span>
-              <p className="mt-0.5 text-xs text-[#a39c90]/80">How long cars usually stay before being sold</p>
-            </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/15 border border-sky-500/30 text-sky-400">
-              <CalendarDays className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="my-2 flex items-baseline gap-1.5 font-sans">
-            <span className="text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums text-[#f5f3ef]">
-              {data.financial.averageStockDays}
-            </span>
-            <span className="text-xs sm:text-sm font-medium text-[#a39c90]">days</span>
-          </div>
-          <div className="flex items-center justify-between border-t border-white/[0.08] pt-2.5 text-xs text-[#a39c90]">
-            <span>Based on the date each car was bought</span>
-          </div>
-        </Card>
-
-        {/* Cars waiting too long */}
-        <Card
-          className={cn(
-            "flex flex-col justify-between p-5 border-white/10 bg-[#141417] shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200",
-            watchCount > 0
-              ? "hover:border-red-500/40"
-              : "hover:border-white/20",
-          )}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <span className="text-xs font-medium uppercase tracking-[0.06em] text-[#a39c90]">
-                Cars Waiting Too Long
-              </span>
-              <p className="mt-0.5 text-xs text-[#a39c90]/80">Cars still for sale after 90 days</p>
-            </div>
-            <div
-              className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-lg border",
-                watchCount > 0
-                  ? "bg-red-500/15 border-red-500/30 text-red-400"
-                  : "bg-white/5 border-white/10 text-gray-400",
-              )}
-            >
-              <AlertTriangle className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="my-2 flex items-baseline gap-1.5 font-sans">
-            <span
-              className={cn(
-                "text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums",
-                watchCount > 0 ? "text-red-400" : "text-[#f5f3ef]",
-              )}
-            >
-              {watchCount}
-            </span>
-            <span className="text-xs sm:text-sm font-medium text-[#a39c90]">vehicles</span>
-          </div>
-          <div className="flex items-center justify-between border-t border-white/[0.08] pt-2.5 text-xs">
-            <span className={watchCount > 0 ? "text-red-400 font-medium" : "text-[#a39c90]"}>
-              {watchCount > 0 ? "Check the price or follow up on these cars" : "No cars have been waiting over 90 days"}
-            </span>
-          </div>
-        </Card>
-      </section>
-
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[.9fr_1.1fr]">
-        {chartsReady ? (
-          <InventoryAgingChart data={data.inventoryAging} comparisonData={data.comparisonOverview?.inventoryAging} isLoading={isLoading} />
-        ) : (
-          <ChartPlaceholder title="Time Cars Have Been in Stock" className="h-56" />
-        )}
+      <section>
         {chartsReady ? (
           <StaffPerformanceChart data={data.staff} comparisonData={data.comparisonOverview?.staff} periodLabel={label} isLoading={isLoading} />
         ) : (

@@ -2,6 +2,7 @@
 
 ## Current objective
 
+- [x] 2026-10-10 Removed unused inventory stock metrics and aging chart from Super Admin Executive Dashboard (`ExecutiveDashboard.tsx`): removed "Money in Cars for Sale", "Average Time in Stock", "Cars Waiting Too Long" cards, and the "Time Cars Have Been in Stock" chart.
 - [x] 2026-10-10 Restricted Super Admin Dashboard Lead Pipeline panel (`executive-overview.ts`, `ExecutivePanels.tsx`) to count exclusively regular valuation leads (`inquiry_type !== 'scrap'`), excluding scrap inquiries from all pipeline stages so counts match the standard Leads Directory filter.
 - [x] 2026-10-10 Enhanced Super Admin Dashboard Lead Pipeline panel (`ExecutivePanels.tsx`, `executive-overview.ts`) to be action/activity-based across all pipeline stages by counting leads created in or transitioned into each stage via status changes during the period.
 - [x] 2026-10-10 Added "Not Purchased" (`closed` status) to the Super Admin Dashboard Lead Pipeline panel (`ExecutivePanels.tsx`, `executive-overview.ts`), and enabled "Not Purchased" filtering and selection in the Leads Directory (`format.ts`).
