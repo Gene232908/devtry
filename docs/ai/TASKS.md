@@ -212,7 +212,11 @@
 
 ## Completed
 
-- [x] 2026-08-05 Added the guided WhatsApp OTP production runbook and the standalone `NABIGAY NA NI SIR NYASH ANG WHATSAPP BUSINESS NUMBER` trigger. No Meta number, billing method, production secret, deployment, or real message was changed; the runbook begins when Sir Nyash supplies and authorizes the business number.
+- [x] 2026-10-10 Admin Sidebar Sticky/Fixed Scrolling Fix & Modern UI Polish:
+  - Fixed sidebar disappearing on scroll by replacing fragile parent sticky context with a dedicated desktop spacer and `fixed top-16 left-0 bottom-0 z-20` layout in `AdminShell.tsx`.
+  - Modernized sidebar UX with 3 semantic navigation groups ("Main Workflow", "Finance & Team", "System & Tools"), vertical gold active indicator glow bar, gold pill badge for Scrap Inquiries, clean icons, and live UAE status pill in `Sidebar.tsx`.
+  - Verified with live browser scroll tests (`http://localhost:3000/admin`), full test suite (277/277 passed), and pushed to both `origin` and `production`.
+
 - [x] 2026-07-07 Committed and pushed the Milestone 1 landing package to `origin/main` for GitHub/Vercel review.
 - [x] 2026-07-07 Prepared Milestone 1 meeting report in Markdown and Word `.docx`, including a non-technical script, live-demo walkthrough, and client question scenarios.
 - [x] 2026-07-07 Finalized public landing polish: approved hero kept, hero focus-in animation added, full-page blur replaced with a lighter fade for performance, client `dubaii.jpeg` used in How It Works, How It Works seam blended, and the video band/footer merged into one compact footer.
