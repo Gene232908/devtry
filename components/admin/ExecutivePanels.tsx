@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -226,12 +227,72 @@ export function StaffSummaryTable({
   staff: ExecutiveOverview["staff"];
   isLoading?: boolean;
 }) {
+  const [roleFilter, setRoleFilter] = useState<"all" | "call_center" | "purchaser">("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const agentCount = staff.filter((s) => s.role === "call_center").length;
+  const purchaserCount = staff.filter((s) => s.role === "purchaser").length;
+
+  const filteredStaff = useMemo(() => {
+    return staff.filter((member) => {
+      if (roleFilter !== "all" && member.role !== roleFilter) return false;
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        return member.name.toLowerCase().includes(query);
+      }
+      return true;
+    });
+  }, [staff, roleFilter, searchQuery]);
+
   return (
     <Card className="overflow-hidden p-0 border-white/10 bg-[#141417] shadow-[0_8px_30px_rgba(0,0,0,0.35)]">
-      <div className="flex flex-wrap items-center justify-between gap-2 p-5 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-5 pb-3">
         <div>
           <h3 className="font-semibold text-fluid-0 text-text tracking-tight">Staff Results</h3>
           <p className="mt-1 text-xs text-gray-400">Profit and commission are based on the staff records already saved.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {staff.length > 5 && (
+            <input
+              type="text"
+              placeholder="Search staff..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-8 w-36 sm:w-44 rounded-lg border border-white/10 bg-white/5 px-2.5 text-xs text-white placeholder-gray-500 focus:border-gold/50 focus:outline-none"
+            />
+          )}
+          <div className="flex rounded-lg border border-white/10 bg-white/5 p-0.5 text-xs">
+            <button
+              type="button"
+              onClick={() => setRoleFilter("all")}
+              className={cn(
+                "rounded-md px-2.5 py-1 font-medium transition-all",
+                roleFilter === "all" ? "bg-white/15 text-white shadow-sm" : "text-gray-400 hover:text-white"
+              )}
+            >
+              All ({staff.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setRoleFilter("call_center")}
+              className={cn(
+                "rounded-md px-2.5 py-1 font-medium transition-all",
+                roleFilter === "call_center" ? "bg-white/15 text-white shadow-sm" : "text-gray-400 hover:text-white"
+              )}
+            >
+              Call Centre ({agentCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setRoleFilter("purchaser")}
+              className={cn(
+                "rounded-md px-2.5 py-1 font-medium transition-all",
+                roleFilter === "purchaser" ? "bg-white/15 text-white shadow-sm" : "text-gray-400 hover:text-white"
+              )}
+            >
+              Purchasers ({purchaserCount})
+            </button>
+          </div>
         </div>
       </div>
       {isLoading ? (
@@ -252,7 +313,7 @@ export function StaffSummaryTable({
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {staff.map((member) => (
+              {filteredStaff.map((member) => (
                 <tr key={member.id} className="hover:bg-white/5 transition-colors">
                   <td className="px-5 py-3">
                     <p className="font-medium text-white">{member.name}</p>
@@ -271,10 +332,12 @@ export function StaffSummaryTable({
                   </td>
                 </tr>
               ))}
-              {staff.length === 0 && (
+              {filteredStaff.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-5 py-8 text-center text-gray-400">
-                    No active Call Centre or Purchaser staff accounts.
+                    {staff.length === 0
+                      ? "No active Call Centre or Purchaser staff accounts."
+                      : "No staff matching the selected filter."}
                   </td>
                 </tr>
               )}

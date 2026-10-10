@@ -31,7 +31,6 @@ import { FinancialTrendChart } from "@/components/admin/FinancialTrendChart";
 import { PipelineFunnelChart } from "@/components/admin/ExecutiveCharts";
 import { VisitorsChart } from "@/components/admin/VisitorsChart";
 import { SubmissionsChart } from "@/components/admin/SubmissionsChart";
-import { StaffPerformanceChart } from "@/components/admin/StaffPerformanceChart";
 
 function formatAed(value: number) {
   return `AED ${Math.round(value).toLocaleString("en-AE")}`;
@@ -263,13 +262,6 @@ function DashboardData({
       </section>
 
 
-      <section>
-        {chartsReady ? (
-          <StaffPerformanceChart data={data.staff} comparisonData={data.comparisonOverview?.staff} periodLabel={label} isLoading={isLoading} />
-        ) : (
-          <ChartPlaceholder title="Staff Performance" className="h-64" />
-        )}
-      </section>
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <OperationalAlerts alerts={data.alerts} isLoading={isLoading} />
