@@ -86,49 +86,49 @@ export function FollowUpPanel({
   const rows = [
     {
       label: "New leads",
-      value: data.newLeads,
+      value: data?.newLeads ?? 0,
       icon: UsersRound,
       tone: "text-sky-400",
       href: stageHref("new"),
     },
     {
       label: "Contacted",
-      value: data.contacted,
+      value: data?.contacted ?? 0,
       icon: CheckCircle2,
       tone: "text-emerald-400",
       href: stageHref("contacted"),
     },
     {
       label: "Inspection scheduled",
-      value: data.inspectionScheduled,
+      value: data?.inspectionScheduled ?? 0,
       icon: Clock3,
       tone: "text-purple-400",
       href: stageHref("inspection_scheduled"),
     },
     {
       label: "No Show",
-      value: data.noShow,
+      value: data?.noShow ?? 0,
       icon: CircleAlert,
       tone: "text-red-400",
       href: stageHref("no_show"),
     },
     {
       label: "Under negotiation",
-      value: data.underNegotiation,
+      value: data?.underNegotiation ?? 0,
       icon: CircleAlert,
       tone: "text-amber-400",
       href: stageHref("negotiating"),
     },
     {
       label: "Deals",
-      value: data.deals,
+      value: data?.deals ?? 0,
       icon: CheckCircle2,
       tone: "text-gold",
       href: stageHref("deal"),
     },
     {
       label: "Not Purchased",
-      value: data.notPurchased,
+      value: data?.notPurchased ?? 0,
       icon: XCircle,
       tone: "text-zinc-400",
       href: stageHref("closed"),
@@ -160,7 +160,7 @@ export function FollowUpPanel({
               </span>
               <div className="flex items-center gap-2">
                 <span className="font-sans font-semibold text-base sm:text-lg tabular-nums text-white group-hover:text-amber-300 transition-colors">
-                  {value}
+                  {value ?? 0}
                 </span>
                 <ChevronRight className="h-3.5 w-3.5 text-gray-500 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
               </div>
