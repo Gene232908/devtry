@@ -297,9 +297,15 @@ export async function fetchExecutiveOverview(
 
   const uniqueEventLeads = (target: string) =>
     new Set(events.filter((event) => event.type === "status_change" && event.meta?.to === target).map((event) => event.lead_id)).size;
+
+  const regularLeads = leads.filter((lead) => lead.inquiry_type !== "scrap");
+  const scrapLeads = leads.filter((lead) => lead.inquiry_type === "scrap");
+  const visitorsCount = new Set((visitorsRes.data ?? []).map((row) => row.session_id as string)).size;
+
   const funnelValues = [
-    { key: "visitors", label: "Visitors", value: new Set((visitorsRes.data ?? []).map((row) => row.session_id as string)).size },
-    { key: "submissions", label: "Submissions", value: leads.length },
+    { key: "visitors", label: "Visitors", value: visitorsCount },
+    { key: "submissions", label: "Regular leads", value: regularLeads.length },
+    { key: "scrap_submissions", label: "Scrap inquiries", value: scrapLeads.length },
     { key: "contacted", label: "Contacted", value: uniqueEventLeads("contacted") },
     { key: "inspection_scheduled", label: "Inspection booked", value: uniqueEventLeads("inspection_scheduled") },
     { key: "inspected", label: "Inspected", value: uniqueEventLeads("inspected") },
@@ -307,10 +313,20 @@ export async function fetchExecutiveOverview(
     { key: "purchased", label: "Purchased", value: inventory.filter((item) => inRange(item.purchased_at, range)).length },
     { key: "sold", label: "Sold", value: current.carsSold },
   ];
-  const pipeline = funnelValues.map((item, index) => ({
-    ...item,
-    conversion: index === 0 || funnelValues[index - 1].value === 0 ? null : (item.value / funnelValues[index - 1].value) * 100,
-  }));
+  const pipeline = funnelValues.map((item, index) => {
+    let conversion: number | null = null;
+    if (item.key === "visitors") {
+      conversion = null;
+    } else if (item.key === "submissions" || item.key === "scrap_submissions") {
+      conversion = visitorsCount > 0 ? (item.value / visitorsCount) * 100 : null;
+    } else if (item.key === "contacted") {
+      conversion = leads.length > 0 ? (item.value / leads.length) * 100 : null;
+    } else {
+      const prev = funnelValues[index - 1];
+      conversion = prev && prev.value > 0 ? (item.value / prev.value) * 100 : null;
+    }
+    return { ...item, conversion };
+  });
 
   const profiles = (staffRes.data ?? []) as Array<{ id: string; display_name: string | null; role: "call_center" | "purchaser" }>;
   const staff = profiles.map((profile) => {
@@ -347,8 +363,6 @@ export async function fetchExecutiveOverview(
   const scrapEventLeadIds = new Set(
     (eventLeadTypes.data ?? []).filter((l) => l.inquiry_type === "scrap").map((l) => l.id)
   );
-
-  const regularLeads = leads.filter((lead) => lead.inquiry_type !== "scrap");
 
   const leadsInStage = (stage: string) => {
     const fromCreated = regularLeads.filter((lead) => lead.status === stage).map((lead) => lead.id);

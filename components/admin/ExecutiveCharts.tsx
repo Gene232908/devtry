@@ -76,6 +76,7 @@ export { FinancialTrendChart } from "@/components/admin/FinancialTrendChart";
 const FUNNEL_PALETTE: Record<string, string> = {
   visitors: "#06B6D4",      // Cyan
   submissions: "#3B82F6",   // Blue
+  scrap_submissions: "#6366F1", // Indigo
   contacted: "#8B5CF6",     // Violet
   inspection_scheduled: "#A855F7", // Purple
   inspected: "#EC4899",     // Pink
@@ -115,7 +116,7 @@ export function PipelineFunnelChart({
           See how people move from visiting the website to buying a car.
         </p>
       )}
-      <div className="h-[332px]">
+      <div className="h-[368px]">
         {isLoading ? (
           <Skeleton className="h-full w-full" />
         ) : isEmptySeries(data.map((point) => point.value)) ? (
@@ -136,7 +137,7 @@ export function PipelineFunnelChart({
                 dataKey="label"
                 type="category"
                 {...RECESSIVE_AXIS}
-                width={116}
+                width={124}
                 tick={{ fill: "#E5E7EB", fontSize: 12 }}
               />
               <Tooltip
