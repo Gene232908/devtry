@@ -97,8 +97,7 @@ export function Sidebar({ className, capabilities, onNavigate, isMobile }: Props
   return (
     <aside
       className={cn(
-        "flex w-64 shrink-0 flex-col border-r border-white/[0.08] bg-[#09090d]/95 backdrop-blur-2xl p-3.5 shadow-[4px_0_24px_rgba(0,0,0,0.5)] select-none",
-        "lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:overflow-y-auto",
+        "flex w-64 shrink-0 flex-col border-r border-white/[0.08] bg-[#09090d]/95 backdrop-blur-2xl px-3.5 py-4 shadow-[4px_0_24px_rgba(0,0,0,0.5)] select-none overflow-y-auto",
         "[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/10 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent",
         className,
       )}
@@ -119,10 +118,10 @@ export function Sidebar({ className, capabilities, onNavigate, isMobile }: Props
       )}
 
       {/* Navigation Group Sections */}
-      <nav className="flex flex-col gap-4">
+      <nav className="flex flex-col gap-3.5 pt-1">
         {groups.map((group) => (
           <div key={group.title} className="flex flex-col gap-1">
-            <span className="px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+            <span className="px-3 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 select-none">
               {group.title}
             </span>
             {group.items.map((item) => {
@@ -140,15 +139,15 @@ export function Sidebar({ className, capabilities, onNavigate, isMobile }: Props
                   href={item.href}
                   onClick={() => onNavigate?.()}
                   className={cn(
-                    "group relative flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-medium transition-all duration-150",
+                    "group relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all duration-150",
                     active
-                      ? "bg-white/[0.08] text-white font-semibold border border-white/[0.12] shadow-[0_2px_12px_rgba(0,0,0,0.5)]"
+                      ? "bg-amber-400/10 text-white font-semibold border border-amber-400/25 shadow-[0_2px_12px_rgba(245,158,11,0.15)]"
                       : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-100 border border-transparent",
                   )}
                 >
                   {/* Left Active Glow Indicator */}
                   {active && (
-                    <span className="absolute left-1 top-2 bottom-2 w-1 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]" />
+                    <span className="absolute left-1.5 top-1/2 -translate-y-1/2 h-5 w-1 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.7)]" />
                   )}
 
                   <Icon
@@ -166,7 +165,7 @@ export function Sidebar({ className, capabilities, onNavigate, isMobile }: Props
 
                   {/* Micro Pill Badge (e.g. Scrap) */}
                   {item.badge && (
-                    <span className="ml-auto shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-amber-400/15 text-amber-300 border border-amber-400/30">
+                    <span className="ml-auto shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-gold/15 text-gold border border-gold/30">
                       {item.badge}
                     </span>
                   )}

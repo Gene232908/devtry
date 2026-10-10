@@ -46,8 +46,13 @@ export function AdminShell({ children, identity }: Props) {
             <div className="sticky top-0 z-30">
               <Topbar onMenuClick={() => setMobileSidebarOpen(true)} identity={identity} />
             </div>
-            <div className="flex min-w-0 flex-1">
-              <Sidebar className="hidden lg:flex" capabilities={capabilities} />
+            <div className="flex min-w-0 flex-1 relative">
+              {/* Desktop Sidebar Spacer to reserve layout width */}
+              <div className="hidden lg:block w-64 shrink-0" aria-hidden="true" />
+              <Sidebar
+                className="hidden lg:flex fixed top-16 left-0 bottom-0 z-20"
+                capabilities={capabilities}
+              />
 
               {mobileSidebarOpen && (
                 <div className="fixed inset-0 z-40 flex lg:hidden animate-fade-in">
