@@ -64,6 +64,7 @@ type DbLead = {
   is_duplicate: boolean | null;
   call_center_id: string | null;
   purchaser_id: string | null;
+  inquiry_type?: string | null;
 };
 
 type DbInventory = {
@@ -158,7 +159,7 @@ export async function fetchExecutiveOverview(
   const [leadsRes, inventoryRes, eventsRes, visitorsRes, partialRes, staffRes, staffEntriesRes, commissionRes] = await Promise.all([
     supabase
       .from("leads")
-      .select("id, created_at, status, make, model, year, is_duplicate, call_center_id, purchaser_id")
+      .select("id, created_at, status, make, model, year, is_duplicate, call_center_id, purchaser_id, inquiry_type")
       .gte("created_at", bounds.from)
       .lte("created_at", bounds.to)
       .limit(MAX_ROWS),
@@ -306,10 +307,21 @@ export async function fetchExecutiveOverview(
     };
   });
 
+  const eventLeadIds = Array.from(new Set(events.filter((e) => e.type === "status_change").map((e) => e.lead_id)));
+  const eventLeadTypes = eventLeadIds.length
+    ? await supabase.from("leads").select("id, inquiry_type").in("id", eventLeadIds)
+    : { data: [] as { id: string; inquiry_type: string | null }[], error: null };
+  if (eventLeadTypes.error) return fail(eventLeadTypes.error.message);
+  const scrapEventLeadIds = new Set(
+    (eventLeadTypes.data ?? []).filter((l) => l.inquiry_type === "scrap").map((l) => l.id)
+  );
+
+  const regularLeads = leads.filter((lead) => lead.inquiry_type !== "scrap");
+
   const leadsInStage = (stage: string) => {
-    const fromCreated = leads.filter((lead) => lead.status === stage).map((lead) => lead.id);
+    const fromCreated = regularLeads.filter((lead) => lead.status === stage).map((lead) => lead.id);
     const fromStatusChange = events
-      .filter((event) => event.type === "status_change" && event.meta?.to === stage)
+      .filter((event) => event.type === "status_change" && event.meta?.to === stage && !scrapEventLeadIds.has(event.lead_id))
       .map((event) => event.lead_id);
     return new Set([...fromCreated, ...fromStatusChange]).size;
   };

@@ -81,7 +81,7 @@ export function FollowUpPanel({
   range: OverviewRange;
   isLoading?: boolean;
 }) {
-  const stageHref = (status: string) => `/admin/leads?status=${status}&origin=all`;
+  const stageHref = (status: string) => `/admin/leads?status=${status}`;
   const rows = [
     {
       label: "New leads",
