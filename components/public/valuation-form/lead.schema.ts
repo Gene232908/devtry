@@ -33,7 +33,7 @@ export const leadSchema = z.object({
   mileageUnit: z.enum(["km", "miles"]),
   specification: z.string().min(1, "Select a specification"),
   description: z.string().max(400, "Keep it under 400 characters").optional().or(z.literal("")),
-  trim: z.string().min(1, "Select a trim"),
+  trim: z.string().max(100, "Keep trim under 100 characters").optional().default(""),
   optionLevel: z.enum(["Basic Mode", "Mid Mode", "Full Option"], { message: "Choose an option level" }),
   location: z.string().min(1, "Choose your location"),
   fullName: z

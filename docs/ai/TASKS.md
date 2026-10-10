@@ -2,6 +2,7 @@
 
 ## Current objective
 
+- [x] 2026-10-10 Made Trim optional in both Valuation and Scrap Inquiry public landing page forms (`lead.schema.ts`, `step-trim-location.tsx`, `app/api/leads/route.ts`). Users can submit without choosing a Trim while Location and Option Level remain mandatory.
 - [x] 2026-10-10 Resolved photo upload failure without notes by relaxing database constraints (migration `0043_optional_inspection_photo_notes.sql`) and adding seamless backend fallback so uploads succeed on both current and unmigrated databases.
 - [x] 2026-10-09 Updated the inspection photo workflow for Valuation and Scrap inquiries: users can capture or upload photos immediately with phone camera or file upload without a prerequisite note. Notes remain optional for parts in good condition and are used to document dents, scratches, or defects.
 - [x] 2026-10-01 Fixed Purchaser My Commission financial columns showing AED 0 despite linked sold Inventory values. Purchasers now receive Sold for, Expenses, Net profit, and Margin only for their own server-scoped commission entries; Call Centre profit remains redacted.

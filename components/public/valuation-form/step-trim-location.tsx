@@ -25,8 +25,8 @@ export function StepTrimLocation({ values, errors, makes, setField, mode = "valu
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <Select
-            label="Trim"
-            placeholder={values.model ? "Select trim" : "Select make & model first"}
+            label="Trim (Optional)"
+            placeholder={values.model ? "Select trim (optional)" : "Select make & model first"}
             options={trimOptions}
             value={values.trim}
             onChange={(v) => setField("trim", v)}
@@ -35,7 +35,7 @@ export function StepTrimLocation({ values, errors, makes, setField, mode = "valu
           />
           {values.model && !errors.trim ? (
             <p className="mt-1.5 text-[0.72rem] font-light text-text-faint">
-              Trims for your {values.make} {values.model}.
+              Trims for your {values.make} {values.model} (optional).
             </p>
           ) : null}
         </div>
