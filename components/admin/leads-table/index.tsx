@@ -71,6 +71,7 @@ const PIPELINE_CONFIG: Record<string, { title: string; description: string }> = 
   no_show: { title: "No Show Leads", description: "Customers who did not attend their scheduled inspection." },
   negotiating: { title: "Leads Under Negotiation", description: "Leads currently in price or terms discussion." },
   deal: { title: "Deals", description: "Leads currently marked as Deal." },
+  closed: { title: "Not Purchased", description: "Leads currently marked as Not Purchased." },
 };
 
 export function LeadsTable() {
@@ -88,9 +89,12 @@ export function LeadsTable() {
   const { leads, isLive, isLoading, isRefreshing, refresh } = useLeads();
   const identity = useStaffIdentity();
   const isScrapView = origin === "scrap";
+  const isAllView = origin === "all";
   const scopedLeads = isScrapView
     ? leads.filter((lead) => lead.inquiryType === "scrap")
-    : leads.filter((lead) => lead.inquiryType !== "scrap");
+    : isAllView
+      ? leads
+      : leads.filter((lead) => lead.inquiryType !== "scrap");
   const filter = useLeadsFilter(scopedLeads, identity?.role, attention, status, from, to);
 
   if (isLoading) {
