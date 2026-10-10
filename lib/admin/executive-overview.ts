@@ -304,12 +304,12 @@ export async function fetchExecutiveOverview(
 
   const funnelValues = [
     { key: "visitors", label: "Visitors", value: visitorsCount },
-    { key: "submissions", label: "Regular leads", value: regularLeads.length },
-    { key: "scrap_submissions", label: "Scrap inquiries", value: scrapLeads.length },
+    { key: "submissions", label: "Regular Leads", value: regularLeads.length },
+    { key: "scrap_submissions", label: "Scrap Inquiries", value: scrapLeads.length },
     { key: "contacted", label: "Contacted", value: uniqueEventLeads("contacted") },
-    { key: "inspection_scheduled", label: "Inspection booked", value: uniqueEventLeads("inspection_scheduled") },
+    { key: "inspection_scheduled", label: "Inspection Scheduled", value: uniqueEventLeads("inspection_scheduled") },
     { key: "inspected", label: "Inspected", value: uniqueEventLeads("inspected") },
-    { key: "deal", label: "Deals", value: uniqueEventLeads("deal") },
+    { key: "deal", label: "Deal", value: uniqueEventLeads("deal") },
     { key: "purchased", label: "Purchased", value: inventory.filter((item) => inRange(item.purchased_at, range)).length },
     { key: "sold", label: "Sold", value: current.carsSold },
   ];

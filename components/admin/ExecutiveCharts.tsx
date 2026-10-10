@@ -129,7 +129,7 @@ export function PipelineFunnelChart({
                 comparisonValue: comparisonData?.find((comparison) => comparison.key === point.key)?.value ?? 0,
               }))}
               layout="vertical"
-              margin={{ top: 4, right: 70, left: 16, bottom: 0 }}
+              margin={{ top: 4, right: 70, left: 8, bottom: 0 }}
             >
               <CartesianGrid {...CHART_GRID_STYLE} horizontal={false} vertical={true} />
               <XAxis type="number" {...RECESSIVE_AXIS} allowDecimals={false} />
@@ -137,7 +137,7 @@ export function PipelineFunnelChart({
                 dataKey="label"
                 type="category"
                 {...RECESSIVE_AXIS}
-                width={124}
+                width={142}
                 tick={{ fill: "#E5E7EB", fontSize: 12 }}
               />
               <Tooltip
