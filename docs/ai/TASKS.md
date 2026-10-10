@@ -2,6 +2,7 @@
 
 ## Current objective
 
+- [x] 2026-10-10 Enhanced multi-day and monthly "Car Submissions" Bar Chart (`SubmissionsChart.tsx`): added quick filter tabs (All, Valuation, Scrap), stacked visualization separating Valuation Requests (amber) from Scrap Inquiries (emerald), and rich daily hover tooltips detailing exact valuation vs scrap counts for each day.
 - [x] 2026-10-10 Made Scrap Inquiry form submissions clearly visible and interactive in the Super Admin Executive Dashboard "Car Submissions" panel (`SubmissionsChart.tsx`, `executive-overview.ts`, `queries.ts`): separated Valuation Requests and Scrap Inquiries counts with functional drill-down links to their respective Leads Directory views (`/admin/leads` and `/admin/leads?origin=scrap`).
 - [x] 2026-10-10 Simplified Staff Performance display on Super Admin Executive Dashboard (`ExecutiveDashboard.tsx`, `ExecutivePanels.tsx`): removed the wide Bar Chart and upgraded the "Staff Results" table with role filter tabs (All, Call Centre, Purchasers) and a staff search input to cleanly support teams of any size.
 - [x] 2026-10-10 Removed unused inventory stock metrics and aging chart from Super Admin Executive Dashboard (`ExecutiveDashboard.tsx`): removed "Money in Cars for Sale", "Average Time in Stock", "Cars Waiting Too Long" cards, and the "Time Cars Have Been in Stock" chart.
