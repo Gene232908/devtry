@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import {
   BarChart,
   Bar,
   CartesianGrid,
-  Legend,
+  LabelList,
   ResponsiveContainer,
   XAxis,
   Tooltip,
@@ -20,22 +19,23 @@ import {
   CHART_MARGIN,
   EmptyChart,
   isEmptySeries,
+  lastValueLabel,
   niceDomain,
   RECESSIVE_AXIS,
 } from "@/components/admin/chart-parts";
 import type { ChartPoint } from "@/lib/admin/use-admin-stats";
 import type { ExecutiveOverview } from "@/lib/admin/executive-overview";
-import { cn } from "@/lib/utils";
 
-function SubmissionsTooltip({
+function SubmissionsDayTooltip({
   active,
   payload,
-  comparisonPeriodLabel,
+  selectedLabel,
+  comparisonLabel,
 }: {
   active?: boolean;
   payload?: ReadonlyArray<{ payload?: Record<string, unknown> }>;
-  periodLabel: string;
-  comparisonPeriodLabel?: string;
+  selectedLabel: string;
+  comparisonLabel?: string;
 }) {
   const point = payload?.[0]?.payload;
   if (!active || !point) return null;
@@ -45,37 +45,34 @@ function SubmissionsTooltip({
   const scrap = Number(point.scrapSubmissions ?? 0);
   const compTotal = Number(point.comparisonSubmissions ?? 0);
   const selectedDay = String(point.day ?? "Selected day");
+  const comparisonDay = point.comparisonDay ? String(point.comparisonDay) : undefined;
 
   return (
-    <div className="min-w-[220px] rounded-xl border border-white/15 bg-[#121216] p-3 text-xs text-gray-200 shadow-2xl">
-      <div className="flex items-center justify-between border-b border-white/10 pb-2">
-        <span className="font-semibold text-white">{selectedDay}</span>
-        <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-gray-300">
-          {total} {total === 1 ? "submission" : "submissions"}
-        </span>
-      </div>
-
-      <div className="mt-2.5 space-y-1.5">
-        <div className="flex items-center justify-between rounded-lg border border-amber-500/20 bg-amber-500/10 px-2.5 py-1.5 text-amber-300">
-          <div className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-amber-400" />
-            <span className="font-medium">Valuation Requests</span>
-          </div>
-          <span className="font-bold tabular-nums text-white">{valuations}</span>
+    <div className="min-w-[200px] rounded-xl border border-white/15 bg-[#121216] p-3 text-xs text-gray-200 shadow-2xl">
+      <p className="font-semibold text-white">{selectedDay}</p>
+      {comparisonDay && comparisonLabel && (
+        <p className="mt-1 text-[11px] leading-snug text-gray-400">
+          Compared with <span className="font-semibold text-slate-200">{comparisonDay}</span>.
+        </p>
+      )}
+      <div className="mt-2.5 grid gap-2">
+        <div className="rounded-lg border border-amber-400/20 bg-amber-400/10 px-2.5 py-2 text-amber-300">
+          <p className="font-medium text-[11px] text-amber-400/80">Selected: {selectedLabel}</p>
+          <p className="mt-0.5 text-sm font-semibold text-white">
+            {total.toLocaleString("en-AE")} {total === 1 ? "submission" : "submissions"}
+          </p>
+          {(valuations > 0 || scrap > 0) && (
+            <p className="mt-1 text-[11px] text-gray-300 border-t border-white/10 pt-1">
+              {valuations} valuation{valuations === 1 ? "" : "s"} · {scrap} scrap
+            </p>
+          )}
         </div>
-
-        <div className="flex items-center justify-between rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1.5 text-emerald-300">
-          <div className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-emerald-400" />
-            <span className="font-medium">Scrap Inquiries</span>
-          </div>
-          <span className="font-bold tabular-nums text-white">{scrap}</span>
-        </div>
-
-        {comparisonPeriodLabel && compTotal > 0 && (
-          <div className="mt-1 flex items-center justify-between rounded-lg border border-slate-500/20 bg-slate-500/10 px-2.5 py-1 text-slate-300">
-            <span>Earlier ({comparisonPeriodLabel})</span>
-            <span className="font-semibold tabular-nums text-white">{compTotal}</span>
+        {comparisonLabel && (
+          <div className="rounded-lg border border-slate-400/20 bg-slate-400/10 px-2.5 py-2">
+            <p className="font-medium text-slate-300">Earlier: {comparisonLabel}</p>
+            <p className="mt-0.5 font-semibold text-white">
+              {compTotal.toLocaleString("en-AE")} submissions
+            </p>
           </div>
         )}
       </div>
@@ -96,8 +93,6 @@ export function SubmissionsChart({
   periodLabel?: string;
   comparisonPeriodLabel?: string;
 }) {
-  const [filterType, setFilterType] = useState<"all" | "valuation" | "scrap">("all");
-
   const chartData = data.map((point, index) => ({
     ...point,
     valuationSubmissions: point.valuationSubmissions ?? 0,
@@ -107,8 +102,6 @@ export function SubmissionsChart({
   }));
   const values = chartData.flatMap((d) => [d.submissions ?? 0, d.comparisonSubmissions ?? 0]);
   const currentTotalSubmissions = data.reduce((sum, v) => sum + (v.submissions || 0), 0);
-  const currentValuationSubmissions = data.reduce((sum, v) => sum + (v.valuationSubmissions || 0), 0);
-  const currentScrapSubmissions = data.reduce((sum, v) => sum + (v.scrapSubmissions || 0), 0);
   const isSingleDay = data.length === 1;
   const comparisonSubmissions = comparisonData?.reduce((sum, item) => sum + item.submissions, 0);
 
@@ -131,41 +124,10 @@ export function SubmissionsChart({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Quick filter tabs to view All, Valuation Only, or Scrap Only */}
-          <div className="flex rounded-lg border border-white/10 bg-white/5 p-0.5 text-xs">
-            <button
-              type="button"
-              onClick={() => setFilterType("all")}
-              className={cn(
-                "rounded-md px-2.5 py-0.5 font-medium transition-all",
-                filterType === "all" ? "bg-white/15 text-white shadow-sm" : "text-gray-400 hover:text-white"
-              )}
-            >
-              All ({currentTotalSubmissions})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterType("valuation")}
-              className={cn(
-                "rounded-md px-2.5 py-0.5 font-medium transition-all",
-                filterType === "valuation" ? "bg-amber-500/25 text-amber-300 shadow-sm" : "text-gray-400 hover:text-white"
-              )}
-            >
-              Valuation ({currentValuationSubmissions})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterType("scrap")}
-              className={cn(
-                "rounded-md px-2.5 py-0.5 font-medium transition-all",
-                filterType === "scrap" ? "bg-emerald-500/25 text-emerald-300 shadow-sm" : "text-gray-400 hover:text-white"
-              )}
-            >
-              Scrap ({currentScrapSubmissions})
-            </button>
-          </div>
-
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-400 border border-amber-500/25">
+            {currentTotalSubmissions} {currentTotalSubmissions === 1 ? "lead" : "leads"}
+          </span>
           {comparisonSubmissions !== undefined && (
             <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-medium text-slate-300 border border-white/10">
               Earlier: {comparisonSubmissions}
@@ -281,13 +243,9 @@ export function SubmissionsChart({
           <ResponsiveContainer width="100%" height="100%" debounce={50} minWidth={0}>
             <BarChart data={chartData} margin={CHART_MARGIN}>
               <defs>
-                <linearGradient id="valuationBarGrad" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="submissionBarGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#F59E0B" stopOpacity={0.95} />
-                  <stop offset="100%" stopColor="#D97706" stopOpacity={0.6} />
-                </linearGradient>
-                <linearGradient id="scrapBarGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10B981" stopOpacity={0.95} />
-                  <stop offset="100%" stopColor="#059669" stopOpacity={0.6} />
+                  <stop offset="100%" stopColor="#D97706" stopOpacity={0.5} />
                 </linearGradient>
               </defs>
               <CartesianGrid {...CHART_GRID_STYLE} />
@@ -301,42 +259,23 @@ export function SubmissionsChart({
               <Tooltip
                 cursor={{ fill: "rgba(255, 255, 255, 0.05)" }}
                 content={(props) => (
-                  <SubmissionsTooltip
+                  <SubmissionsDayTooltip
                     {...props}
-                    periodLabel={periodLabel}
-                    comparisonPeriodLabel={comparisonPeriodLabel}
+                    selectedLabel={periodLabel}
+                    comparisonLabel={comparisonPeriodLabel}
                   />
                 )}
               />
-              <Legend
-                verticalAlign="top"
-                align="right"
-                height={24}
-                iconType="circle"
-                wrapperStyle={{ fontSize: "11px", color: "#E5E7EB" }}
-              />
-              {filterType !== "scrap" && (
-                <Bar
-                  dataKey="valuationSubmissions"
-                  name="Valuation"
-                  stackId={filterType === "all" ? "submissions" : undefined}
-                  fill="url(#valuationBarGrad)"
-                  maxBarSize={comparisonData ? 24 : 44}
-                  radius={filterType === "valuation" ? [6, 6, 0, 0] : [0, 0, 0, 0]}
-                  isAnimationActive={false}
-                />
-              )}
-              {filterType !== "valuation" && (
-                <Bar
-                  dataKey="scrapSubmissions"
-                  name="Scrap"
-                  stackId={filterType === "all" ? "submissions" : undefined}
-                  fill="url(#scrapBarGrad)"
-                  maxBarSize={comparisonData ? 24 : 44}
-                  radius={[6, 6, 0, 0]}
-                  isAnimationActive={false}
-                />
-              )}
+              <Bar
+                dataKey="submissions"
+                name={`Selected: ${periodLabel}`}
+                fill="url(#submissionBarGrad)"
+                maxBarSize={comparisonData ? 24 : 48}
+                radius={[6, 6, 0, 0]}
+                isAnimationActive={false}
+              >
+                <LabelList dataKey="submissions" content={lastValueLabel(data.length)} />
+              </Bar>
               {comparisonData && (
                 <Bar
                   dataKey="comparisonSubmissions"
