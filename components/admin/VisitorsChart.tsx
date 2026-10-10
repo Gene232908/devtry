@@ -52,6 +52,11 @@ export function VisitorsChart({
 
   const todayVisitors = data[0]?.visitors ?? 0;
   const todaySubmissions = data[0]?.submissions ?? 0;
+  const todayScrap = data[0]?.scrapSubmissions ?? 0;
+  const todayValuations =
+    data[0]?.valuationSubmissions !== undefined
+      ? (data[0].valuationSubmissions ?? 0)
+      : Math.max(0, todaySubmissions - todayScrap);
   const conversionRate = todayVisitors > 0 ? ((todaySubmissions / todayVisitors) * 100).toFixed(1) : "0.0";
   const compVisitors = comparisonData?.[0]?.visitors;
   const compSubmissions = comparisonData?.[0]?.submissions;
@@ -147,8 +152,13 @@ export function VisitorsChart({
                       {todaySubmissions === 1 ? "car inquiry" : "car inquiries"}
                     </span>
                   </div>
+                  <div className="flex items-center justify-center gap-1.5 text-[11px] mt-0.5">
+                    <span className="text-blue-300 font-medium">{todayValuations} regular</span>
+                    <span className="text-white/20">·</span>
+                    <span className="text-amber-400 font-medium">{todayScrap} scrap</span>
+                  </div>
                   {compSubmissions !== undefined && (
-                    <p className="text-[11px] text-blue-300/80 mt-0.5">
+                    <p className="text-[10px] text-blue-300/70 mt-0.5">
                       vs <strong className="text-blue-200">{compSubmissions}</strong> prior
                     </p>
                   )}
@@ -161,8 +171,18 @@ export function VisitorsChart({
                   </div>
                 </div>
 
-                <div className="text-center text-[10px] text-gray-400 border-t border-white/10 pt-1.5">
-                  {todaySubmissions} lead{todaySubmissions === 1 ? "" : "s"} from {todayVisitors} visitor{todayVisitors === 1 ? "" : "s"}
+                <div className="text-center text-[10px] text-gray-400 border-t border-white/10 pt-1.5 flex items-center justify-center gap-1.5 flex-wrap">
+                  <span className="text-gray-200 font-medium">
+                    {todayValuations} {todayValuations === 1 ? "lead" : "leads"}
+                  </span>
+                  <span className="text-white/20">·</span>
+                  <span className="text-amber-400 font-medium">
+                    {todayScrap} {todayScrap === 1 ? "scrap inquiry" : "scrap inquiries"}
+                  </span>
+                  <span className="text-white/20">·</span>
+                  <span>
+                    from {todayVisitors} {todayVisitors === 1 ? "visitor" : "visitors"}
+                  </span>
                 </div>
               </div>
             </div>
