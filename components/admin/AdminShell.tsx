@@ -50,17 +50,18 @@ export function AdminShell({ children, identity }: Props) {
               <Sidebar className="hidden lg:flex" capabilities={capabilities} />
 
               {mobileSidebarOpen && (
-                <div className="fixed inset-0 z-40 flex lg:hidden">
+                <div className="fixed inset-0 z-40 flex lg:hidden animate-fade-in">
                   <Sidebar
-                    className="flex"
+                    className="flex w-72 max-w-[85vw] shadow-2xl h-full overflow-y-auto"
                     capabilities={capabilities}
                     onNavigate={() => setMobileSidebarOpen(false)}
+                    isMobile
                   />
                   <button
                     type="button"
                     aria-label="Close sidebar"
                     onClick={() => setMobileSidebarOpen(false)}
-                    className="flex-1 bg-black/60"
+                    className="flex-1 bg-black/70 backdrop-blur-sm transition-opacity"
                   >
                     <X className="m-4 h-6 w-6 text-text" />
                   </button>
