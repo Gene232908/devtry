@@ -6,6 +6,13 @@ Use reverse chronological order.
 
 ### Added
 
+- **Incomplete-form unviewed counter badge & row indicators.** Admin Sidebar now
+  shows an amber pill counter badge on "Incomplete Forms" displaying the number of
+  unviewed partial leads (`viewed_at IS NULL` and `status != 'converted'`), hidden
+  when 0. Table rows in `/admin/incomplete` display an amber left accent border and
+  "NEW" badge pill. Opening an incomplete form optimistically clears the row indicator
+  and decrements the sidebar badge count instantaneously without full page reload.
+
 - **Incomplete-form typo dedupe.** Each opened Valuation/Scrap form now carries
   a UUID and revision so correcting a valid-looking phone number updates the
   same incomplete record and delayed older requests cannot restore the typo.

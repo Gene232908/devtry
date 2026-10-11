@@ -412,7 +412,7 @@ export async function fetchPartialLeads(identity?: { role: string; userId: strin
   };
 
   let { data, error } = await createQuery(PARTIAL_LEAD_COLUMNS);
-  if (error && /inquiry_type|scrap_condition|scrap_asking_price_aed|mileage_value|mileage_unit/i.test(error.message ?? "")) {
+  if (error && /inquiry_type|scrap_condition|scrap_asking_price_aed|mileage_value|mileage_unit|viewed_at/i.test(error.message ?? "")) {
     ({ data, error } = await createQuery(PARTIAL_LEAD_COLUMNS_LEGACY));
   }
 
@@ -442,7 +442,7 @@ export async function fetchPartialLead(
   };
 
   let { data, error } = await createQuery(PARTIAL_LEAD_COLUMNS);
-  if (error && /inquiry_type|scrap_condition|scrap_asking_price_aed|mileage_value|mileage_unit/i.test(error.message ?? "")) {
+  if (error && /inquiry_type|scrap_condition|scrap_asking_price_aed|mileage_value|mileage_unit|viewed_at/i.test(error.message ?? "")) {
     ({ data, error } = await createQuery(PARTIAL_LEAD_COLUMNS_LEGACY));
   }
 

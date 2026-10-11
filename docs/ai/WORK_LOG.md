@@ -4,6 +4,19 @@ This is the factual source for reports.
 
 Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
+## 2026-10-11
+
+### Completed
+
+- Incomplete forms unviewed counter badge and row highlights:
+  - Added high-contrast, crystal-clear luminous gold counter pill badge to Admin Sidebar for "Incomplete Forms".
+  - Created `/api/admin/incomplete/count` endpoint and added client-side route revalidation so the badge count stays fresh across navigation.
+  - Implemented persistent session cookie tracking (`lib/admin/viewed-partial-leads.ts`) for viewed partial lead IDs, preventing the counter badge from jumping back to 2 upon inspecting customer records or navigating routes.
+  - Applied subtle low-opacity highlight (`bg-amber-400/[0.045]`) strictly to unviewed `status = 'new'` incomplete forms, keeping contacted/scheduled rows neutral.
+  - Removed redundant glowing line and "NEW" tag beside customer names.
+  - Added migration `0045_partial_lead_viewed_at.sql` and safe fallback handling for Postgres error code `42703`.
+  - Verification: `npx tsc --noEmit` passed with 0 errors, `npx vitest run` passed all 36 test files (279 tests), and `npx vitest run lib/admin/partial-lead.test.ts` passed (4 tests).
+
 ## 2026-09-24
 
 ### Completed

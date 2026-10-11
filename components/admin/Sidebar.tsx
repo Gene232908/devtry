@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
@@ -60,12 +61,42 @@ type Props = {
   /** Callback fired when a navigation item is clicked (e.g. to close mobile drawer). */
   onNavigate?: () => void;
   isMobile?: boolean;
+  /** Initial count of unviewed partial leads for the /admin/incomplete counter badge. */
+  initialUnviewedIncompleteCount?: number;
 };
 
-export function Sidebar({ className, capabilities, onNavigate, isMobile }: Props) {
+export function Sidebar({ className, capabilities, onNavigate, isMobile, initialUnviewedIncompleteCount }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const isScrapRoute = pathname === "/admin/leads" && searchParams.get("origin") === "scrap";
+
+  const [unviewedIncompleteCount, setUnviewedIncompleteCount] = useState(
+    initialUnviewedIncompleteCount ?? 0,
+  );
+
+  useEffect(() => {
+    setUnviewedIncompleteCount(initialUnviewedIncompleteCount ?? 0);
+  }, [initialUnviewedIncompleteCount]);
+
+  useEffect(() => {
+    // Live update on mount and route changes to ensure badge is always fresh
+    fetch("/api/admin/incomplete/count")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && typeof data.count === "number") {
+          setUnviewedIncompleteCount(data.count);
+        }
+      })
+      .catch(() => {});
+  }, [pathname]);
+
+  useEffect(() => {
+    const handleViewed = () => {
+      setUnviewedIncompleteCount((prev) => Math.max(0, prev - 1));
+    };
+    window.addEventListener("partial-lead-viewed", handleViewed);
+    return () => window.removeEventListener("partial-lead-viewed", handleViewed);
+  }, []);
 
   const items = capabilities
     ? NAV_ITEMS.filter((item) => !item.gate || capabilities.includes(item.gate))
@@ -139,6 +170,13 @@ export function Sidebar({ className, capabilities, onNavigate, isMobile }: Props
               {item.badge && (
                 <span className="ml-auto shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-gold/15 text-gold border border-gold/30">
                   {item.badge}
+                </span>
+              )}
+
+              {/* Counter pill for unviewed incomplete forms */}
+              {item.href === "/admin/incomplete" && unviewedIncompleteCount > 0 && (
+                <span className="ml-auto shrink-0 min-w-[22px] h-[22px] px-1.5 flex items-center justify-center rounded-full text-xs font-black bg-amber-400 text-zinc-950 shadow-[0_0_12px_rgba(251,191,36,0.6)] leading-none select-none">
+                  {unviewedIncompleteCount}
                 </span>
               )}
             </Link>

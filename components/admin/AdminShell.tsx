@@ -19,9 +19,11 @@ type Props = {
   children: React.ReactNode;
   /** Server-resolved identity. Null during preview mode or before resolution. */
   identity: StaffIdentity | null;
+  /** Initial count of unviewed partial leads for sidebar badge */
+  initialUnviewedIncompleteCount?: number;
 };
 
-export function AdminShell({ children, identity }: Props) {
+export function AdminShell({ children, identity, initialUnviewedIncompleteCount }: Props) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const pathname = usePathname();
   const chromeless = CHROMELESS_ROUTES.includes(pathname);
@@ -54,6 +56,7 @@ export function AdminShell({ children, identity }: Props) {
               <Sidebar
                 className="hidden lg:flex fixed top-16 left-0 bottom-0 z-20 w-72"
                 capabilities={capabilities}
+                initialUnviewedIncompleteCount={initialUnviewedIncompleteCount}
               />
 
               {mobileSidebarOpen && (
@@ -63,6 +66,7 @@ export function AdminShell({ children, identity }: Props) {
                     capabilities={capabilities}
                     onNavigate={() => setMobileSidebarOpen(false)}
                     isMobile
+                    initialUnviewedIncompleteCount={initialUnviewedIncompleteCount}
                   />
                   <button
                     type="button"

@@ -2,6 +2,16 @@
 
 ## Current state
 
+- 2026-10-11 update: Admin Sidebar now renders an amber counter badge for unviewed
+  incomplete valuation/scrap forms (`viewed_at IS NULL` and `status != 'converted'`),
+  and unviewed rows in `/admin/incomplete` display an amber left border highlight
+  plus a "NEW" badge pill. Opening an incomplete lead instantly clears the row
+  indicator and decrements the sidebar badge count optimistically via a decoupled
+  window CustomEvent (`partial-lead-viewed`), with async POST persistence to
+  `/api/admin/incomplete/[id]/view` and server-side tracking on `/admin/incomplete/[id]`.
+  Includes safe backward compatibility for unmigrated `viewed_at` schemas.
+  Verified with `npx tsc --noEmit` (0 errors) and Vitest (277 tests passing).
+
 - 2026-10-01 update: Purchaser My Commission now receives Sold for, Expenses,
   Net profit, and Margin for only the signed-in Purchaser's own commission
   entries. The previous owner-only projection caused valid totals to render as

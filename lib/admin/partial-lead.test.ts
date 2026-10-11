@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { PARTIAL_STATUSES, partialInquiryType } from "@/lib/admin/partial-lead";
+import {
+  PARTIAL_STATUSES,
+  PARTIAL_LEAD_COLUMNS,
+  partialInquiryType,
+  getUnviewedPartialLeadsCount,
+} from "@/lib/admin/partial-lead";
 
 describe("incomplete-form CSR statuses", () => {
   it("keeps buying outcomes out of the CSR menu", () => {
@@ -16,3 +21,15 @@ describe("incomplete inquiry origin", () => {
     expect(partialInquiryType({ inquiry_type: "scrap" })).toBe("scrap");
   });
 });
+
+describe("incomplete lead viewed tracking", () => {
+  it("includes viewed_at in PARTIAL_LEAD_COLUMNS", () => {
+    expect(PARTIAL_LEAD_COLUMNS).toContain("viewed_at");
+  });
+
+  it("returns 0 for purchaser identity without querying database", async () => {
+    const count = await getUnviewedPartialLeadsCount({ role: "purchaser", userId: "p-1" });
+    expect(count).toBe(0);
+  });
+});
+

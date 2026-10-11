@@ -8,6 +8,7 @@ export type PartialLead = {
   id: string;
   created_at: string;
   updated_at: string;
+  viewed_at?: string | null;
   phone_e164: string;
   full_name: string | null;
   consent: boolean;
@@ -41,7 +42,7 @@ export type PartialLeadActivity = {
 /** Columns selected everywhere a partial lead is read, kept in one place so the
  *  list and detail endpoints can never drift apart. */
 export const PARTIAL_LEAD_COLUMNS =
-  "id, created_at, updated_at, phone_e164, full_name, consent, status, notes, furthest_step, last_trigger, make, model, year, mileage_km, mileage_value, mileage_unit, specification, description, inquiry_type, scrap_condition, scrap_asking_price_aed, call_center_id, purchaser_id";
+  "id, created_at, updated_at, viewed_at, phone_e164, full_name, consent, status, notes, furthest_step, last_trigger, make, model, year, mileage_km, mileage_value, mileage_unit, specification, description, inquiry_type, scrap_condition, scrap_asking_price_aed, call_center_id, purchaser_id";
 
 export const PARTIAL_LEAD_COLUMNS_LEGACY =
   "id, created_at, updated_at, phone_e164, full_name, consent, status, notes, furthest_step, last_trigger, make, model, year, mileage_km, specification, description, call_center_id, purchaser_id";
@@ -95,3 +96,98 @@ export function partialCarSummary(row: Pick<PartialLead, "year" | "make" | "mode
 // business runs on UAE time, so a capture made late in the UAE evening must not
 // read as the following day (or the previous one) depending on who is looking.
 export { formatUaeDateShort as formatPartialDate } from "@/lib/uae-time";
+
+/**
+ * Returns the count of new/unviewed incomplete forms for the sidebar notification badge.
+ * Criteria:
+ * - If viewed_at exists in PostgreSQL: count where viewed_at IS NULL and status != 'converted'.
+ * - Fallback: count unconverted leads with status = 'new'.
+ * Excludes converted leads and purchasers.
+ */
+export async function getUnviewedPartialLeadsCount(
+  identity?: { role: string; userId: string },
+  viewedIds: string[] = [],
+): Promise<number> {
+  if (identity?.role === "purchaser") return 0;
+  try {
+    const { getSupabaseAdmin, isSupabaseConfigured } = await import("@/lib/supabase/admin");
+    if (!isSupabaseConfigured()) return 0;
+    const supabase = getSupabaseAdmin();
+
+    // 1. Primary check: if viewed_at column exists in PostgreSQL
+    let query = supabase
+      .from("partial_leads")
+      .select("id", { count: "exact", head: true })
+      .is("viewed_at", null)
+      .eq("status", "new")
+      .is("converted_lead_id", null)
+      .is("archived_at", null);
+
+    if (identity?.role === "call_center") {
+      query = query.eq("call_center_id", identity.userId);
+    }
+
+    if (viewedIds.length > 0) {
+      query = query.not("id", "in", `(${viewedIds.join(",")})`);
+    }
+
+    const { count, error } = await query;
+    if (!error && typeof count === "number") {
+      return count;
+    }
+
+    // 2. Safe Fallback when viewed_at is not migrated (error 42703 or column missing):
+    // Count active unhandled partial leads (status = 'new' and unconverted)
+    let fallbackQuery = supabase
+      .from("partial_leads")
+      .select("id", { count: "exact", head: true })
+      .is("converted_lead_id", null)
+      .is("archived_at", null)
+      .eq("status", "new");
+
+    if (identity?.role === "call_center") {
+      fallbackQuery = fallbackQuery.eq("call_center_id", identity.userId);
+    }
+
+    if (viewedIds.length > 0) {
+      fallbackQuery = fallbackQuery.not("id", "in", `(${viewedIds.join(",")})`);
+    }
+
+    const fallbackRes = await fallbackQuery;
+    return fallbackRes.count ?? 0;
+  } catch (err) {
+    console.warn("[partial-lead] Error counting unviewed partial leads:", err);
+    return 0;
+  }
+}
+
+/**
+ * Sets viewed_at to the current ISO timestamp for a partial lead if not already viewed.
+ * Gracefully handles missing column (Postgres 42703) or missing database.
+ */
+export async function markPartialLeadAsViewed(id: string): Promise<boolean> {
+  if (!id) return false;
+  try {
+    const { getSupabaseAdmin, isSupabaseConfigured } = await import("@/lib/supabase/admin");
+    if (!isSupabaseConfigured()) return false;
+    const supabase = getSupabaseAdmin();
+    const { error } = await supabase
+      .from("partial_leads")
+      .update({ viewed_at: new Date().toISOString() })
+      .eq("id", id)
+      .is("viewed_at", null);
+
+    if (error) {
+      if (error.code === "42703" || /viewed_at|column/i.test(error.message ?? "")) {
+        return false;
+      }
+      console.warn("[partial-lead] Failed to mark partial lead viewed:", error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn("[partial-lead] Error marking partial lead viewed:", err);
+    return false;
+  }
+}
+

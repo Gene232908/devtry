@@ -4,6 +4,9 @@ import { requireStaff } from "@/lib/server/require-staff";
 import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 import { buildIdentity, type StaffRole } from "@/lib/auth/permissions";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { getUnviewedPartialLeadsCount } from "@/lib/admin/partial-lead";
+import { demoPartialLeads } from "@/config/demo-admin-data";
+import { getViewedPartialLeadIds } from "@/lib/admin/viewed-partial-leads";
 
 /**
  * Server layout — resolves the viewer's identity once per navigation and
@@ -20,9 +23,18 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 const VALID_ROLES = new Set(["admin", "manager", "call_center", "purchaser"]);
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const viewedIds = await getViewedPartialLeadIds();
+
   if (ADMIN_PREVIEW) {
     const identity = buildIdentity("preview", "admin", "Preview Admin");
-    return <AdminShell identity={identity}>{children}</AdminShell>;
+    const initialUnviewedIncompleteCount = demoPartialLeads.filter(
+      (row) => row.status === "new" && !row.viewed_at && !viewedIds.includes(row.id),
+    ).length;
+    return (
+      <AdminShell identity={identity} initialUnviewedIncompleteCount={initialUnviewedIncompleteCount}>
+        {children}
+      </AdminShell>
+    );
   }
 
   const cookieStore = await cookies();
@@ -47,11 +59,25 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     }
 
     const identity = buildIdentity(userId, roleCookie as StaffRole, displayName);
-    return <AdminShell identity={identity}>{children}</AdminShell>;
+    const initialUnviewedIncompleteCount =
+      roleCookie === "purchaser" ? 0 : await getUnviewedPartialLeadsCount(identity, viewedIds);
+
+    return (
+      <AdminShell identity={identity} initialUnviewedIncompleteCount={initialUnviewedIncompleteCount}>
+        {children}
+      </AdminShell>
+    );
   }
 
   // Slow path (first load or cookie expired): full DB check via requireStaff().
   const auth = await requireStaff().catch(() => ({ ok: false as const, status: 401 as const, message: "Not authenticated." }));
   const identity = auth.ok ? auth.identity : null;
-  return <AdminShell identity={identity}>{children}</AdminShell>;
+  const initialUnviewedIncompleteCount =
+    identity && identity.role !== "purchaser" ? await getUnviewedPartialLeadsCount(identity, viewedIds) : 0;
+
+  return (
+    <AdminShell identity={identity} initialUnviewedIncompleteCount={initialUnviewedIncompleteCount}>
+      {children}
+    </AdminShell>
+  );
 }

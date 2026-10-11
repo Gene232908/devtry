@@ -13,6 +13,7 @@ import { partialInquiryType, type PartialLead } from "@/lib/admin/partial-lead";
 import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 import { LeadStatus } from "@/config/mock-data";
 import { ScrapInquiryBadge } from "@/components/admin/ScrapInquiryBadge";
+import { cn } from "@/lib/utils";
 
 // Valuation forms that were started but never submitted. These are UNVERIFIED:
 // nobody proved the number belongs to them, which is exactly why they are kept
@@ -65,6 +66,23 @@ export default function IncompleteValuationsClient({
     () => inquiryFilter === "all" ? rows : rows.filter((row) => partialInquiryType(row) === inquiryFilter),
     [inquiryFilter, rows],
   );
+
+  function handleMarkAsViewed(row: PartialLead) {
+    if (!row.viewed_at && row.status === "new") {
+      // Optimistically clear highlight & badge in local table state
+      setRows((current) =>
+        current.map((r) => (r.id === row.id ? { ...r, viewed_at: new Date().toISOString() } : r)),
+      );
+      // Immediately notify sidebar to decrement counter badge
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("partial-lead-viewed", { detail: { id: row.id } }));
+      }
+      // Asynchronous API call to persist viewed timestamp
+      fetch(`/api/admin/incomplete/${row.id}/view`, { method: "POST" }).catch((err) => {
+        console.warn("[incomplete] Failed to mark lead viewed:", err);
+      });
+    }
+  }
 
   function ask(action: PendingAction) {
     setPending(action);
@@ -217,43 +235,58 @@ export default function IncompleteValuationsClient({
                 </tr>
               </thead>
               <tbody>
-                {visibleRows.map((row) => (
-                  <tr key={row.id} className="border-b border-border last:border-0 hover:bg-surface-2/50">
-                    <td className="py-3 pr-4">
-                      <Link href={`/admin/incomplete/${row.id}`} className="text-text hover:text-gold">
-                        {row.full_name || "Unnamed contact"}
-                      </Link>
-                      {partialInquiryType(row) === "scrap" && (
-                        <ScrapInquiryBadge compact className="mt-1" />
+                {visibleRows.map((row) => {
+                  const isNew = row.status === "new" && !row.viewed_at;
+                  return (
+                    <tr
+                      key={row.id}
+                      className={cn(
+                        "border-b border-border last:border-0 transition-colors",
+                        isNew
+                          ? "bg-amber-400/[0.045] hover:bg-amber-400/[0.08]"
+                          : "hover:bg-surface-2/50",
                       )}
-                    </td>
-                    <td className="py-3 pr-4">
-                      <StatusPill status={row.status as LeadStatus} />
-                    </td>
-                    <td className="py-3 pl-2 pr-1">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        className="px-3 text-danger hover:bg-danger/10"
-                        disabled={busyId === row.id}
-                        onClick={() => ask({ kind: "block", row })}
-                        title="Block this number from requesting more codes"
-                      >
-                        <Ban className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="px-3"
-                        disabled={busyId === row.id}
-                        onClick={() => ask({ kind: "delete", row })}
-                        title="Remove from this list"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                    >
+                      <td className="py-3 pr-4">
+                        <Link
+                          href={`/admin/incomplete/${row.id}`}
+                          onClick={() => handleMarkAsViewed(row)}
+                          className="text-text hover:text-gold font-medium transition-colors"
+                        >
+                          {row.full_name || "Unnamed contact"}
+                        </Link>
+                        {partialInquiryType(row) === "scrap" && (
+                          <ScrapInquiryBadge compact className="mt-1" />
+                        )}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <StatusPill status={row.status as LeadStatus} />
+                      </td>
+                      <td className="py-3 pl-2 pr-1">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            className="px-3 text-danger hover:bg-danger/10"
+                            disabled={busyId === row.id}
+                            onClick={() => ask({ kind: "block", row })}
+                            title="Block this number from requesting more codes"
+                          >
+                            <Ban className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="px-3"
+                            disabled={busyId === row.id}
+                            onClick={() => ask({ kind: "delete", row })}
+                            title="Remove from this list"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             {visibleRows.length === 0 && (

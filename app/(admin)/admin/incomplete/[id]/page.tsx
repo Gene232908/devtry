@@ -4,14 +4,21 @@ import { fetchPartialLead } from "@/lib/admin/queries";
 import { requireStaff } from "@/lib/server/require-staff";
 import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 import { demoPartialLeads } from "@/config/demo-admin-data";
+import { markPartialLeadAsViewed } from "@/lib/admin/partial-lead";
+import { addViewedPartialLeadId } from "@/lib/admin/viewed-partial-leads";
 
 export const dynamic = "force-dynamic";
 
 export default async function IncompleteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
+  await addViewedPartialLeadId(resolvedParams.id);
+
   if (ADMIN_PREVIEW) {
     const fallback = demoPartialLeads.find((row) => row.id === resolvedParams.id) ?? null;
     if (!fallback) return <NotFound />;
+    if (!fallback.viewed_at && fallback.status !== "converted") {
+      fallback.viewed_at = new Date().toISOString();
+    }
     return <PartialLeadDetail partial={fallback} />;
   }
 
@@ -29,7 +36,14 @@ export default async function IncompleteDetailPage({ params }: { params: Promise
     return <NotFound />;
   }
 
-  return <PartialLeadDetail partial={result.data.partialLead} />;
+  // Mark viewed in database asynchronously upon server page render
+  await markPartialLeadAsViewed(resolvedParams.id);
+  const partial = {
+    ...result.data.partialLead,
+    viewed_at: result.data.partialLead.viewed_at ?? new Date().toISOString(),
+  };
+
+  return <PartialLeadDetail partial={partial} />;
 }
 
 function NotFound() {
