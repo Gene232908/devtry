@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireStaff } from "@/lib/server/require-staff";
 import { getUnviewedPartialLeadsCount } from "@/lib/admin/partial-lead";
 import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
@@ -7,8 +7,14 @@ import { getViewedPartialLeadIds } from "@/lib/admin/viewed-partial-leads";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  const viewedIds = await getViewedPartialLeadIds();
+export async function GET(request: NextRequest) {
+  const cookieViewedIds = await getViewedPartialLeadIds();
+  const queryViewed = request.nextUrl.searchParams.get("viewed");
+  const queryViewedIds = queryViewed
+    ? queryViewed.split(",").map((s) => s.trim()).filter(Boolean)
+    : [];
+
+  const viewedIds = Array.from(new Set([...cookieViewedIds, ...queryViewedIds]));
 
   if (ADMIN_PREVIEW) {
     const count = demoPartialLeads.filter(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Ban, Trash2, UsersRound, X } from "lucide-react";
@@ -67,14 +67,38 @@ export default function IncompleteValuationsClient({
     [inquiryFilter, rows],
   );
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const raw = sessionStorage.getItem("cvd_viewed_ids");
+        const list: string[] = raw ? JSON.parse(raw) : [];
+        if (list.length > 0) {
+          setRows((current) =>
+            current.map((r) =>
+              list.includes(r.id) ? { ...r, viewed_at: r.viewed_at ?? new Date().toISOString() } : r,
+            ),
+          );
+        }
+      } catch {}
+    }
+  }, []);
+
   function handleMarkAsViewed(row: PartialLead) {
     if (!row.viewed_at && row.status === "new") {
-      // Optimistically clear highlight & badge in local table state
+      // Optimistically clear highlight in local table state
       setRows((current) =>
         current.map((r) => (r.id === row.id ? { ...r, viewed_at: new Date().toISOString() } : r)),
       );
-      // Immediately notify sidebar to decrement counter badge
+      // Immediately notify sidebar to decrement counter badge and save to sessionStorage
       if (typeof window !== "undefined") {
+        try {
+          const raw = sessionStorage.getItem("cvd_viewed_ids");
+          const list: string[] = raw ? JSON.parse(raw) : [];
+          if (!list.includes(row.id)) {
+            list.push(row.id);
+            sessionStorage.setItem("cvd_viewed_ids", JSON.stringify(list));
+          }
+        } catch {}
         window.dispatchEvent(new CustomEvent("partial-lead-viewed", { detail: { id: row.id } }));
       }
       // Asynchronous API call to persist viewed timestamp

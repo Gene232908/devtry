@@ -79,8 +79,32 @@ export function Sidebar({ className, capabilities, onNavigate, isMobile, initial
   }, [initialUnviewedIncompleteCount]);
 
   useEffect(() => {
-    // Live update on mount and route changes to ensure badge is always fresh
-    fetch("/api/admin/incomplete/count")
+    // If user is currently inspecting a customer record, mark that record's ID as viewed immediately
+    const match = pathname.match(/^\/admin\/incomplete\/([^/]+)$/);
+    const activeDetailId = match && match[1] ? match[1] : null;
+
+    let storedIds: string[] = [];
+    if (typeof window !== "undefined") {
+      try {
+        const raw = sessionStorage.getItem("cvd_viewed_ids");
+        if (raw) storedIds = JSON.parse(raw);
+      } catch {}
+
+      if (activeDetailId && !storedIds.includes(activeDetailId)) {
+        storedIds.push(activeDetailId);
+        try {
+          sessionStorage.setItem("cvd_viewed_ids", JSON.stringify(storedIds));
+        } catch {}
+      }
+    }
+
+    if (activeDetailId) {
+      fetch(`/api/admin/incomplete/${activeDetailId}/view`, { method: "POST" }).catch(() => {});
+    }
+
+    const queryParam = storedIds.length > 0 ? `?viewed=${encodeURIComponent(storedIds.join(","))}` : "";
+
+    fetch(`/api/admin/incomplete/count${queryParam}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && typeof data.count === "number") {
@@ -91,7 +115,19 @@ export function Sidebar({ className, capabilities, onNavigate, isMobile, initial
   }, [pathname]);
 
   useEffect(() => {
-    const handleViewed = () => {
+    const handleViewed = (e: Event) => {
+      const customEvent = e as CustomEvent<{ id?: string }>;
+      const id = customEvent.detail?.id;
+      if (id && typeof window !== "undefined") {
+        try {
+          const raw = sessionStorage.getItem("cvd_viewed_ids");
+          const list: string[] = raw ? JSON.parse(raw) : [];
+          if (!list.includes(id)) {
+            list.push(id);
+            sessionStorage.setItem("cvd_viewed_ids", JSON.stringify(list));
+          }
+        } catch {}
+      }
       setUnviewedIncompleteCount((prev) => Math.max(0, prev - 1));
     };
     window.addEventListener("partial-lead-viewed", handleViewed);
