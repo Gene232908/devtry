@@ -16,10 +16,8 @@ export async function POST(
     return NextResponse.json({ ok: false, error: "Missing ID" }, { status: 400 });
   }
 
-  // Always track in session cookie so count and highlight persist immediately
-  await addViewedPartialLeadId(id);
-
   if (ADMIN_PREVIEW) {
+    await addViewedPartialLeadId(id, "admin");
     return NextResponse.json({ ok: true, preview: true });
   }
 
@@ -31,6 +29,9 @@ export async function POST(
   if (!hasCapability(auth.identity, "viewIncompleteForms")) {
     return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
   }
+
+  // Track in session cookie scoped to this staff member's role
+  await addViewedPartialLeadId(id, auth.identity.role);
 
   const success = await markPartialLeadAsViewed(id);
   return NextResponse.json({ ok: true, success });

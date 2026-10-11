@@ -9,9 +9,8 @@ import { getViewedPartialLeadIds } from "@/lib/admin/viewed-partial-leads";
 export const dynamic = "force-dynamic";
 
 export default async function AdminIncompletePage() {
-  const viewedIds = await getViewedPartialLeadIds();
-
   if (ADMIN_PREVIEW) {
+    const viewedIds = await getViewedPartialLeadIds("admin");
     const initialRows = demoPartialLeads.map((row) =>
       viewedIds.includes(row.id) ? { ...row, viewed_at: row.viewed_at ?? new Date().toISOString() } : row,
     );
@@ -27,6 +26,7 @@ export default async function AdminIncompletePage() {
     return <div>Not authorized</div>;
   }
 
+  const viewedIds = await getViewedPartialLeadIds(auth.identity.role);
   const result = await fetchPartialLeads(auth.identity);
   const rawRows = result.ok ? result.data.partialLeads : [];
   const initialRows = rawRows.map((row) =>

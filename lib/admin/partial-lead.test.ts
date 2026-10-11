@@ -23,8 +23,8 @@ describe("incomplete inquiry origin", () => {
 });
 
 describe("incomplete lead viewed tracking", () => {
-  it("includes viewed_at in PARTIAL_LEAD_COLUMNS", () => {
-    expect(PARTIAL_LEAD_COLUMNS).toContain("viewed_at");
+  it("includes inquiry_type in PARTIAL_LEAD_COLUMNS", () => {
+    expect(PARTIAL_LEAD_COLUMNS).toContain("inquiry_type");
   });
 
   it("returns 0 for purchaser identity without querying database", async () => {

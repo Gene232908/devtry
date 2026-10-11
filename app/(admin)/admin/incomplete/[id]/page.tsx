@@ -11,9 +11,9 @@ export const dynamic = "force-dynamic";
 
 export default async function IncompleteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
-  await addViewedPartialLeadId(resolvedParams.id);
 
   if (ADMIN_PREVIEW) {
+    await addViewedPartialLeadId(resolvedParams.id, "admin");
     const fallback = demoPartialLeads.find((row) => row.id === resolvedParams.id) ?? null;
     if (!fallback) return <NotFound />;
     if (!fallback.viewed_at && fallback.status !== "converted") {
@@ -26,6 +26,8 @@ export default async function IncompleteDetailPage({ params }: { params: Promise
   if (!auth.ok) {
     return <div>Not authorized</div>;
   }
+
+  await addViewedPartialLeadId(resolvedParams.id, auth.identity.role);
 
   const result = await fetchPartialLead(resolvedParams.id, auth.identity);
   if (!result.ok) {

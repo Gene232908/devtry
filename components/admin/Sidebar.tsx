@@ -53,6 +53,8 @@ const NAV_ITEMS: SidebarItem[] = [
   { href: "/admin/settings", label: "Settings", icon: Settings, gate: "viewSettings" },
 ];
 
+import { useStaffIdentity } from "@/lib/admin/staff-identity-context";
+
 type Props = {
   className?: string;
   /** The capabilities the current viewer holds. When omitted all items show
@@ -69,6 +71,9 @@ export function Sidebar({ className, capabilities, onNavigate, isMobile, initial
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const isScrapRoute = pathname === "/admin/leads" && searchParams.get("origin") === "scrap";
+  const staffIdentity = useStaffIdentity();
+  const role = staffIdentity?.role ?? "default";
+  const storageKey = `cvd_viewed_ids_${role}`;
 
   const [unviewedIncompleteCount, setUnviewedIncompleteCount] = useState(
     initialUnviewedIncompleteCount ?? 0,
@@ -86,14 +91,14 @@ export function Sidebar({ className, capabilities, onNavigate, isMobile, initial
     let storedIds: string[] = [];
     if (typeof window !== "undefined") {
       try {
-        const raw = sessionStorage.getItem("cvd_viewed_ids");
+        const raw = sessionStorage.getItem(storageKey);
         if (raw) storedIds = JSON.parse(raw);
       } catch {}
 
       if (activeDetailId && !storedIds.includes(activeDetailId)) {
         storedIds.push(activeDetailId);
         try {
-          sessionStorage.setItem("cvd_viewed_ids", JSON.stringify(storedIds));
+          sessionStorage.setItem(storageKey, JSON.stringify(storedIds));
         } catch {}
       }
     }
@@ -112,7 +117,7 @@ export function Sidebar({ className, capabilities, onNavigate, isMobile, initial
         }
       })
       .catch(() => {});
-  }, [pathname]);
+  }, [pathname, storageKey]);
 
   useEffect(() => {
     const handleViewed = (e: Event) => {
@@ -120,11 +125,11 @@ export function Sidebar({ className, capabilities, onNavigate, isMobile, initial
       const id = customEvent.detail?.id;
       if (id && typeof window !== "undefined") {
         try {
-          const raw = sessionStorage.getItem("cvd_viewed_ids");
+          const raw = sessionStorage.getItem(storageKey);
           const list: string[] = raw ? JSON.parse(raw) : [];
           if (!list.includes(id)) {
             list.push(id);
-            sessionStorage.setItem("cvd_viewed_ids", JSON.stringify(list));
+            sessionStorage.setItem(storageKey, JSON.stringify(list));
           }
         } catch {}
       }
@@ -132,7 +137,7 @@ export function Sidebar({ className, capabilities, onNavigate, isMobile, initial
     };
     window.addEventListener("partial-lead-viewed", handleViewed);
     return () => window.removeEventListener("partial-lead-viewed", handleViewed);
-  }, []);
+  }, [storageKey]);
 
   const items = capabilities
     ? NAV_ITEMS.filter((item) => !item.gate || capabilities.includes(item.gate))

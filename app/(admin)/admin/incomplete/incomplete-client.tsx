@@ -14,6 +14,7 @@ import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
 import { LeadStatus } from "@/config/mock-data";
 import { ScrapInquiryBadge } from "@/components/admin/ScrapInquiryBadge";
 import { cn } from "@/lib/utils";
+import { useStaffIdentity } from "@/lib/admin/staff-identity-context";
 
 // Valuation forms that were started but never submitted. These are UNVERIFIED:
 // nobody proved the number belongs to them, which is exactly why they are kept
@@ -51,6 +52,10 @@ export default function IncompleteValuationsClient({
   const attention = searchParams.get("attention");
   const isAttention = attention === "incomplete";
 
+  const staffIdentity = useStaffIdentity();
+  const role = staffIdentity?.role ?? "default";
+  const storageKey = `cvd_viewed_ids_${role}`;
+
   const [rows, setRows] = useServerState<PartialLead[]>(initialRows);
   const [inquiryFilter, setInquiryFilter] = useState<"all" | "valuation" | "scrap">("all");
   const [error, setError] = useState<string | null>(initialError);
@@ -70,7 +75,7 @@ export default function IncompleteValuationsClient({
   useEffect(() => {
     if (typeof window !== "undefined") {
       try {
-        const raw = sessionStorage.getItem("cvd_viewed_ids");
+        const raw = sessionStorage.getItem(storageKey);
         const list: string[] = raw ? JSON.parse(raw) : [];
         if (list.length > 0) {
           setRows((current) =>
@@ -81,7 +86,7 @@ export default function IncompleteValuationsClient({
         }
       } catch {}
     }
-  }, []);
+  }, [storageKey, setRows]);
 
   function handleMarkAsViewed(row: PartialLead) {
     if (!row.viewed_at && row.status === "new") {
@@ -92,11 +97,11 @@ export default function IncompleteValuationsClient({
       // Immediately notify sidebar to decrement counter badge and save to sessionStorage
       if (typeof window !== "undefined") {
         try {
-          const raw = sessionStorage.getItem("cvd_viewed_ids");
+          const raw = sessionStorage.getItem(storageKey);
           const list: string[] = raw ? JSON.parse(raw) : [];
           if (!list.includes(row.id)) {
             list.push(row.id);
-            sessionStorage.setItem("cvd_viewed_ids", JSON.stringify(list));
+            sessionStorage.setItem(storageKey, JSON.stringify(list));
           }
         } catch {}
         window.dispatchEvent(new CustomEvent("partial-lead-viewed", { detail: { id: row.id } }));

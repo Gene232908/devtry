@@ -23,7 +23,10 @@ import { getViewedPartialLeadIds } from "@/lib/admin/viewed-partial-leads";
 const VALID_ROLES = new Set(["admin", "manager", "call_center", "purchaser"]);
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const viewedIds = await getViewedPartialLeadIds();
+  const cookieStore = await cookies();
+  const roleCookie = cookieStore.get("cvd_role")?.value ?? "";
+  const nameCookie = cookieStore.get("cvd_display_name")?.value ?? "";
+  const viewedIds = await getViewedPartialLeadIds(roleCookie || "admin");
 
   if (ADMIN_PREVIEW) {
     const identity = buildIdentity("preview", "admin", "Preview Admin");
@@ -36,10 +39,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </AdminShell>
     );
   }
-
-  const cookieStore = await cookies();
-  const roleCookie = cookieStore.get("cvd_role")?.value ?? "";
-  const nameCookie = cookieStore.get("cvd_display_name")?.value ?? "";
 
   // Fast path: role cookie set by middleware is still valid — derive identity
   // from cookies without any DB round-trip. The JWT verification already happened
