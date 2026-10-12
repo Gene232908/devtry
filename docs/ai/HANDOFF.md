@@ -2,15 +2,19 @@
 
 ## Current state
 
-- 2026-10-11 update: Admin Sidebar now renders an amber counter badge for unviewed
-  incomplete valuation/scrap forms (`viewed_at IS NULL` and `status != 'converted'`),
-  and unviewed rows in `/admin/incomplete` display an amber left border highlight
-  plus a "NEW" badge pill. Opening an incomplete lead instantly clears the row
-  indicator and decrements the sidebar badge count optimistically via a decoupled
-  window CustomEvent (`partial-lead-viewed`), with async POST persistence to
-  `/api/admin/incomplete/[id]/view` and server-side tracking on `/admin/incomplete/[id]`.
-  Includes safe backward compatibility for unmigrated `viewed_at` schemas.
-  Verified with `npx tsc --noEmit` (0 errors) and Vitest (277 tests passing).
+- 2026-10-12 update: Implemented granular cookie consent system for the CarVibe
+  Dubai public landing page (`lib/cookie-consent.ts`, `components/public/CookieConsent*`).
+  Renders a luxury dark-gold floating banner with the required personal data processing
+  acknowledgment and link to `/privacy`, offering equally accessible "Accept All",
+  "Reject Optional", and "Customize Preferences" actions. Preferences modal gates 3
+  categories: Necessary (locked Always Enabled), Analytics (optional), and Marketing
+  (optional). Consent record is stored in localStorage with versioning (`1.0`) and
+  timestamp to eliminate banner flicker on refresh/navigation. Meta Pixel (`MetaPixel.tsx`),
+  `PageViewTracker.tsx`, and contact event tracking (`lib/track-click.ts`) strictly
+  require marketing and analytics consent respectively before activating. Added a
+  "Cookie Preferences" action in the public footer to allow visitors to modify choices.
+  Verified with `npx tsc --noEmit` (0 errors), Vitest (37 suites, 287 tests passing),
+  ESLint (0 errors), and browser subagent recording.
 
 - 2026-10-01 update: Purchaser My Commission now receives Sold for, Expenses,
   Net profit, and Margin for only the signed-in Purchaser's own commission

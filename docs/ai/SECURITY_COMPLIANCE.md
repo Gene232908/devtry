@@ -1,5 +1,14 @@
 # SECURITY_COMPLIANCE.md
 
+## 2026-10-12 Cookie consent & tracking boundary
+
+- Implemented client-side cookie consent banner and preference customization modal adhering to consent-before-tracking principles.
+- Categories: Necessary (always enabled), Analytics (optional), and Marketing (optional).
+- Stored record schema (`cvd_cookie_consent`) contains version (`1.0`), timestamp, and explicit category booleans. Outdated versions are invalidated automatically upon policy revision.
+- Meta Pixel (`components/public/MetaPixel.tsx`), first-party analytics tracking (`components/public/PageViewTracker.tsx`), and interaction events (`lib/track-click.ts`) strictly require marketing and analytics consent respectively before activating or recording data.
+- Visitors can revisit and adjust preferences at any time via the "Cookie Preferences" button in the footer.
+- UAE PDPL / ePrivacy note: while this technical architecture provides granular category gating, formal legal review of the final privacy text and vendor agreements is still required before full commercial production.
+
 ## 2026-10-01 incomplete-form capture-session boundary
 
 - The browser-generated UUID is an idempotency key, not authentication or an

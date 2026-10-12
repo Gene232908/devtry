@@ -1,14 +1,23 @@
+"use client";
+
 /* eslint-disable @next/next/no-img-element -- Meta requires this noscript fallback. */
 import Script from "next/script";
+import { useCookieConsent } from "./CookieConsentContext";
 
 /**
- * Loads Meta's browser pixel only when a public Pixel ID is configured.
+ * Loads Meta's browser pixel ONLY when marketing consent is explicitly granted
+ * by the user and a public Pixel ID is configured in the environment.
  * It sends PageView plus standard interaction events from the public UI.
  * Customer contact fields are never passed to Meta.
  */
 export function MetaPixel() {
   const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
-  if (!pixelId) return null;
+  const { consent } = useCookieConsent();
+
+  // Strictly guard: do not load or activate Meta Pixel before marketing consent is granted
+  if (!pixelId || !consent?.categories.marketing) {
+    return null;
+  }
 
   // This is a deployment-controlled public ID, but serialize it anyway so a
   // malformed environment value can never break out of the inline script.

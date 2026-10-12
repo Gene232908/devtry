@@ -7,6 +7,7 @@ import { Logo } from "./Logo";
 import { brand } from "@/config/brand";
 import { copy } from "@/config/copy";
 import { cn } from "@/lib/utils";
+import { openCookiePreferencesModal } from "@/lib/cookie-consent";
 
 // The "Admin" link was removed deliberately. It advertised the existence and
 // exact location of the staff login to every visitor and every crawler, which
@@ -233,6 +234,13 @@ export function Footer() {
                 {link.label}
               </Link>
             ))}
+            <button
+              type="button"
+              onClick={openCookiePreferencesModal}
+              className="cursor-pointer transition-colors hover:text-gold text-[0.72rem] font-light uppercase tracking-[0.16em]"
+            >
+              Cookie Preferences
+            </button>
           </nav>
 
           <div className="flex items-center gap-3">

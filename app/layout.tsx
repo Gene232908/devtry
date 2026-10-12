@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { fontDisplay, fontSans } from "./fonts";
 import "./globals.css";
 import { MetaPixel } from "@/components/public/MetaPixel";
+import { CookieConsentProvider } from "@/components/public/CookieConsentContext";
+import { CookieConsent } from "@/components/public/CookieConsent";
 
 export const metadata: Metadata = {
   title: "CarVibeDubai - Get Your Free Valuation",
@@ -17,8 +19,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${fontSans.variable} ${fontDisplay.variable} antialiased`}>
-        {children}
-        <MetaPixel />
+        <CookieConsentProvider>
+          {children}
+          <CookieConsent />
+          <MetaPixel />
+        </CookieConsentProvider>
       </body>
     </html>
   );

@@ -112,8 +112,11 @@ function writeSeen(seen: SeenToday) {
  * The visitor figures are unchanged by this: they were already counting distinct
  * people, so removing duplicate rows removes only duplicates.
  */
+import { useCookieConsent } from "./CookieConsentContext";
+
 export function PageViewTracker() {
   const pathname = usePathname();
+  const { consent } = useCookieConsent();
 
   // React StrictMode runs effects twice in development, and a parent re-render
   // can re-run this one. The storage check below already covers repeats, but
@@ -121,6 +124,9 @@ export function PageViewTracker() {
   const lastSentRef = useRef<string | null>(null);
 
   useEffect(() => {
+    // Strictly guard: do not record page views without analytics consent
+    if (!consent?.categories.analytics) return;
+
     if (lastSentRef.current === pathname) return;
     lastSentRef.current = pathname;
 
@@ -143,7 +149,7 @@ export function PageViewTracker() {
     } catch {
       // best-effort; ignore failures
     }
-  }, [pathname]);
+  }, [pathname, consent?.categories.analytics]);
 
   return null;
 }

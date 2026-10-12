@@ -4,6 +4,21 @@ This is the factual source for reports.
 
 Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
+## 2026-10-12
+
+### Completed
+
+- Cookie Consent System implementation:
+  - Created granular cookie consent data model and storage engine (`lib/cookie-consent.ts`) with versioning (`1.0`), timestamp tracking, category gates (`necessary`, `analytics`, `marketing`), and custom event dispatching.
+  - Implemented `CookieConsentContext` (`components/public/CookieConsentContext.tsx`) for hydration-safe state management, eliminating banner flash on initial page load when consent already exists.
+  - Built dark luxury `CookieConsentBanner` (`components/public/CookieConsentBanner.tsx`) with the required acknowledgment text, link to `/privacy`, and three balanced actions: "Accept All", "Reject Optional", and "Customize Preferences".
+  - Built `CookiePreferencesModal` (`components/public/CookiePreferencesModal.tsx`) with 3 categories: Necessary (locked Always Enabled), Analytics (optional toggle), and Marketing (optional toggle), plus keyboard accessibility (Escape to dismiss, focus management).
+  - Connected `MetaPixel` (`components/public/MetaPixel.tsx`) and interaction tracking (`lib/track-click.ts`) to require marketing consent before injecting or sending browser events.
+  - Connected `PageViewTracker` (`components/public/PageViewTracker.tsx`) and button contact clicks to require analytics consent before writing visitor storage or sending `/api/events`.
+  - Added "Cookie Preferences" button to public `Footer` navigation (`components/public/Footer.tsx`) allowing visitors to revisit and adjust choices at any time.
+  - Mounted `<CookieConsentProvider>` in `app/layout.tsx` while suppressing the banner on internal `/admin` routes.
+  - Verification: `npx tsc --noEmit` passed with 0 errors; all 37 Vitest test suites (287 tests) passed including 8 new unit tests in `lib/cookie-consent.test.ts`; ESLint passed with 0 errors; browser subagent verified banner display, customization modal toggle, saving preferences, persistence across reload, and footer reopen action.
+
 ## 2026-10-11
 
 ### Completed

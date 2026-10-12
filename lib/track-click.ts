@@ -1,22 +1,19 @@
+import { isCategoryAllowed } from "./cookie-consent";
+
 /**
  * Records that a visitor pressed one of the two contact buttons.
  *
- * These were never recorded. `whatsapp_click` was an accepted event type and
- * the Overview counted it, but nothing in the site ever sent one — so the
- * figure was permanently zero and read as "nobody wants to contact us" rather
- * than "this is not wired up", which is the worse of the two failures.
- *
  * Fire-and-forget on purpose. Opening the valuation form is what the visitor
  * asked for; it must not wait on analytics, and it must still happen if this
- * fails. Everything here is wrapped for the same reason the page-view tracker
- * is: building the payload can throw as easily as sending it.
+ * fails.
  */
 export type ContactClick = "whatsapp_click" | "call_click";
 
 type MetaEvent = "Lead" | "Contact";
 
-/** Send a standard Meta browser event without ever blocking the user flow. */
+/** Send a standard Meta browser event only when marketing consent is granted. */
 export function trackMetaEvent(event: MetaEvent, contentName: string) {
+  if (!isCategoryAllowed("marketing")) return;
   try {
     const fbq = (window as Window & { fbq?: (...args: unknown[]) => void }).fbq;
     if (typeof fbq !== "function") return;
@@ -26,7 +23,9 @@ export function trackMetaEvent(event: MetaEvent, contentName: string) {
   }
 }
 
+/** Record internal contact button interaction only when analytics consent is granted. */
 export function trackContactClick(type: ContactClick) {
+  if (!isCategoryAllowed("analytics")) return;
   try {
     fetch("/api/events", {
       method: "POST",
