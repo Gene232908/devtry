@@ -2,6 +2,7 @@
 
 ## Current objective
 
+- [x] 2026-10-16 Removed notification bell from Topbar navbar (`components/admin/Topbar.tsx`): removed `InspectionNotificationBell` element and import, cleaning up the header navigation for Super Admin and Purchaser roles without affecting lead creation, profile menu, or routing.
 - [x] 2026-10-16 Fixed Vercel build failure in `nextFontGoogleFontLoader` (`app/fonts.ts`): removed redundant static `weight` arrays from variable fonts `Manrope` and `Sora`, eliminating 10 parallel HTTP requests to Google Fonts API in `Promise.all` that caused Vercel CI timeouts/failures, accelerating compilation from 40s to 9.6s.
 - [x] 2026-10-16 Removed "CarVibe Live" status indicator footer from Admin Sidebar (`components/admin/Sidebar.tsx`): cleaned up bottom status strip containing the green pulsing dot, "CarVibe Live" label, and "UAE" badge per user request, preserving all navigation links, unviewed counter badges, and capabilities.
 - [x] 2026-10-16 Removed "Margin" column from Super Admin Staff Commissions table (`app/(admin)/admin/commission/commission-client.tsx`): removed the Margin header and data cell while preserving all underlying financial metrics (Paid amount, Expenses, Net profit, Commission), rebalanced table column widths to 100%, and verified that settlement, invoices, and the Details modal remain 100% operational.

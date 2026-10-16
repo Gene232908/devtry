@@ -8,6 +8,11 @@ Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
 ### Completed
 
+- Navbar notification bell removal:
+  - Removed `InspectionNotificationBell` from the Topbar navigation in `components/admin/Topbar.tsx` per user request for Super Admin and Purchaser roles.
+  - Eliminated the bell button and automated `/api/admin/inspection-notifications` background polling from the header layout.
+  - Verification: `npx tsc --noEmit` (0 errors), `npm run lint` (0 errors), Vitest (37 suites, 287 tests passing).
+
 - Google Fonts Vercel build fix:
   - Fixed `nextFontGoogleFontLoader` failure (`Promise.all` index 0 error) during Vercel builds by removing redundant static `weight: ["300", "400", "500", "600", "700"]` arrays from variable fonts `Manrope` and `Sora` in `app/fonts.ts`.
   - Replaced 10 parallel HTTP font requests with 2 native variable font downloads, preventing Google Fonts API rate-limiting/timeouts on Vercel build nodes and reducing compilation time from 40s to 9.6s.
