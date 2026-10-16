@@ -8,6 +8,11 @@ Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
 ### Completed
 
+- Google Fonts Vercel build fix:
+  - Fixed `nextFontGoogleFontLoader` failure (`Promise.all` index 0 error) during Vercel builds by removing redundant static `weight: ["300", "400", "500", "600", "700"]` arrays from variable fonts `Manrope` and `Sora` in `app/fonts.ts`.
+  - Replaced 10 parallel HTTP font requests with 2 native variable font downloads, preventing Google Fonts API rate-limiting/timeouts on Vercel build nodes and reducing compilation time from 40s to 9.6s.
+  - Verification: `npx tsc --noEmit` (0 errors), `npm run build:check` (compiled successfully with 18 static pages generated).
+
 - Admin Sidebar status footer removal:
   - Removed the bottom status footer element containing the green dot indicator, "CarVibe Live" text, and "UAE" badge in `components/admin/Sidebar.tsx` per user request.
   - Preserved all navigation links, route groups, capability guards, and counter badges.
