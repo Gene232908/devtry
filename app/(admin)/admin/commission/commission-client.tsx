@@ -681,16 +681,15 @@ function StaffCommissionView({
                 right next to it. Fixed widths give every column its own
                 share regardless of how short or long its content happens to
                 be, so the gaps between columns read as even. */}
-            <table className={`w-full table-fixed text-left text-fluid--1 ${hideProfit ? "min-w-[680px]" : showFinancialColumns ? "min-w-[1120px]" : "min-w-[820px]"}`}>
+            <table className={`w-full table-fixed text-left text-fluid--1 ${hideProfit ? "min-w-[680px]" : showFinancialColumns ? "min-w-[1040px]" : "min-w-[820px]"}`}>
               <thead>
                 <tr className="border-b border-border text-text-faint">
                   <th className="w-[15%] py-2 pr-4 font-normal">Name</th>
                   <th className="w-[8%] py-2 pr-4 text-right font-normal">Unpaid Sales</th>
                   {showFinancialColumns && <>
-                    <th className="w-[10%] py-2 pr-4 text-right font-normal">Paid amount</th>
-                    <th className="w-[9%] py-2 pr-4 text-right font-normal">Expenses</th>
-                    <th className="w-[11%] py-2 pr-4 text-right font-normal">Net profit</th>
-                    <th className="w-[7%] py-2 pr-4 text-right font-normal">Margin</th>
+                    <th className="w-[12%] py-2 pr-4 text-right font-normal">Paid amount</th>
+                    <th className="w-[11%] py-2 pr-4 text-right font-normal">Expenses</th>
+                    <th className="w-[13%] py-2 pr-4 text-right font-normal">Net profit</th>
                   </>}
                   {!hideProfit && !showFinancialColumns && <th className="w-[15%] py-2 pr-4 text-right font-normal">Total Profit</th>}
                   {/* Extra right padding (pr-8, not pr-4) on purpose: this
@@ -699,7 +698,7 @@ function StaffCommissionView({
                       each other with nothing but the column boundary between
                       "AED 400" and "Unpaid". The padding pulls the number back
                       from that boundary to open up real breathing room. */}
-                  <th className="w-[10%] py-2 pr-8 text-right font-normal">Commission</th>
+                  <th className="w-[11%] py-2 pr-8 text-right font-normal">Commission</th>
                   <th className="w-[9%] py-2 pr-4 font-normal">Status</th>
                   <th className="w-[21%] py-2 pr-1 font-normal"></th>
                 </tr>
@@ -720,7 +719,6 @@ function StaffCommissionView({
                       <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{formatAed(getStaffFinancialSummary(staff).soldFor)}</td>
                       <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{formatAed(getStaffFinancialSummary(staff).expenses)}</td>
                       <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{formatAed(getStaffFinancialSummary(staff).netProfit)}</td>
-                      <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{getStaffFinancialSummary(staff).margin == null ? "—" : `${getStaffFinancialSummary(staff).margin!.toFixed(1)}%`}</td>
                     </>}
                     {!hideProfit && !showFinancialColumns && <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{formatAed(staff.totalProfit)}</td>}
                     <td className="py-3 pr-8 text-right tabular-nums text-gold">{formatAed(staff.totalCommission)}</td>

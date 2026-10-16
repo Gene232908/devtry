@@ -4,6 +4,21 @@ This is the factual source for reports.
 
 Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
+## 2026-10-16
+
+### Completed
+
+- Admin Sidebar status footer removal:
+  - Removed the bottom status footer element containing the green dot indicator, "CarVibe Live" text, and "UAE" badge in `components/admin/Sidebar.tsx` per user request.
+  - Preserved all navigation links, route groups, capability guards, and counter badges.
+  - Verification: `npx tsc --noEmit` (0 errors), ESLint (0 errors).
+
+- Super Admin Commission table "Margin" column removal:
+  - Removed "Margin" header and data cell from the main Staff Commissions table in `app/(admin)/admin/commission/commission-client.tsx` per user request.
+  - Rebalanced column widths (`Name`: 15%, `Unpaid Sales`: 8%, `Paid amount`: 12%, `Expenses`: 11%, `Net profit`: 13%, `Commission`: 11%, `Status`: 9%, `Actions`: 21%) to maintain 100% table layout balance and adjusted `min-w` to `1040px`.
+  - Preserved 100% of underlying financial calculations, role permissions, settlement workflows, PDF invoice exports, and Details modal functionality without disruption.
+  - Verification: `npx tsc --noEmit` (0 errors), ESLint (0 errors), Vitest (37 suites, 287 tests passing).
+
 ## 2026-10-12
 
 ### Completed

@@ -40,9 +40,7 @@ export function Hero() {
             </span>
           </h1>
           <p className="mt-5 max-w-[32rem] text-fluid--1 font-light leading-7 text-white/85 [text-shadow:0_1px_12px_rgba(0,0,0,.75)] [animation-delay:.6s]">
-            Selling is simple: share your car details, get a free professional
-            valuation, and our team follows up directly on WhatsApp. Buying a
-            car with CarVibeDubai is launching soon.
+            Selling your car in Dubai has never been easier. Share your vehicle details to get a free valuation, and our team will connect with you instantly on WhatsApp with a fair price.
           </p>
 
           <div className="mt-9 [animation-delay:.75s]">
