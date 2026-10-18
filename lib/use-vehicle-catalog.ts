@@ -41,6 +41,7 @@ type ApiSpecification = { id: string; name: string };
 
 export function useVehicleCatalog() {
   const [makes, setMakes] = useState<CatalogMake[]>(FALLBACK);
+  const [allMakes, setAllMakes] = useState<string[]>(() => FALLBACK.map((m) => m.name));
   const [specifications, setSpecifications] = useState<CatalogSpecification[]>(FALLBACK_SPECIFICATIONS);
   const [isLive, setIsLive] = useState(false);
 
@@ -53,6 +54,17 @@ export function useVehicleCatalog() {
         if (!res.ok) return;
         const body = await res.json();
         if (!body.ok || !Array.isArray(body.data?.makes)) return;
+
+        const rawMakes = (body.data.makes as ApiMake[])
+          .map((m) => m.name?.trim())
+          .filter(Boolean);
+
+        if (!cancelled && rawMakes.length > 0) {
+          const sorted = Array.from(new Set(rawMakes)).sort((a, b) =>
+            a.localeCompare(b, undefined, { sensitivity: "base" }),
+          );
+          setAllMakes(sorted);
+        }
 
         const live = (body.data.makes as ApiMake[])
           // A make with no models cannot be chosen usefully, so it is dropped
@@ -93,7 +105,7 @@ export function useVehicleCatalog() {
     };
   }, []);
 
-  return { makes, specifications, isLive };
+  return { makes, specifications, isLive, allMakes };
 }
 
 /** Models for the selected make. Empty when nothing is selected yet. */

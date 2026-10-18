@@ -43,7 +43,7 @@ export function MobileLeadsList({
           return (
             <Link
               key={lead.id}
-              href={`/admin/leads/${lead.id}`}
+              href={`/admin/leads/${lead.id}${lead.inquiryType === "scrap" ? "?origin=scrap" : ""}`}
               className="group flex items-center justify-between p-3.5 sm:p-4 transition-all hover:bg-white/[0.03] active:bg-white/[0.06]"
             >
               <div className="flex items-center gap-3 min-w-0 pr-2">

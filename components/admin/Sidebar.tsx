@@ -54,6 +54,7 @@ const NAV_ITEMS: SidebarItem[] = [
 ];
 
 import { useStaffIdentity } from "@/lib/admin/staff-identity-context";
+import { useLeads } from "@/lib/admin/leads-store";
 
 type Props = {
   className?: string;
@@ -70,7 +71,17 @@ type Props = {
 export function Sidebar({ className, capabilities, onNavigate, isMobile, initialUnviewedIncompleteCount }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { getLead } = useLeads();
+
   const isScrapRoute = pathname === "/admin/leads" && searchParams.get("origin") === "scrap";
+  const isLeadDetailRoute = pathname.startsWith("/admin/leads/") && pathname !== "/admin/leads";
+  const inspectedLeadId = isLeadDetailRoute ? pathname.replace("/admin/leads/", "").split("/")[0] : null;
+  const inspectedLead = inspectedLeadId ? getLead(inspectedLeadId) : null;
+  const isScrapDetail =
+    isLeadDetailRoute &&
+    (searchParams.get("origin") === "scrap" || inspectedLead?.inquiryType === "scrap");
+  const isRegularLeadDetail = isLeadDetailRoute && !isScrapDetail;
+
   const staffIdentity = useStaffIdentity();
   const role = staffIdentity?.role ?? "default";
   const storageKey = `cvd_viewed_ids_${role}`;
@@ -171,9 +182,9 @@ export function Sidebar({ className, capabilities, onNavigate, isMobile, initial
         {items.map((item) => {
           const active =
             item.href === "/admin/leads?origin=scrap"
-              ? isScrapRoute
+              ? isScrapRoute || isScrapDetail
               : item.href === "/admin/leads"
-                ? pathname === "/admin/leads" && !isScrapRoute
+                ? (pathname === "/admin/leads" && !isScrapRoute) || isRegularLeadDetail
                 : pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
           const Icon = item.icon;
 

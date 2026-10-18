@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Lead, LeadStatus } from "@/config/mock-data";
 import type { StaffRole } from "@/lib/auth/permissions";
 import { AGENT_STATUS_CHOICES, PURCHASER_VISIBLE_STATUSES } from "@/lib/auth/lead-visibility";
@@ -89,6 +89,26 @@ export function queuePriority(status: LeadStatus, role: StaffRole | undefined): 
   return status === "new" ? 0 : 1;
 }
 
+type SavedFilterState = {
+  search?: string;
+  statuses?: LeadStatus[];
+  makes?: string[];
+  emirates?: string[];
+  arrivalStatuses?: string[];
+  page?: number;
+};
+
+function getSavedFilter(key: string): SavedFilterState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw) as SavedFilterState;
+  } catch {
+    return null;
+  }
+}
+
 export function useLeadsFilter(
   leads: Lead[],
   role?: StaffRole,
@@ -96,19 +116,10 @@ export function useLeadsFilter(
   statusFilter?: string | null,
   createdFrom?: string | null,
   createdTo?: string | null,
+  sessionScope?: string,
 ) {
-  // searchInput updates the text box instantly; search (debounced) drives
-  // filtering, so typing doesn't re-filter/re-sort/re-render on every keystroke.
-  const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch] = useState("");
-  // Status, make and emirate are multi-select. An EMPTY array means "no filter"
-  // rather than "match nothing" — an untouched control should show everything,
-  // and unticking the last box has to return the full list rather than strand
-  // the user on an empty table. Statuses starts pre-set for an operational
-  // role instead of empty (see `defaultStatusesForRole`) — the one case where
-  // "no filter chosen yet" and "the landing view" are deliberately different.
-  // If arriving via an attention filter, we start with no status restriction so
-  // all relevant leads (e.g. pending/contacted) appear immediately.
+  const storageKey = `cvd_leads_filter_${sessionScope ?? "regular"}_${role ?? "all"}`;
+
   const requestedStatus = statusFilter && FILTER_STATUS_OPTIONS.some((status) => status === statusFilter)
     ? (statusFilter as LeadStatus)
     : null;
@@ -116,28 +127,115 @@ export function useLeadsFilter(
     () => parseLeadCreatedRange(createdFrom, createdTo),
     [createdFrom, createdTo],
   );
-  const [statuses, setStatuses] = useState<LeadStatus[]>(() =>
-    attentionFilter ? [] : requestedStatus ? [requestedStatus] : defaultStatusesForRole(role)
-  );
-  const [makes, setMakes] = useState<string[]>([]);
-  const [emirates, setEmirates] = useState<string[]>([]);
-  const [arrivalStatuses, setArrivalStatuses] = useState<string[]>([]);
+
+  const hasUrlFilter = Boolean(attentionFilter || statusFilter || createdFrom || createdTo);
+
+  // searchInput updates the text box instantly; search (debounced) drives
+  // filtering, so typing doesn't re-filter/re-sort/re-render on every keystroke.
+  const [searchInput, setSearchInput] = useState(() => {
+    if (hasUrlFilter) return "";
+    const saved = getSavedFilter(storageKey);
+    return saved?.search ?? "";
+  });
+  const [search, setSearch] = useState(() => {
+    if (hasUrlFilter) return "";
+    const saved = getSavedFilter(storageKey);
+    return saved?.search ?? "";
+  });
+
+  const [statuses, setStatuses] = useState<LeadStatus[]>(() => {
+    if (attentionFilter) return [];
+    if (requestedStatus) return [requestedStatus];
+    const saved = getSavedFilter(storageKey);
+    if (saved && Array.isArray(saved.statuses)) return saved.statuses;
+    return defaultStatusesForRole(role);
+  });
+  const [makes, setMakes] = useState<string[]>(() => {
+    if (hasUrlFilter) return [];
+    const saved = getSavedFilter(storageKey);
+    return saved && Array.isArray(saved.makes) ? saved.makes : [];
+  });
+  const [emirates, setEmirates] = useState<string[]>(() => {
+    if (hasUrlFilter) return [];
+    const saved = getSavedFilter(storageKey);
+    return saved && Array.isArray(saved.emirates) ? saved.emirates : [];
+  });
+  const [arrivalStatuses, setArrivalStatuses] = useState<string[]>(() => {
+    if (hasUrlFilter) return [];
+    const saved = getSavedFilter(storageKey);
+    return saved && Array.isArray(saved.arrivalStatuses) ? saved.arrivalStatuses : [];
+  });
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(() => {
+    if (hasUrlFilter) return 1;
+    const saved = getSavedFilter(storageKey);
+    return typeof saved?.page === "number" && saved.page > 0 ? saved.page : 1;
+  });
   const [pageSize, setPageSizeState] = useState(6);
+
+  const currentKeyRef = useRef(storageKey);
 
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput), 200);
     return () => clearTimeout(t);
   }, [searchInput]);
 
+  // If storageKey changes (e.g. switching between regular and scrap scope),
+  // immediately reload that scope's saved filters rather than writing the
+  // previous scope's in-memory filters into the new scope's key.
+  useEffect(() => {
+    if (currentKeyRef.current !== storageKey) {
+      currentKeyRef.current = storageKey;
+      if (!hasUrlFilter) {
+        const saved = getSavedFilter(storageKey);
+        setSearchInput(saved?.search ?? "");
+        setSearch(saved?.search ?? "");
+        setStatuses(
+          saved && Array.isArray(saved.statuses)
+            ? saved.statuses
+            : defaultStatusesForRole(role),
+        );
+        setMakes(saved && Array.isArray(saved.makes) ? saved.makes : []);
+        setEmirates(saved && Array.isArray(saved.emirates) ? saved.emirates : []);
+        setArrivalStatuses(
+          saved && Array.isArray(saved.arrivalStatuses) ? saved.arrivalStatuses : [],
+        );
+        setPage(
+          typeof saved?.page === "number" && saved.page > 0 ? saved.page : 1,
+        );
+      }
+    }
+  }, [storageKey, hasUrlFilter, role]);
+
+  // Persist filter selections to sessionStorage so staff can inspect records
+  // and return without losing their active filters or page state.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (hasUrlFilter) return;
+    if (currentKeyRef.current !== storageKey) return;
+
+    try {
+      const payload: SavedFilterState = {
+        search: searchInput,
+        statuses,
+        makes,
+        emirates,
+        arrivalStatuses,
+        page,
+      };
+      sessionStorage.setItem(storageKey, JSON.stringify(payload));
+    } catch {}
+  }, [storageKey, hasUrlFilter, searchInput, statuses, makes, emirates, arrivalStatuses, page]);
+
   // A dashboard pipeline card arrives with a current-stage filter. Keep this
   // in sync on client-side navigation so a second card click cannot retain the
   // previous stage's checkbox selection.
   useEffect(() => {
-    setStatuses(attentionFilter ? [] : requestedStatus ? [requestedStatus] : defaultStatusesForRole(role));
-    setPage(1);
+    if (attentionFilter || requestedStatus) {
+      setStatuses(attentionFilter ? [] : requestedStatus ? [requestedStatus] : defaultStatusesForRole(role));
+      setPage(1);
+    }
   }, [attentionFilter, requestedStatus, role]);
 
   const filtered = useMemo(() => {
@@ -199,7 +297,10 @@ export function useLeadsFilter(
     // stacking filters is normally taken to mean, and it is the only reading
     // where adding a tick can never remove a row you could already see.
     if (statuses.length) result = result.filter((l) => statuses.includes(l.status));
-    if (makes.length) result = result.filter((l) => makes.includes(l.make));
+    if (makes.length) {
+      const selectedMakes = new Set(makes.map((m) => m.trim().toLowerCase()));
+      result = result.filter((l) => l.make && selectedMakes.has(l.make.trim().toLowerCase()));
+    }
     // `location` is optional on a lead, and a lead with no emirate recorded
     // matches no emirate box — it is unknown, not universal.
     if (emirates.length) result = result.filter((l) => l.location != null && emirates.includes(l.location));
@@ -260,14 +361,26 @@ export function useLeadsFilter(
       setArrivalStatuses(v);
       setPage(1);
     },
-    /** True when any of the three multi-selects is narrowing the list. */
-    hasFilters: statuses.length > 0 || makes.length > 0 || emirates.length > 0 || arrivalStatuses.length > 0,
+    /** True when any filter (search, status, make, emirate, arrival) is narrowing the list. */
+    hasFilters:
+      searchInput.trim().length > 0 ||
+      statuses.length > 0 ||
+      makes.length > 0 ||
+      emirates.length > 0 ||
+      arrivalStatuses.length > 0,
     clearFilters: () => {
+      setSearchInput("");
+      setSearch("");
       setStatuses([]);
       setMakes([]);
       setEmirates([]);
       setArrivalStatuses([]);
       setPage(1);
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.removeItem(storageKey);
+        } catch {}
+      }
     },
     sortKey,
     sortDir,

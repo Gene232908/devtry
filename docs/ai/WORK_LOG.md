@@ -4,6 +4,34 @@ This is the factual source for reports.
 
 Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
+## 2026-10-18
+
+### Completed
+
+- Leads Directory vs Scrap Inquiries Filter Isolation & Sidebar Active Indicator Fixes:
+  - Isolated filter state between Leads Directory (`/admin/leads`) and Scrap Inquiries (`/admin/leads?origin=scrap`) by keying `LeadsTableContent` by `sessionScope` and hardening `useLeadsFilter` against cross-scope state bleed on key switches.
+  - Changing or clearing filters on Leads no longer alters or clears Scrap Inquiries filters, and vice-versa.
+  - Fixed sidebar active state when viewing customer records under Leads (`/admin/leads/[id]`) and Scrap Inquiries (`/admin/leads/[id]?origin=scrap`): regular lead records keep "Leads" highlighted, and scrap inquiry records keep "Scrap Inquiries" highlighted.
+  - Updated `row.tsx` and `mobile-list.tsx` to include `?origin=scrap` for scrap leads so navigation immediately resolves scrap context.
+- Filter State Session Persistence across Leads, Scrap Inquiries, and Incomplete Forms:
+  - Enabled role-and-scope-aware `sessionStorage` in `useLeadsFilter` (`lib/admin/use-leads-filter.ts`) and `incomplete-client.tsx` (`app/(admin)/admin/incomplete/incomplete-client.tsx`).
+  - Active search text, statuses, makes, emirates, arrival statuses, and page pagination persist when navigating into a customer record and clicking "Back", as well as across page reloads/hard refreshes.
+  - Clicking "Clear filters" cleans up both component state and stored session state.
+  - Linked `LeadDetail` breadcrumb back link to `/admin/leads?origin=scrap` when viewing scrap inquiries.
+- Dynamic Vehicle Catalog Makes Filter for Leads & Scrap Inquiries:
+  - Replaced the hardcoded 10-make configuration in `LeadsToolbar` (`components/admin/leads-table/toolbar.tsx`) with dynamic Vehicle Catalog makes via `useVehicleCatalog` (`lib/use-vehicle-catalog.ts`), merged with any active makes from loaded leads and sorted alphabetically (e.g. 212, Abarth, Acura, AION, Aito, Alfa Romeo, Arcfox, Aston Martin, Audi, Avatr, BAIC, Bestune, etc.).
+  - Added an inline search filter to `MultiSelect` (`components/ui/MultiSelect.tsx`) when options exceed 5, allowing users to quickly search and select brands from large lists.
+  - Hardened make matching in `use-leads-filter.ts` to be trimmed and case-insensitive.
+  - Verified across Super Admin, Purchaser, and Customer Service roles in both Leads (`/admin/leads`) and Scrap Inquiries (`/admin/leads?origin=scrap`) tabs.
+- Margin field removal in Commission Details modal:
+  - Removed "Margin" from the mobile card view and desktop Closed Car Sales table headers and rows in `app/(admin)/admin/commission/commission-client.tsx` per user request.
+  - Preserved all underlying financial figures (`Paid amount`, `Expenses`, `Net profit`, `Profit`, `Commission`), payment history, and settlement functions 100% operational.
+- Verification:
+  - `npx tsc --noEmit` (0 errors).
+  - `npm test` (37 files, 287 tests passing).
+  - `npm run lint` (0 errors).
+  - Browser verification with Playwright subagent: verified dynamic makes dropdown, search filtering, and clean details modal.
+
 ## 2026-10-16
 
 ### Completed

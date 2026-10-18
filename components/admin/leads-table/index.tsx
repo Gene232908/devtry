@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -23,6 +23,8 @@ import { LeadsTableSkeleton } from "./skeleton";
 import { Pagination } from "./pagination";
 import { MobileLeadsList } from "./mobile-list";
 import { ManualLeadDialog } from "@/components/admin/ManualLeadDialog";
+import { useVehicleCatalog } from "@/lib/use-vehicle-catalog";
+import { MAKES } from "@/config/vehicles";
 
 const ATTENTION_CONFIG: Record<
   string,
@@ -75,12 +77,36 @@ const PIPELINE_CONFIG: Record<string, { title: string; description: string }> = 
 };
 
 export function LeadsTable() {
+  const searchParams = useSearchParams();
+  const origin = searchParams.get("origin");
+  const isScrapView = origin === "scrap";
+  const isAllView = origin === "all";
+  const sessionScope = isScrapView ? "scrap" : isAllView ? "all" : "regular";
+
+  return (
+    <LeadsTableContent
+      key={sessionScope}
+      sessionScope={sessionScope}
+      isScrapView={isScrapView}
+      isAllView={isAllView}
+    />
+  );
+}
+
+function LeadsTableContent({
+  sessionScope,
+  isScrapView,
+  isAllView,
+}: {
+  sessionScope: string;
+  isScrapView: boolean;
+  isAllView: boolean;
+}) {
   const [manualLeadOpen, setManualLeadOpen] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const attention = searchParams.get("attention");
   const status = searchParams.get("status");
-  const origin = searchParams.get("origin");
   const from = searchParams.get("from");
   const to = searchParams.get("to");
   const activeAttention = attention ? ATTENTION_CONFIG[attention] : null;
@@ -88,14 +114,29 @@ export function LeadsTable() {
 
   const { leads, isLive, isLoading, isRefreshing, refresh } = useLeads();
   const identity = useStaffIdentity();
-  const isScrapView = origin === "scrap";
-  const isAllView = origin === "all";
+  const { allMakes } = useVehicleCatalog();
   const scopedLeads = isScrapView
     ? leads.filter((lead) => lead.inquiryType === "scrap")
     : isAllView
       ? leads
       : leads.filter((lead) => lead.inquiryType !== "scrap");
-  const filter = useLeadsFilter(scopedLeads, identity?.role, attention, status, from, to);
+  const filter = useLeadsFilter(scopedLeads, identity?.role, attention, status, from, to, sessionScope);
+
+  const availableMakes = useMemo(() => {
+    const set = new Set<string>();
+    for (const m of allMakes) {
+      if (m && m.trim()) set.add(m.trim());
+    }
+    for (const lead of scopedLeads) {
+      if (lead.make && lead.make.trim()) set.add(lead.make.trim());
+    }
+    if (set.size === 0) {
+      for (const m of MAKES) set.add(m.name);
+    }
+    return Array.from(set).sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" }),
+    );
+  }, [allMakes, scopedLeads]);
 
   if (isLoading) {
     return (
@@ -204,7 +245,7 @@ export function LeadsTable() {
         hasFilters={filter.hasFilters}
         onClearFilters={() => {
           if (attention || status) {
-            router.replace("/admin/leads");
+            router.replace(isScrapView ? "/admin/leads?origin=scrap" : "/admin/leads");
           }
           filter.clearFilters();
         }}
@@ -216,6 +257,7 @@ export function LeadsTable() {
         onRefresh={refresh}
         onCreateLead={() => setManualLeadOpen(true)}
         role={identity?.role}
+        availableMakes={availableMakes}
       />
 
       <ManualLeadDialog

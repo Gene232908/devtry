@@ -922,7 +922,6 @@ function StaffDetailModal({
                       <DetailMetric label="Paid amount" value={entry.financialReview?.salePrice == null ? "—" : formatAed(entry.financialReview.salePrice)} />
                       <DetailMetric label="Expenses" value={entry.financialReview ? formatAed(entry.financialReview.expenses) : "—"} />
                       <DetailMetric label="Net profit" value={entry.financialReview?.netProfit == null ? "Pending review" : formatAed(entry.financialReview.netProfit)} />
-                      <DetailMetric label="Margin" value={entry.financialReview?.margin == null ? "—" : `${entry.financialReview.margin.toFixed(1)}%`} />
                     </>}
                     {!hideProfit && <DetailMetric label="Profit" value={entry.profit === null ? "—" : formatAed(entry.profit)} />}
                   </div>
@@ -930,7 +929,7 @@ function StaffDetailModal({
               ))}
             </div>
             <div className="hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[980px] text-left text-fluid--1">
+              <table className="w-full min-w-[880px] text-left text-fluid--1">
                 <thead>
                   <tr className="border-b border-border text-text-faint">
                     {canPay && (
@@ -951,7 +950,6 @@ function StaffDetailModal({
                       <th className="py-2 pr-4 text-right font-normal">Paid amount</th>
                       <th className="py-2 pr-4 text-right font-normal">Expenses</th>
                       <th className="py-2 pr-4 text-right font-normal">Net profit</th>
-                      <th className="py-2 pr-4 text-right font-normal">Margin</th>
                     </>}
                     {!hideProfit && <th className="py-2 pr-4 text-right font-normal">Profit</th>}
                     <th className="py-2 pr-1 text-right font-normal">Commission</th>
@@ -986,7 +984,6 @@ function StaffDetailModal({
                           {entry.financialReview ? formatAed(entry.financialReview.expenses) : "—"}
                         </td>
                         <td className="py-2.5 pr-4 text-right tabular-nums text-text-muted">{entry.financialReview?.netProfit == null ? "Pending review" : formatAed(entry.financialReview.netProfit)}</td>
-                        <td className="py-2.5 pr-4 text-right tabular-nums text-text-muted">{entry.financialReview?.margin == null ? "—" : `${entry.financialReview.margin.toFixed(1)}%`}</td>
                       </>}
                       {!hideProfit && (
                         <td className="py-2.5 pr-4 text-right tabular-nums text-text-muted">

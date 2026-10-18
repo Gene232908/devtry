@@ -22,7 +22,10 @@ export const LeadRow = memo(function LeadRow({ lead, duplicateReview = false, sh
     <tr className="border-b border-border/50 last:border-0 hover:bg-white/[0.02] transition-colors">
       <td className="py-3.5 pl-4 pr-3 min-w-[160px]">
         <div className="flex flex-col gap-0.5">
-          <Link href={`/admin/leads/${lead.id}`} className="font-semibold text-text hover:text-gold transition-colors">
+          <Link
+            href={`/admin/leads/${lead.id}${lead.inquiryType === "scrap" ? "?origin=scrap" : ""}`}
+            className="font-semibold text-text hover:text-gold transition-colors"
+          >
             {lead.fullName || "Customer"}
           </Link>
           {duplicateReview && (

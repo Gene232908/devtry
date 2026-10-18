@@ -2,6 +2,20 @@
 
 ## Current state
 
+- 2026-10-18 update: Filter State Isolation & Persistence across Leads Directory and
+  Scrap Inquiries (`lib/admin/use-leads-filter.ts`, `components/admin/leads-table/*`,
+  `components/admin/Sidebar.tsx`, `components/admin/LeadDetail.tsx`, `incomplete-client.tsx`):
+  - Solved cross-scope filter bleed between Leads and Scrap Inquiries by keying `LeadsTableContent`
+    with `sessionScope` and hardening `useLeadsFilter` with `currentKeyRef` so that switching tabs
+    loads each scope's dedicated `sessionStorage` state and never overwrites it with stale data.
+  - Active search input, statuses, makes, emirates, arrival statuses, and page pagination persist
+    when navigating to customer records and returning or reloading.
+  - Fixed Sidebar active indicators when viewing customer records under Leads and Scrap Inquiries.
+  - Replaced hardcoded 10-make filter with live Vehicle Catalog makes and added search in `MultiSelect`.
+  - Removed "Margin" field from the Closed Car Sales table in the Commission Details modal.
+  - Verified with `npx tsc --noEmit` (0 errors), Vitest (37 suites, 287 tests passing), and
+    browser automation across all user roles.
+
 - 2026-10-12 update: Implemented granular cookie consent system for the CarVibe
   Dubai public landing page (`lib/cookie-consent.ts`, `components/public/CookieConsent*`).
   Renders a luxury dark-gold floating banner with the required personal data processing

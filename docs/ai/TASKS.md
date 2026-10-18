@@ -1,7 +1,24 @@
 # TASKS.md
 
-## Current objective
-
+- [x] 2026-10-18 Isolated Leads Directory vs Scrap Inquiries filter state and fixed Sidebar active indicator on Customer Records (`components/admin/leads-table/index.tsx`, `lib/admin/use-leads-filter.ts`, `components/admin/Sidebar.tsx`, `components/admin/leads-table/row.tsx`, `components/admin/leads-table/mobile-list.tsx`):
+  - Solved cross-scope filter bleed between Leads (`/admin/leads`) and Scrap Inquiries (`/admin/leads?origin=scrap`) by keying the table component with `key={sessionScope}` and synchronizing `useLeadsFilter` on storage key changes to prevent stale scope state overwrite.
+  - Selecting, changing, or clearing filters in Leads has zero impact on Scrap Inquiries filters, and vice-versa.
+  - Fixed sidebar active state when viewing customer records under Leads (`/admin/leads/[id]`) and Scrap Inquiries (`/admin/leads/[id]?origin=scrap`): regular customer records keep "Leads" highlighted, and scrap inquiry records keep "Scrap Inquiries" highlighted.
+  - Updated desktop and mobile row links to explicitly pass `?origin=scrap` on scrap leads so customer record navigation immediately retains scrap context.
+- [x] 2026-10-18 Filter State Session Persistence across Leads, Scrap Inquiries, and Incomplete Forms (`lib/admin/use-leads-filter.ts`, `components/admin/leads-table/index.tsx`, `components/admin/LeadDetail.tsx`, `app/(admin)/admin/incomplete/incomplete-client.tsx`):
+  - Added role-and-scope-aware `sessionStorage` persistence to `useLeadsFilter` so that selected filters (search, statuses, makes, emirates, arrival statuses, page) remain active when navigating to inspect a customer record (`/admin/leads/[id]`) and returning, or on browser refresh/hard refresh.
+  - Linked "Clear filters" button to reset all selections (including search input) and clear stored session filters with one click.
+  - Updated `LeadDetail` breadcrumb back link to accurately return to `/admin/leads?origin=scrap` when viewing a scrap inquiry and `/admin/leads` for standard leads.
+  - Added `sessionStorage` persistence to Incomplete Forms tab filter (`All`, `Valuations`, `Scrap Inquiries`) so that inspecting an incomplete record and returning to `/admin/incomplete` preserves the chosen tab instead of resetting to default.
+- [x] 2026-10-18 Dynamic Vehicle Catalog Makes Filter for Leads & Scrap Inquiries tabs across all roles (`lib/use-vehicle-catalog.ts`, `components/admin/leads-table/toolbar.tsx`, `components/admin/leads-table/index.tsx`, `components/ui/MultiSelect.tsx`, `lib/admin/use-leads-filter.ts`):
+  - Upgraded `useVehicleCatalog` to expose all active/unarchived catalog makes dynamically from the database (`/api/vehicles`).
+  - Replaced the hardcoded static 10-make configuration in `LeadsToolbar` with live Vehicle Catalog makes combined with current leads data, sorted alphabetically (e.g. 212, Abarth, Acura, AION, Aito, Alfa Romeo, Arcfox, Aston Martin, Audi, Avatr, BAIC, Bestune, etc.).
+  - Added an inline search filter to `MultiSelect` when options exceed 5, making it effortless to search and filter across large brand lists.
+  - Hardened make matching in `use-leads-filter.ts` to be trimmed and case-insensitive.
+  - Verified across Super Admin, Purchaser, and Customer Service roles in both Leads (`/admin/leads`) and Scrap Inquiries (`/admin/leads?origin=scrap`) tabs.
+- [x] 2026-10-18 Removed "Margin" field from Commission Details modal (`app/(admin)/admin/commission/commission-client.tsx`):
+  - Removed Margin from the mobile card view and desktop Closed Car Sales table headers/rows inside the Staff Details modal per user request.
+  - Kept all core financial metrics (`Paid amount`, `Expenses`, `Net profit`, `Profit`, `Commission`) 100% operational, accurate, and intact.
 - [x] 2026-10-16 Removed notification bell from Topbar navbar (`components/admin/Topbar.tsx`): removed `InspectionNotificationBell` element and import, cleaning up the header navigation for Super Admin and Purchaser roles without affecting lead creation, profile menu, or routing.
 - [x] 2026-10-16 Fixed Vercel build failure in `nextFontGoogleFontLoader` (`app/fonts.ts`): removed redundant static `weight` arrays from variable fonts `Manrope` and `Sora`, eliminating 10 parallel HTTP requests to Google Fonts API in `Promise.all` that caused Vercel CI timeouts/failures, accelerating compilation from 40s to 9.6s.
 - [x] 2026-10-16 Removed "CarVibe Live" status indicator footer from Admin Sidebar (`components/admin/Sidebar.tsx`): cleaned up bottom status strip containing the green pulsing dot, "CarVibe Live" label, and "UAE" badge per user request, preserving all navigation links, unviewed counter badges, and capabilities.

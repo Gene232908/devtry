@@ -35,9 +35,10 @@ type Props = {
   onCreateLead?: () => void;
   /** Narrows the status filter to what that role's leads can ever be. */
   role?: StaffRole;
+  /** Dynamically sourced make names from the Vehicle Catalog + loaded leads. */
+  availableMakes?: string[];
 };
 
-const MAKE_OPTIONS = MAKES.map((m) => ({ value: m.name, label: m.name }));
 const EMIRATE_OPTIONS = EMIRATES.map((e) => ({ value: e, label: e }));
 
 export function LeadsToolbar({
@@ -59,11 +60,19 @@ export function LeadsToolbar({
   isRefreshing,
   onRefresh,
   role,
+  availableMakes,
 }: Props) {
   const statusOptions = useMemo(
     () => filterStatusOptionsForRole(role).map((s) => ({ value: s, label: STATUS_LABEL[s] })),
     [role],
   );
+
+  const makeOptions = useMemo(() => {
+    const list = availableMakes && availableMakes.length > 0
+      ? availableMakes
+      : MAKES.map((m) => m.name);
+    return list.map((name) => ({ value: name, label: name }));
+  }, [availableMakes]);
 
   return (
     <div className="flex flex-col gap-3">
@@ -124,11 +133,12 @@ export function LeadsToolbar({
 
         <MultiSelect
           className="w-full xs:w-[calc(50%-4px)] sm:w-auto sm:min-w-[135px]"
-          options={MAKE_OPTIONS}
+          options={makeOptions}
           selected={makes}
           onChange={onMakes}
           allLabel="All makes"
           noun="makes"
+          searchable
         />
 
         <MultiSelect

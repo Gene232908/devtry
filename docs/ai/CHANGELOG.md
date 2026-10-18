@@ -23,6 +23,19 @@ Use reverse chronological order.
 
 ### Fixed
 
+- **Leads Directory vs Scrap Inquiries filter isolation & sidebar indicator.** Filter
+  state is now completely isolated between Leads Directory (`/admin/leads`) and Scrap
+  Inquiries (`/admin/leads?origin=scrap`) using session-scoped table mounting and
+  synchronization. Changing or clearing filters in one tab never modifies or clears the
+  other. Navigating into a customer record now reliably preserves the sidebar's active
+  highlight ("Leads" for standard valuation leads, "Scrap Inquiries" for scrap submissions).
+- **Dynamic Vehicle Catalog Makes in Leads toolbar.** Replaced static 10-brand dropdown
+  with live Vehicle Catalog makes combined with current leads, added search filtering in
+  `MultiSelect`, and hardened case-insensitive make matching across all roles.
+- **Removed Margin field in Commission Details.** Cleaned up desktop Closed Car Sales table
+  headers/rows and mobile card view inside the Staff Details modal while keeping all financial
+  and settlement logic intact.
+
 - **Referral commission clarity.** Referral incentives are now separated from
   closed-car commission rows: invoices show the referral amount and customer
   count beside the invoice details, while the dashboard Details modal uses a

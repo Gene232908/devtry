@@ -55,11 +55,31 @@ export default function IncompleteValuationsClient({
   const staffIdentity = useStaffIdentity();
   const role = staffIdentity?.role ?? "default";
   const storageKey = `cvd_viewed_ids_${role}`;
+  const filterStorageKey = `cvd_incomplete_filter_${role}`;
 
   const [rows, setRows] = useServerState<PartialLead[]>(initialRows);
-  const [inquiryFilter, setInquiryFilter] = useState<"all" | "valuation" | "scrap">("all");
+  const [inquiryFilter, setInquiryFilter] = useState<"all" | "valuation" | "scrap">(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = sessionStorage.getItem(filterStorageKey);
+        if (saved === "all" || saved === "valuation" || saved === "scrap") {
+          return saved;
+        }
+      } catch {}
+    }
+    return "all";
+  });
   const [error, setError] = useState<string | null>(initialError);
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  const handleInquiryFilterChange = (next: "all" | "valuation" | "scrap") => {
+    setInquiryFilter(next);
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(filterStorageKey, next);
+      } catch {}
+    }
+  };
 
   // Nothing destructive happens without passing through the dialog first.
   // `pending` deliberately survives the dialog's exit animation: clearing it on
@@ -244,7 +264,7 @@ export default function IncompleteValuationsClient({
               <button
                 key={value}
                 type="button"
-                onClick={() => setInquiryFilter(value)}
+                onClick={() => handleInquiryFilterChange(value)}
                 className={`min-h-10 rounded-btn border px-3 text-xs font-medium transition-colors ${
                   inquiryFilter === value ? "border-gold bg-gold/10 text-gold" : "border-border text-text-muted hover:border-gold/60 hover:text-text"
                 }`}

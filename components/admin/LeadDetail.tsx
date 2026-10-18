@@ -281,10 +281,10 @@ export function LeadDetail({ lead }: { lead: Lead }) {
     <div className="flex flex-col gap-6 font-sans">
       {/* Breadcrumb */}
       <Link
-        href="/admin/leads"
+        href={lead.inquiryType === "scrap" ? "/admin/leads?origin=scrap" : "/admin/leads"}
         className="inline-flex items-center gap-2 text-sm text-text-muted hover:text-gold transition-colors self-start"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to leads
+        <ArrowLeft className="h-4 w-4" /> {lead.inquiryType === "scrap" ? "Back to scrap inquiries" : "Back to leads"}
       </Link>
 
       {/* Header: Customer Name, Status, Date */}
