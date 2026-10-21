@@ -22,12 +22,11 @@ export type StaffSummary = {
 
 /**
  * Roles that may be assigned to a staff account.
- * 'admin' (Super Admin) accounts are not created through this form —
- * they are provisioned directly in Supabase Auth.
+ * Super Admin (admin), Call Centre, and Purchaser.
  */
-export const ASSIGNABLE_ROLES: StaffRole[] = ["call_center", "purchaser"];
+export const ASSIGNABLE_ROLES: StaffRole[] = ["admin", "call_center", "purchaser"];
 
-export const ASSIGNABLE_ROLE_VALUES = ["call_center", "purchaser"] as const;
+export const ASSIGNABLE_ROLE_VALUES = ["admin", "call_center", "purchaser"] as const;
 
 export type AssignableRole = (typeof ASSIGNABLE_ROLE_VALUES)[number];
 
@@ -41,7 +40,8 @@ export const staffDraftSchema = z.object({
     .string()
     .min(6, "Password must be at least 6 characters.")
     .max(72, "Password is too long.")
-    .optional(),
+    .optional()
+    .or(z.literal("")),
   displayName: z
     .string()
     .trim()
@@ -65,7 +65,14 @@ export const staffPatchSchema = z.object({
     .min(2, "Enter a display name (at least 2 characters).")
     .max(80, "Display name is too long.")
     .optional(),
-  role: z.enum(ASSIGNABLE_ROLE_VALUES, { message: "Select a valid role." }).optional(),
+  email: z.string().trim().email("Enter a valid email address.").optional(),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters.")
+    .max(72, "Password is too long.")
+    .optional()
+    .or(z.literal("")),
+  role: z.enum(["admin", "manager", "call_center", "purchaser"], { message: "Select a valid role." }).optional(),
   isActive: z.boolean().optional(),
 });
 

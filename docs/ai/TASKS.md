@@ -1,5 +1,14 @@
 # TASKS.md
 
+- [x] 2026-10-21 Staff Management Editable Email, Password & Super Admin Role (`lib/admin/staff-schema.ts`, `app/api/admin/staff/[id]/route.ts`, `app/api/admin/staff/route.ts`, `components/admin/StaffAccounts.tsx`, `lib/admin/staff-schema.test.ts`):
+  - Enabled Super Admins to edit Email, Password (reset/update credentials), and Role for staff and owner accounts directly from Staff Management.
+  - Updated `lib/admin/staff-schema.ts` to include `admin` (Super Admin) in `ASSIGNABLE_ROLE_VALUES`, allowing Super Admin assignment, and expanded `staffPatchSchema` to accept optional `email` and optional `password` (>= 6 chars or blank).
+  - Updated `PATCH /api/admin/staff/[id]` to update Supabase Auth user credentials (`email`, `password`, `user_metadata`) via `supabase.auth.admin.updateUserById()` and sync `public.profiles` (`email`, `display_name`, `role`, `is_active`).
+  - Hardened last-owner protection in `PATCH /api/admin/staff/[id]` to prevent demoting or disabling the last active owner (`would_remove_last_owner`).
+  - Updated `POST /api/admin/staff` to support provisioning new Super Admin accounts directly.
+  - Updated `StaffAccounts.tsx` to keep email field editable, show optional password input on edit, include Super Admin in role select, and display edit controls for owner accounts with self-disable safeguards and `(You)` badge.
+  - Added unit test suite in `lib/admin/staff-schema.test.ts` (100% passing across 41 test suites, 314 tests) and verified visually with browser subagent.
+
 - [x] 2026-10-21 Customer Service Number Blocking Activation (`lib/auth/permissions.ts`, `app/api/admin/blocked-numbers/route.ts`, `app/api/admin/blocked-numbers/route.test.ts`):
   - Enabled the number blocking system for the Customer Service (`call_center`) role by granting the `manageBlocklist` capability in `lib/auth/permissions.ts`.
   - Updated `POST` and `DELETE` endpoints in `app/api/admin/blocked-numbers/route.ts` to authorize staff with `manageBlocklist` (Super Admin, Owner, and Customer Service) instead of hardcoding `requireAdmin()`.

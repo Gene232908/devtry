@@ -58,7 +58,12 @@ export function StaffAccounts({ viewer, initialStaff, canManageStaff }: Props) {
 
   function openEdit(member: StaffSummary) {
     setEditTarget(member);
-    setDraft({ email: member.email, displayName: member.displayName, role: member.role as StaffDraft["role"] });
+    setDraft({
+      email: member.email,
+      displayName: member.displayName,
+      role: (member.role === "manager" ? "admin" : member.role) as StaffDraft["role"],
+      password: "",
+    });
     setDraftErrors({});
     setMutationError(null);
     setMutation("idle");
@@ -81,6 +86,16 @@ export function StaffAccounts({ viewer, initialStaff, canManageStaff }: Props) {
   async function handleSubmit() {
     if (inFlight.current) return;
 
+    if (!editTarget && (!draft.password || draft.password.trim().length === 0)) {
+      setDraftErrors({ password: "Password is required for new accounts." });
+      return;
+    }
+
+    if (draft.password && draft.password.trim().length > 0 && draft.password.trim().length < 6) {
+      setDraftErrors({ password: "Password must be at least 6 characters." });
+      return;
+    }
+
     const parsed = staffDraftSchema.safeParse(draft);
     if (!parsed.success) {
       setDraftErrors(staffFieldErrors(parsed.error));
@@ -93,11 +108,20 @@ export function StaffAccounts({ viewer, initialStaff, canManageStaff }: Props) {
 
     try {
       if (editTarget) {
-        // PATCH — rename or change role
+        // PATCH — rename, email, password, or change role
+        const payload: Record<string, unknown> = {
+          email: parsed.data.email,
+          displayName: parsed.data.displayName,
+          role: parsed.data.role,
+        };
+        if (parsed.data.password && parsed.data.password.trim().length >= 6) {
+          payload.password = parsed.data.password.trim();
+        }
+
         const res = await fetch(`/api/admin/staff/${editTarget.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ displayName: parsed.data.displayName, role: parsed.data.role }),
+          body: JSON.stringify(payload),
         });
         const json = await res.json().catch(() => null);
         if (!res.ok || !json?.ok) {
@@ -165,12 +189,10 @@ export function StaffAccounts({ viewer, initialStaff, canManageStaff }: Props) {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   const saving = mutation === "saving";
-  // Hide the viewer's own row from the management list to prevent self-disable.
-  const manageable = staff.filter((m) => m.id !== viewer.userId);
-  const operational = manageable.filter(
+  const operational = staff.filter(
     (m) => m.role === "call_center" || m.role === "purchaser",
   );
-  const owners = manageable.filter(
+  const owners = staff.filter(
     (m) => m.role === "admin" || m.role === "manager",
   );
 
@@ -193,22 +215,26 @@ export function StaffAccounts({ viewer, initialStaff, canManageStaff }: Props) {
           )}
         </div>
 
-        {/* Owner accounts (read-only list) */}
+        {/* Super Admins & Owners */}
         {owners.length > 0 && (
           <section>
             <p className="mb-2 text-[0.72rem] font-medium uppercase tracking-wider text-text-faint">
-              Owners
+              Super Admins & Owners
             </p>
             <ul className="flex flex-col gap-1.5">
-              {owners.map((m) => (
-                <StaffRow
-                  key={m.id}
-                  member={m}
-                  canManage={false}
-                  onEdit={() => {}}
-                  onToggleActive={() => {}}
-                />
-              ))}
+              {owners.map((m) => {
+                const isSelf = m.id === viewer.userId;
+                return (
+                  <StaffRow
+                    key={m.id}
+                    member={m}
+                    canManage={canManageStaff}
+                    isSelf={isSelf}
+                    onEdit={() => openEdit(m)}
+                    onToggleActive={isSelf ? undefined : () => void toggleActive(m)}
+                  />
+                );
+              })}
             </ul>
           </section>
         )}
@@ -220,29 +246,33 @@ export function StaffAccounts({ viewer, initialStaff, canManageStaff }: Props) {
               Operational staff
             </p>
             <ul className="flex flex-col gap-1.5">
-              {operational.map((m) => (
-                <StaffRow
-                  key={m.id}
-                  member={m}
-                  canManage={canManageStaff}
-                  onEdit={() => openEdit(m)}
-                  onToggleActive={() => void toggleActive(m)}
-                />
-              ))}
+              {operational.map((m) => {
+                const isSelf = m.id === viewer.userId;
+                return (
+                  <StaffRow
+                    key={m.id}
+                    member={m}
+                    canManage={canManageStaff}
+                    isSelf={isSelf}
+                    onEdit={() => openEdit(m)}
+                    onToggleActive={isSelf ? undefined : () => void toggleActive(m)}
+                  />
+                );
+              })}
             </ul>
           </section>
         )}
 
-        {manageable.length === 0 && (
+        {staff.length === 0 && (
           <p className="text-fluid--1 text-text-faint">
-            No other staff accounts yet.{" "}
-            {canManageStaff && 'Use "Add staff" to invite a call centre or purchaser.'}
+            No staff accounts yet.{" "}
+            {canManageStaff && 'Use "Add staff" to create a staff or Super Admin account.'}
           </p>
         )}
 
         {!canManageStaff && (
           <p className="text-fluid--1 text-text-faint">
-            Only owners can manage staff accounts.
+            Only Super Admins can manage staff accounts.
           </p>
         )}
       </Card>
@@ -280,23 +310,22 @@ export function StaffAccounts({ viewer, initialStaff, canManageStaff }: Props) {
                 type="email"
                 value={draft.email}
                 error={draftErrors.email}
-                disabled={saving || !!editTarget}
+                disabled={saving}
                 placeholder="name@example.com"
                 onChange={(e) => updateDraft("email", e.target.value)}
               />
               
-              {!editTarget && (
-                <Input
-                  label="Password"
-                  name="staff-password"
-                  type="text"
-                  value={draft.password ?? ""}
-                  error={draftErrors.password}
-                  disabled={saving}
-                  placeholder="At least 6 characters"
-                  onChange={(e) => updateDraft("password", e.target.value)}
-                />
-              )}
+              <Input
+                label={editTarget ? "Password (leave blank to keep current)" : "Password"}
+                name="staff-password"
+                type="text"
+                value={draft.password ?? ""}
+                error={draftErrors.password}
+                disabled={saving}
+                placeholder={editTarget ? "Leave blank to keep unchanged" : "At least 6 characters"}
+                onChange={(e) => updateDraft("password", e.target.value)}
+              />
+
               <Input
                 label="Display name"
                 name="staff-displayName"
@@ -337,7 +366,9 @@ export function StaffAccounts({ viewer, initialStaff, canManageStaff }: Props) {
                   <p className="text-[0.72rem] text-danger">{draftErrors.role}</p>
                 )}
                 <p className="text-[0.72rem] text-text-faint">
-                  {draft.role === "call_center"
+                  {draft.role === "admin"
+                    ? "Full administrative access. Can manage staff, oversee all leads, financial reports, catalog, and settings."
+                    : draft.role === "call_center"
                     ? "Can see assigned leads and contact info. Cannot see prices or commissions."
                     : "Can see assigned leads and prices. Cannot see contact info or commissions."}
                 </p>
@@ -378,17 +409,25 @@ export function StaffAccounts({ viewer, initialStaff, canManageStaff }: Props) {
 type RowProps = {
   member: StaffSummary;
   canManage: boolean;
+  isSelf?: boolean;
   onEdit: () => void;
-  onToggleActive: () => void;
+  onToggleActive?: () => void;
 };
 
-function StaffRow({ member, canManage, onEdit, onToggleActive }: RowProps) {
+function StaffRow({ member, canManage, isSelf, onEdit, onToggleActive }: RowProps) {
   return (
     <li className="flex items-center justify-between gap-3 rounded-card bg-surface-2 px-3 py-2 text-fluid--1">
       <div className="min-w-0 flex-1">
-        <span className={`block truncate font-medium ${member.isActive ? "text-text" : "text-text-muted line-through"}`}>
-          {member.displayName}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className={`block truncate font-medium ${member.isActive ? "text-text" : "text-text-muted line-through"}`}>
+            {member.displayName}
+          </span>
+          {isSelf && (
+            <span className="rounded bg-gold/15 px-1.5 py-0.5 text-[0.68rem] font-semibold uppercase tracking-wider text-gold">
+              You
+            </span>
+          )}
+        </div>
         <span className="block truncate text-[0.72rem] text-text-faint">{member.email}</span>
       </div>
 
@@ -410,24 +449,28 @@ function StaffRow({ member, canManage, onEdit, onToggleActive }: RowProps) {
               aria-label={`Edit ${member.displayName}`}
               onClick={onEdit}
               className="rounded p-1 text-text-muted hover:text-text"
+              title="Edit account (email, password, role)"
             >
               <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor">
                 <path d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287.753 2.205 2.205-.63 6.287-6.422ZM12.5 2.502l-.75.75 1 1 .75-.75-.25-.25-.75-.75Z" />
               </svg>
             </button>
 
-            <button
-              type="button"
-              aria-label={member.isActive ? `Disable ${member.displayName}` : `Enable ${member.displayName}`}
-              onClick={onToggleActive}
-              className={`rounded p-1 ${member.isActive ? "text-text-muted hover:text-danger" : "text-success hover:text-success/80"}`}
-            >
-              {member.isActive ? (
-                <ShieldOff className="h-3.5 w-3.5" />
-              ) : (
-                <UserCheck className="h-3.5 w-3.5" />
-              )}
-            </button>
+            {onToggleActive && !isSelf && (
+              <button
+                type="button"
+                aria-label={member.isActive ? `Disable ${member.displayName}` : `Enable ${member.displayName}`}
+                onClick={onToggleActive}
+                className={`rounded p-1 ${member.isActive ? "text-text-muted hover:text-danger" : "text-success hover:text-success/80"}`}
+                title={member.isActive ? "Disable account" : "Enable account"}
+              >
+                {member.isActive ? (
+                  <ShieldOff className="h-3.5 w-3.5" />
+                ) : (
+                  <UserCheck className="h-3.5 w-3.5" />
+                )}
+              </button>
+            )}
           </>
         )}
       </div>

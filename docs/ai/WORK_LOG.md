@@ -8,6 +8,16 @@ Update it after meaningful completed work. Do not invent hours, tests, or dates.
  
 ### Completed
  
+- Staff Management Editable Email, Password & Super Admin Role:
+  - Enabled Super Admins to edit Email, Password (reset/update credentials), and Role for staff and owner accounts directly from Staff Management.
+  - Updated [lib/admin/staff-schema.ts](file:///e:/Github/carvibe/lib/admin/staff-schema.ts) to include `admin` (Super Admin) in `ASSIGNABLE_ROLE_VALUES`, allowing Super Admin assignment, and expanded `staffPatchSchema` to accept optional `email` and optional `password` (>= 6 chars or blank).
+  - Updated `PATCH /api/admin/staff/[id]` in [app/api/admin/staff/[id]/route.ts](file:///e:/Github/carvibe/app/api/admin/staff/[id]/route.ts) to update Supabase Auth user credentials (`email`, `password`, `user_metadata`) via `supabase.auth.admin.updateUserById()` and sync `public.profiles` (`email`, `display_name`, `role`, `is_active`).
+  - Hardened last-owner protection in `PATCH /api/admin/staff/[id]` to prevent demoting or disabling the last active owner (`would_remove_last_owner`).
+  - Updated `POST /api/admin/staff` in [app/api/admin/staff/route.ts](file:///e:/Github/carvibe/app/api/admin/staff/route.ts) to support provisioning new Super Admin accounts directly.
+  - Updated [components/admin/StaffAccounts.tsx](file:///e:/Github/carvibe/components/admin/StaffAccounts.tsx) to keep email field editable, show optional password input on edit, include Super Admin in role select, and display edit controls for owner accounts with self-disable safeguards and `(You)` badge.
+  - Added unit test suite in [lib/admin/staff-schema.test.ts](file:///e:/Github/carvibe/lib/admin/staff-schema.test.ts).
+  - Verified: `npm run lint` (0 errors, 0 warnings), `npx tsc --noEmit` (0 errors), `npm test` (41 suites, 314 tests passing), and verified in live browser subagent.
+ 
 - Customer Service Number Blocking Activation:
   - Enabled the number blocking system for the Customer Service (`call_center`) role by granting the `manageBlocklist` capability in [lib/auth/permissions.ts](file:///e:/Github/carvibe/lib/auth/permissions.ts).
   - Updated `POST` and `DELETE` endpoints in [app/api/admin/blocked-numbers/route.ts](file:///e:/Github/carvibe/app/api/admin/blocked-numbers/route.ts) to authorize staff with `manageBlocklist` (Super Admin, Owner, and Customer Service) instead of hardcoding `requireAdmin()`.

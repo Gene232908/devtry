@@ -109,13 +109,29 @@ export async function POST(req: NextRequest) {
 
   const userId = authData.user.id;
 
-  // Step 2: Insert/update the profile row via the provisioning RPC.
-  const { error: profileError } = await supabase.rpc("provision_staff_account", {
-    p_user_id: userId,
-    p_email: email,
-    p_name: displayName,
-    p_role: role,
-  });
+  // Step 2: Insert/update the profile row via the provisioning RPC or direct upsert for admin.
+  let profileError: { message: string } | null = null;
+
+  if (role === "admin") {
+    const { error: upsertErr } = await supabase
+      .from("profiles")
+      .upsert({
+        id: userId,
+        email,
+        display_name: displayName,
+        role: "admin",
+        is_active: true,
+      });
+    profileError = upsertErr;
+  } else {
+    const { error: rpcErr } = await supabase.rpc("provision_staff_account", {
+      p_user_id: userId,
+      p_email: email,
+      p_name: displayName,
+      p_role: role,
+    });
+    profileError = rpcErr;
+  }
 
   if (profileError) {
     // Attempt to clean up the orphaned Auth user.
