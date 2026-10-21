@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Users, AlertTriangle, ShieldCheck } from "lucide-react";
+import { Users, AlertTriangle } from "lucide-react";
 import { StaffAccounts } from "@/components/admin/StaffAccounts";
 import { StaffErrorReport } from "@/components/admin/StaffErrorReport";
 import type { StaffIdentity } from "@/lib/auth/permissions";
@@ -48,14 +48,6 @@ export function StaffPageClient({ viewer, initialStaff, canManageStaff }: Props)
               ? "Create, edit, enable, and disable staff accounts. Assign roles to control what each person can see."
               : "Executive audit report tracking staff errors, arrival reversals, and mistake frequency per agent."}
           </p>
-        </div>
-
-        {/* Status Badge */}
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium bg-gold/10 text-gold border border-gold/20">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            Super Admin Access
-          </span>
         </div>
       </div>
 
