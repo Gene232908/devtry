@@ -1,5 +1,11 @@
 # TASKS.md
 
+- [x] 2026-10-21 Sir Nash System Verification Checklist & Online Live Guide (`app/verification-checklist/page.tsx`, `docs/client/Sir_Nash_Verification_Checklist.md`, `.docx`, `.html`, `scripts/generate_verification_checklist_docx.mjs`):
+  - Extracted and structured all 14 operational requirements from the Oct 18, 2026 Strategy Meeting into a simplified, non-technical, plain-English verification checklist.
+  - Built an interactive, responsive online checklist page at `app/verification-checklist/page.tsx` (`http://localhost:3000/verification-checklist`) with live progress tracker, persistent checkboxes via `localStorage`, 1-click "Copy for Google Docs", and "Print / Save PDF".
+  - Generated Word `.docx` (`docs/client/Sir_Nash_Verification_Checklist.docx`) and standalone `.html` via `scripts/generate_verification_checklist_docx.mjs` for seamless offline sharing and direct Google Drive upload.
+  - Verified across desktop and mobile viewports via browser subagent. Passed all TypeScript checks and tests.
+
 - [x] 2026-10-21 Staff Management Editable Email, Password & Super Admin Role (`lib/admin/staff-schema.ts`, `app/api/admin/staff/[id]/route.ts`, `app/api/admin/staff/route.ts`, `components/admin/StaffAccounts.tsx`, `lib/admin/staff-schema.test.ts`):
   - Enabled Super Admins to edit Email, Password (reset/update credentials), and Role for staff and owner accounts directly from Staff Management.
   - Updated `lib/admin/staff-schema.ts` to include `admin` (Super Admin) in `ASSIGNABLE_ROLE_VALUES`, allowing Super Admin assignment, and expanded `staffPatchSchema` to accept optional `email` and optional `password` (>= 6 chars or blank).

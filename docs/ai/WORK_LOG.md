@@ -8,6 +8,12 @@ Update it after meaningful completed work. Do not invent hours, tests, or dates.
  
 ### Completed
  
+- Sir Nash System Verification Checklist & Interactive Live Document:
+  - Extracted all 14 core operational requirements from the Oct 18, 2026 Strategy Meeting into a concise, non-technical, plain-English verification checklist.
+  - Implemented an interactive online verification dashboard at [app/verification-checklist/page.tsx](file:///e:/Github/carvibe/app/verification-checklist/page.tsx) (`http://localhost:3000/verification-checklist`) with real-time progress counter, persistent checkboxes via `localStorage`, 1-click "Copy for Google Docs", and "Print / Save PDF".
+  - Created Word `.docx` ([docs/client/Sir_Nash_Verification_Checklist.docx](file:///e:/Github/carvibe/docs/client/Sir_Nash_Verification_Checklist.docx)), standalone HTML ([docs/client/Sir_Nash_Verification_Checklist.html](file:///e:/Github/carvibe/docs/client/Sir_Nash_Verification_Checklist.html)), and Markdown ([docs/client/Sir_Nash_Verification_Checklist.md](file:///e:/Github/carvibe/docs/client/Sir_Nash_Verification_Checklist.md)) via [scripts/generate_verification_checklist_docx.mjs](file:///e:/Github/carvibe/scripts/generate_verification_checklist_docx.mjs).
+  - Verified: `npm run lint` (0 errors, 0 warnings), `npx tsc --noEmit` (0 errors), `npm test` (41 suites, 314 tests passing), and live browser subagent inspection.
+ 
 - Staff Management Editable Email, Password & Super Admin Role:
   - Enabled Super Admins to edit Email, Password (reset/update credentials), and Role for staff and owner accounts directly from Staff Management.
   - Updated [lib/admin/staff-schema.ts](file:///e:/Github/carvibe/lib/admin/staff-schema.ts) to include `admin` (Super Admin) in `ASSIGNABLE_ROLE_VALUES`, allowing Super Admin assignment, and expanded `staffPatchSchema` to accept optional `email` and optional `password` (>= 6 chars or blank).
