@@ -49,6 +49,7 @@ export type LeadPatch = Partial<Lead> & {
   reason?: string;
   originalArrivedBy?: string;
   requestArrivalReversal?: boolean;
+  declineArrivalReversal?: boolean;
 };
 
 type LeadsContextValue = {
@@ -252,6 +253,7 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
         if (patch.reason !== undefined) body.reason = patch.reason;
         if (patch.originalArrivedBy !== undefined) body.original_arrived_by = patch.originalArrivedBy;
         if (patch.requestArrivalReversal !== undefined) body.request_arrival_reversal = patch.requestArrivalReversal;
+        if (patch.declineArrivalReversal !== undefined) body.decline_arrival_reversal = patch.declineArrivalReversal;
         if (patch.estimatedValueAed !== undefined) body.estimated_value_aed = patch.estimatedValueAed;
         if (patch.notes !== undefined) body.notes = patch.notes;
         if (patch.isSpam !== undefined) body.is_spam = patch.isSpam;

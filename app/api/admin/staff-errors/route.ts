@@ -27,6 +27,7 @@ interface DbLeadRow {
   make: string | null;
   model: string | null;
   year: number | null;
+  arrival_status?: string | null;
 }
 
 interface DbProfileRow {
@@ -55,13 +56,19 @@ export async function GET() {
   try {
     const supabase = getSupabaseAdmin();
 
-    // Query actual arrival_reverted, arrival_reversal_requested, and staff_error events from lead_events
+    // Query actual arrival_reverted, arrival_reversal_requested, arrival_reset_due_to_reschedule, arrival_reversal_declined, and staff_error events
     const { data: eventsData, error: eventsError } = await supabase
       .from("lead_events")
       .select("id, lead_id, actor, type, meta, created_at")
-      .in("type", ["arrival_reverted", "arrival_reversal_requested", "staff_error"])
+      .in("type", [
+        "arrival_reverted",
+        "arrival_reversal_requested",
+        "arrival_reset_due_to_reschedule",
+        "arrival_reversal_declined",
+        "staff_error",
+      ])
       .order("created_at", { ascending: false })
-      .limit(100);
+      .limit(150);
 
     if (eventsError) {
       return NextResponse.json(
@@ -94,16 +101,33 @@ export async function GET() {
 
     const confirmedEvents = (confirmedData ?? []) as DbEventRow[];
 
-    // Filter out arrival_reversal_requested events that were already completed by an arrival_reverted event
+    // Fetch leads early to check arrival_status
+    const { data: leadsData } = leadIds.length > 0
+      ? await supabase.from("leads").select("id, full_name, make, model, year, arrival_status").in("id", leadIds)
+      : { data: [] };
+
+    const leadsMap = new Map(((leadsData as DbLeadRow[]) ?? []).map((l) => [l.id, l]));
+
+    // Filter events: only include arrival_reversal_requested if the lead is currently marked as arrived
+    // and hasn't been reverted, rescheduled, or declined afterwards
     const events = rawEvents.filter((ev) => {
+      if (ev.type === "arrival_reset_due_to_reschedule") return false; // purely a resolution event
       if (ev.type !== "arrival_reversal_requested") return true;
-      const isAlreadyReverted = rawEvents.some(
+
+      const lead = leadsMap.get(ev.lead_id);
+      // If arrival status is already not_arrived (e.g. turned off, rescheduled, or reverted),
+      // there is no pending reversal to approve!
+      if (!lead || lead.arrival_status !== "arrived") return false;
+
+      const isResolved = rawEvents.some(
         (other) =>
           other.lead_id === ev.lead_id &&
-          other.type === "arrival_reverted" &&
+          (other.type === "arrival_reverted" ||
+            other.type === "arrival_reset_due_to_reschedule" ||
+            other.type === "arrival_reversal_declined") &&
           new Date(other.created_at).getTime() >= new Date(ev.created_at).getTime() - 1000
       );
-      return !isAlreadyReverted;
+      return !isResolved;
     });
 
     // Helper: identify the staff member who made the error
@@ -158,17 +182,11 @@ export async function GET() {
 
     const allProfileIds = Array.from(new Set([...staffIds, ...approverIds, ...actorIds]));
 
-    // Fetch leads with full_name, make, model, year
-    const { data: leadsData } = leadIds.length > 0
-      ? await supabase.from("leads").select("id, full_name, make, model, year").in("id", leadIds)
-      : { data: [] };
-
     // Fetch profiles with display_name, role
     const { data: profilesData } = allProfileIds.length > 0
       ? await supabase.from("profiles").select("id, display_name, role").in("id", allProfileIds)
       : { data: [] };
 
-    const leadsMap = new Map(((leadsData as DbLeadRow[]) ?? []).map((l) => [l.id, l]));
     const profilesMap = new Map(((profilesData as DbProfileRow[]) ?? []).map((p) => [p.id, p]));
 
     const mappedRecords: StaffErrorRecord[] = events.map((event) => {

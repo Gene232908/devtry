@@ -199,11 +199,13 @@ export function filterStaffErrors(
     query?: string;
     period?: "all" | "this_month" | "last_30_days";
     agentName?: string;
+    status?: "all" | "pending" | "completed";
   }
 ): StaffErrorRecord[] {
   const query = (options.query ?? "").trim().toLowerCase();
   const period = options.period ?? "all";
   const selectedAgent = (options.agentName ?? "all").trim().toLowerCase();
+  const statusFilter = options.status ?? "all";
 
   const now = new Date();
   const currentYear = now.getUTCFullYear();
@@ -211,6 +213,13 @@ export function filterStaffErrors(
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   return records.filter((rec) => {
+    // Status filter (pending vs completed vs all)
+    if (statusFilter === "pending") {
+      if (rec.status !== "pending_approval") return false;
+    } else if (statusFilter === "completed") {
+      if (rec.status !== "reverted" && rec.status !== "rejected") return false;
+    }
+
     // Agent filter
     if (selectedAgent !== "all" && rec.agentName.toLowerCase() !== selectedAgent) {
       return false;

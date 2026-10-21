@@ -100,5 +100,18 @@ describe("Staff Errors & Reversals Audit Helper", () => {
     expect(agentRecords.length).toBe(2);
     expect(agentRecords[0].approvedBy).toBe("Sir Nash (Super Admin)");
     expect(agentRecords[1].status).toBe("pending_approval");
+
+    // Filter by status: pending
+    const pendingOnly = filterStaffErrors(records, { status: "pending" });
+    expect(pendingOnly.length).toBe(1);
+    expect(pendingOnly[0].status).toBe("pending_approval");
+    expect(pendingOnly[0].vehicleDetails).toBe("2023 BMW X5");
+
+    // Filter by status: completed
+    const completedOnly = filterStaffErrors(records, { status: "completed" });
+    expect(completedOnly.length).toBe(1);
+    expect(completedOnly[0].status).toBe("reverted");
+    expect(completedOnly[0].vehicleDetails).toBe("2024 Nissan Patrol");
   });
 });
+

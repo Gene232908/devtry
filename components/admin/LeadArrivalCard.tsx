@@ -5,47 +5,12 @@ import { AlertTriangle, Check, Clock, Phone, ShieldCheck } from "lucide-react";
 import { Dialog } from "@/components/ui/Dialog";
 import { formatUaeDateTime } from "@/lib/uae-time";
 
-const STORAGE_KEY = "cvd_arrival_reversals_v1";
-
 type ReversalRecord = {
   leadId: string;
   reason: string;
   requestedBy: string;
   requestedAt: string;
 };
-
-function getPendingReversal(leadId: string): ReversalRecord | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const map: Record<string, ReversalRecord> = JSON.parse(raw);
-    return map[leadId] ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function savePendingReversal(record: ReversalRecord) {
-  if (typeof window === "undefined") return;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const map: Record<string, ReversalRecord> = raw ? JSON.parse(raw) : {};
-    map[record.leadId] = record;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
-  } catch {}
-}
-
-function clearPendingReversal(leadId: string) {
-  if (typeof window === "undefined") return;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    const map: Record<string, ReversalRecord> = JSON.parse(raw);
-    delete map[leadId];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
-  } catch {}
-}
 
 function normalizePhoneDigits(val: string): string {
   return val.replace(/\D/g, "");
@@ -89,6 +54,7 @@ type Props = {
   onConfirmArrival: () => Promise<void> | void;
   onRevertArrival?: (reason?: string) => Promise<void> | void;
   onRequestReversal?: (reason: string) => Promise<void> | void;
+  onDeclineReversal?: () => Promise<void> | void;
   showCard: boolean;
   isSuperAdmin?: boolean;
   staffRole?: string;
@@ -105,6 +71,7 @@ export function LeadArrivalCard({
   onConfirmArrival,
   onRevertArrival,
   onRequestReversal,
+  onDeclineReversal,
   showCard,
   isSuperAdmin = false,
   staffName = "Customer Service",
@@ -122,8 +89,36 @@ export function LeadArrivalCard({
   const [pendingRequest, setPendingRequest] = useState<ReversalRecord | null>(null);
 
   useEffect(() => {
-    setPendingRequest(getPendingReversal(leadId));
-  }, [leadId]);
+    // Clear legacy localStorage to prevent stale reversals
+    try {
+      localStorage.removeItem("cvd_arrival_reversals_v1");
+    } catch {}
+
+    if (arrivalStatus !== "arrived") {
+      setPendingRequest(null);
+      return;
+    }
+
+    let active = true;
+    async function loadPending() {
+      try {
+        const res = await fetch(`/api/leads/${leadId}`, { cache: "no-store" });
+        if (res.ok) {
+          const json = await res.json();
+          if (active && json.ok) {
+            setPendingRequest(json.data?.pendingReversal ?? null);
+          }
+        }
+      } catch {
+        // network fallback
+      }
+    }
+
+    void loadPending();
+    return () => {
+      active = false;
+    };
+  }, [leadId, arrivalStatus]);
 
   if (!showCard) return null;
 
@@ -165,7 +160,6 @@ export function LeadArrivalCard({
 
     setPhoneError(null);
     setPhoneModalOpen(false);
-    clearPendingReversal(leadId);
     setPendingRequest(null);
     await onConfirmArrival();
   }
@@ -184,7 +178,6 @@ export function LeadArrivalCard({
       requestedAt: new Date().toISOString(),
     };
 
-    savePendingReversal(rec);
     setPendingRequest(rec);
     setReversalModalOpen(false);
 
@@ -195,21 +188,21 @@ export function LeadArrivalCard({
 
   async function handleApproveReversal() {
     const reason = pendingRequest?.reason;
-    clearPendingReversal(leadId);
     setPendingRequest(null);
     if (onRevertArrival) {
       await onRevertArrival(reason);
     }
   }
 
-  function handleDeclineReversal() {
-    clearPendingReversal(leadId);
+  async function handleDeclineReversal() {
     setPendingRequest(null);
+    if (onDeclineReversal) {
+      await onDeclineReversal();
+    }
   }
 
   async function handleSuperAdminDirectRevert() {
     const reason = adminReason.trim() || undefined;
-    clearPendingReversal(leadId);
     setPendingRequest(null);
     setSuperAdminRevertModalOpen(false);
     if (onRevertArrival) {

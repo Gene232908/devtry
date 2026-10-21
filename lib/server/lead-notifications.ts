@@ -246,4 +246,145 @@ export async function dispatchArrivalNotification(
   }
 }
 
+export type ArrivalReversalNotification = {
+  leadId: string;
+  customerName: string;
+  vehicle: string;
+  requesterName: string;
+  requesterRole: string;
+  reason: string;
+  requestedAt: string;
+};
+
+export function formatArrivalReversalText(data: ArrivalReversalNotification): string {
+  const roleLabel =
+    data.requesterRole === "call_center"
+      ? "Customer Service (Call Centre)"
+      : data.requesterRole === "purchaser"
+      ? "Purchaser"
+      : data.requesterRole;
+
+  return [
+    "CarVibe Dubai • Arrival Reversal Approval Request",
+    "",
+    "A staff member has submitted a request for Sir Nash to review and approve turning off customer arrival status.",
+    "",
+    `Staff Member: ${data.requesterName} (${roleLabel})`,
+    `Customer: ${data.customerName}`,
+    `Vehicle: ${data.vehicle || "Not specified"}`,
+    `Reason: "${data.reason}"`,
+    `Request Time: ${data.requestedAt}`,
+    "",
+    "Review and approve or decline this request in the CarVibe Admin Dashboard:",
+    `${process.env.NEXT_PUBLIC_SITE_URL || "https://carvibedubai.com"}/admin/leads/${data.leadId}`,
+  ].join("\n");
+}
+
+export function formatArrivalReversalHtml(data: ArrivalReversalNotification): string {
+  const adminUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://carvibedubai.com"}/admin/leads/${data.leadId}`;
+  const roleLabel =
+    data.requesterRole === "call_center"
+      ? "Customer Service (Call Centre)"
+      : data.requesterRole === "purchaser"
+      ? "Purchaser"
+      : data.requesterRole;
+
+  return `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #09090b; color: #f4f4f5; border-radius: 12px; overflow: hidden; border: 1px solid #27272a;">
+      <div style="background: linear-gradient(135deg, #1c1917, #09090b); padding: 24px; border-bottom: 3px solid #f59e0b;">
+        <span style="color: #f59e0b; font-size: 11px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;">CarVibe Dubai • Action Required</span>
+        <h2 style="margin: 8px 0 0; color: #ffffff; font-size: 20px;">Customer Arrival Reversal Request</h2>
+      </div>
+      <div style="padding: 24px; font-size: 14px; line-height: 1.6;">
+        <p style="margin: 0 0 16px; color: #e4e4e7;">A staff member has submitted a request for Sir Nash to review and approve turning off customer arrival.</p>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <tr>
+            <td style="padding: 8px 0; color: #a1a1aa; width: 140px;">Staff Member:</td>
+            <td style="padding: 8px 0; color: #ffffff; font-weight: 600;">${data.requesterName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #a1a1aa;">Staff Role:</td>
+            <td style="padding: 8px 0; color: #f59e0b; font-weight: 600;">${roleLabel}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #a1a1aa;">Customer:</td>
+            <td style="padding: 8px 0; color: #ffffff; font-weight: 600;">${data.customerName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #a1a1aa;">Vehicle:</td>
+            <td style="padding: 8px 0; color: #ffffff;">${data.vehicle || "Not specified"}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #a1a1aa;">Request Time:</td>
+            <td style="padding: 8px 0; color: #ffffff;">${data.requestedAt}</td>
+          </tr>
+        </table>
+        <div style="margin: 16px 0; padding: 14px 16px; background: #18181b; border-left: 3px solid #f59e0b; border-radius: 6px;">
+          <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: #f59e0b; margin-bottom: 4px;">Stated Reason</div>
+          <div style="color: #f4f4f5; font-style: italic;">&ldquo;${data.reason}&rdquo;</div>
+        </div>
+        <div style="text-align: center; margin-top: 24px;">
+          <a href="${adminUrl}" style="background: #f59e0b; color: #000000; font-weight: 600; padding: 12px 24px; border-radius: 9999px; text-decoration: none; display: inline-block;">Review &amp; Approve in Admin</a>
+        </div>
+      </div>
+      <div style="background: #18181b; padding: 12px 24px; text-align: center; font-size: 11px; color: #71717a;">
+        CarVibe Dubai • Operations &amp; Audit Alert
+      </div>
+    </div>
+  `;
+}
+
+export async function sendArrivalReversalNotification(
+  recipients: string[],
+  data: ArrivalReversalNotification,
+): Promise<void> {
+  const config = smtpConfig();
+  const client = transport();
+  if (!config || !client) {
+    console.warn("[lead-notifications] SMTP not configured; arrival reversal email skipped for", recipients);
+    return;
+  }
+
+  const validRecipients = Array.from(new Set(recipients.map((r) => r.trim()).filter((r) => r.includes("@"))));
+  if (validRecipients.length === 0) return;
+
+  const roleLabel = data.requesterRole === "call_center" ? "Customer Service" : data.requesterRole;
+  const subject = `[Approval Required] Arrival Reversal Request by ${data.requesterName} (${roleLabel}) - ${data.customerName}`;
+  await withTimeout(client.sendMail({
+    from: config.from,
+    to: validRecipients,
+    subject,
+    text: formatArrivalReversalText(data),
+    html: formatArrivalReversalHtml(data),
+  }));
+}
+
+export async function dispatchArrivalReversalRequestNotification(
+  params: {
+    leadId: string;
+    customerName: string;
+    vehicle: string;
+    requesterName: string;
+    requesterRole: string;
+    reason: string;
+  },
+): Promise<void> {
+  const recipients = ["carvibe@cresvcs.com"];
+
+  try {
+    await sendArrivalReversalNotification(recipients, {
+      leadId: params.leadId,
+      customerName: params.customerName,
+      vehicle: params.vehicle,
+      requesterName: params.requesterName,
+      requesterRole: params.requesterRole,
+      reason: params.reason,
+      requestedAt: new Date().toLocaleString("en-GB", { timeZone: "Asia/Dubai" }) + " (UAE)",
+    });
+  } catch (err) {
+    console.error("[lead-notifications] Arrival reversal email dispatch failed:", err);
+  }
+}
+
+
 

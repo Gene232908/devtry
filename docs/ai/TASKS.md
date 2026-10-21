@@ -1,5 +1,13 @@
 # TASKS.md
 
+- [x] 2026-10-22 Arrival Reversal Notification to Sir Nash, Staff Error Status Filter & Database State Sync Fix (`lib/server/lead-notifications.ts`, `app/api/leads/[id]/route.ts`, `app/api/admin/staff-errors/route.ts`, `components/admin/StaffErrorReport.tsx`, `components/admin/LeadArrivalCard.tsx`, `components/admin/LeadDetail.tsx`, `lib/admin/leads-store.tsx`, `lib/admin/staff-errors.ts`, `lib/admin/staff-errors.test.ts`, `lib/server/lead-notifications.test.ts`):
+  - Automated Email Notifications: Dispatched email alerts to `carvibe@cresvcs.com` whenever staff submit an arrival reversal approval request, including requester name, role (e.g. Customer Service / Purchaser), customer name, vehicle, stated reason, and direct link to lead review in admin.
+  - Staff Error Report Status Filter: Removed the CSV export button and added a Status Filter dropdown in the toolbar (`Pending Review`, `Completed / Reverted`, `All Statuses`), defaulting to `Pending Review`.
+  - Inline Sir Nash Action: Added inline `Approve` and `Decline` action buttons in the Staff Mistake table for pending arrival reversals.
+  - Arrival Status Disconnect Fix: Fixed the disconnect where a request remained pending in the error report while the lead's arrival status was already turned off (due to rescheduling or prior reversion). The server now checks `lead.arrival_status === "arrived"` and verifies resolution events before classifying any request as pending.
+  - Server-Side Reversal Synchronization: Replaced client-side `localStorage` caching in `LeadArrivalCard.tsx` with server-backed `GET /api/leads/[id]` pending reversal state, ensuring seamless sync across all devices and browsers.
+  - Verification: Passed all 41 test suites (315 tests), TypeScript (`npx tsc --noEmit`), and ESLint (`npm run lint`) with 0 errors/warnings. Pushed to `devtry` on branch `final`.
+
 - [x] 2026-10-22 Restrict Download Invoice (PDF) to Super Admin / Owner (`app/(admin)/admin/commission/commission-client.tsx`):
   - Hid the "Download Invoice (PDF)" button in the commission details modal from Customer Service (`call_center`) and Purchaser staff self-views (`canPay = false`).
   - Preserved invoice downloading privileges exclusively for Super Admin / Owner accounts (`canPay = true`).

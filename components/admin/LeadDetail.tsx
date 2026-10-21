@@ -304,6 +304,14 @@ export function LeadDetail({ lead }: { lead: Lead }) {
     void fetchTimeline();
   }
 
+  async function declineArrivalReversal() {
+    await updateLead(lead.id, {
+      declineArrivalReversal: true,
+    });
+    router.refresh();
+    void fetchTimeline();
+  }
+
   return (
     <div className="flex flex-col gap-6 font-sans">
       {/* Breadcrumb */}
@@ -470,6 +478,7 @@ export function LeadDetail({ lead }: { lead: Lead }) {
               onConfirmArrival={() => confirmArrival()}
               onRevertArrival={(reason) => revertArrival(reason)}
               onRequestReversal={(reason) => requestArrivalReversal(reason)}
+              onDeclineReversal={() => declineArrivalReversal()}
               showCard={canConfirmArrival || isPurchaser || lead.arrivalStatus === "arrived" || Boolean(scheduledInspectionAt)}
               isSuperAdmin={identity?.role === "admin" || identity?.role === "manager"}
               staffRole={identity?.role}

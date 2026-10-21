@@ -7,7 +7,10 @@ import { pickNextAssignee } from "@/lib/server/lead-assignment";
 import { canRoleSetStatus, canSeeLead } from "@/lib/auth/lead-visibility";
 import { createInspectionScheduleNotifications } from "@/lib/server/inspection-schedule-notifications";
 import { arrivalResetForRescheduledInspection } from "@/lib/server/inspection-reschedule";
-import { dispatchArrivalNotification } from "@/lib/server/lead-notifications";
+import {
+  dispatchArrivalNotification,
+  dispatchArrivalReversalRequestNotification,
+} from "@/lib/server/lead-notifications";
 
 // "deal" = the customer agreed to sell; "closed" = met but no agreement.
 // "valuation_sent" stays accepted so historical rows can still be written back,
@@ -434,14 +437,52 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   // Customer Service requesting arrival reversal from Sir Nash
   if (body.request_arrival_reversal === true && typeof body.reason === "string" && body.reason.trim()) {
+    if (current.arrival_status !== "arrived") {
+      return NextResponse.json(
+        { ok: false, error: { message: "Cannot request arrival reversal: customer is not currently marked as arrived." } },
+        { status: 400 },
+      );
+    }
+    const reasonText = body.reason.trim();
+    const requesterName = auth.identity.displayName || "Customer Service";
+    const requesterRole = auth.identity.role || "call_center";
+
     events.push({
       lead_id: id,
       type: "arrival_reversal_requested",
       meta: eventMeta({
-        reason: body.reason.trim(),
+        reason: reasonText,
         requested_by: userId,
-        requested_by_name: auth.identity.displayName || "Customer Service",
-        requested_by_role: auth.identity.role || "call_center",
+        requested_by_name: requesterName,
+        requested_by_role: requesterRole,
+      }),
+    });
+
+    const carVehicle = [current.year, current.make, current.model, current.trim].filter(Boolean).join(" ");
+    void dispatchArrivalReversalRequestNotification({
+      leadId: id,
+      customerName: current.full_name || "Valuation Customer",
+      vehicle: carVehicle,
+      requesterName,
+      requesterRole,
+      reason: reasonText,
+    });
+  }
+
+  // Super Admin declining an arrival reversal request
+  if (body.decline_arrival_reversal === true) {
+    if (role !== "admin" && role !== "manager") {
+      return NextResponse.json(
+        { ok: false, error: { message: "Only Admin can decline arrival reversal requests." } },
+        { status: 403 },
+      );
+    }
+    events.push({
+      lead_id: id,
+      type: "arrival_reversal_declined",
+      meta: eventMeta({
+        declined_by: userId,
+        declined_by_name: auth.identity.displayName || "Sir Nash",
       }),
     });
   }
@@ -519,3 +560,58 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   return NextResponse.json({ ok: true, data: { id } });
 }
 
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const auth = await requireStaff();
+  if (!auth.ok) {
+    return NextResponse.json({ ok: false, error: { message: auth.message } }, { status: auth.status });
+  }
+
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json({ ok: true, data: { pendingReversal: null } });
+  }
+
+  const supabase = getSupabaseAdmin();
+  const id = resolvedParams.id;
+
+  const { data: lead } = await supabase
+    .from("leads")
+    .select("id, arrival_status")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!lead || lead.arrival_status !== "arrived") {
+    return NextResponse.json({ ok: true, data: { pendingReversal: null } });
+  }
+
+  const { data: recentEvents } = await supabase
+    .from("lead_events")
+    .select("id, type, meta, created_at")
+    .eq("lead_id", id)
+    .in("type", [
+      "arrival_reversal_requested",
+      "arrival_reverted",
+      "arrival_reset_due_to_reschedule",
+      "arrival_reversal_declined",
+    ])
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  const topEvent = recentEvents?.[0];
+  if (topEvent && topEvent.type === "arrival_reversal_requested") {
+    const meta = (topEvent.meta as Record<string, unknown>) ?? {};
+    return NextResponse.json({
+      ok: true,
+      data: {
+        pendingReversal: {
+          leadId: id,
+          reason: typeof meta.reason === "string" ? meta.reason : "Reversal requested by CSR",
+          requestedBy: typeof meta.requested_by_name === "string" ? meta.requested_by_name : "Customer Service",
+          requestedAt: topEvent.created_at,
+        },
+      },
+    });
+  }
+
+  return NextResponse.json({ ok: true, data: { pendingReversal: null } });
+}

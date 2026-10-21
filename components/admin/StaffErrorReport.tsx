@@ -8,7 +8,6 @@ import {
   ExternalLink,
   RotateCw,
   Users,
-  FileSpreadsheet,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -18,16 +17,14 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import { ROLE_LABELS, type StaffRole } from "@/lib/auth/permissions";
+import { ROLE_LABELS } from "@/lib/auth/permissions";
 import {
   calculateStaffErrorMetrics,
   filterStaffErrors,
   formatStaffErrorDate,
-  generateStaffErrorsCsv,
   type StaffErrorRecord,
 } from "@/lib/admin/staff-errors";
 
-const REVERSALS_STORAGE_KEY = "cvd_arrival_reversals_v1";
 const STAFF_PAGE_SIZE = 10;
 const INCIDENT_PAGE_SIZE = 10;
 
@@ -36,7 +33,8 @@ export function StaffErrorReport() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPeriod, setSelectedPeriod] = useState<"all" | "this_month" | "last_30_days">("all");
   const [selectedAgent, setSelectedAgent] = useState("all");
-  const [isExporting, setIsExporting] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<"pending" | "completed" | "all">("pending");
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Pagination & search states for Staff Reversal Frequency List
@@ -46,7 +44,7 @@ export function StaffErrorReport() {
   // Pagination state for Incident Records Table
   const [incidentPage, setIncidentPage] = useState(1);
 
-  // Load strictly accurate error records from API & localStorage
+  // Load strictly accurate error records from live server API
   const loadAccurateData = useCallback(async () => {
     setIsLoading(true);
     let apiRecords: StaffErrorRecord[] = [];
@@ -61,40 +59,6 @@ export function StaffErrorReport() {
       }
     } catch {
       // API error fallback
-    }
-
-    // Merge any active pending reversal requests from localStorage
-    try {
-      const raw = localStorage.getItem(REVERSALS_STORAGE_KEY);
-      if (raw) {
-        const storedMap: Record<string, { leadId: string; reason: string; requestedBy: string; requestedAt: string }> =
-          JSON.parse(raw);
-        const pendingItems: StaffErrorRecord[] = Object.values(storedMap)
-          .filter((item) => item && item.leadId)
-          .map((item, idx) => ({
-            id: `pending-${item.leadId || idx}`,
-            leadId: item.leadId,
-            agentId: "csr-pending",
-            agentName: item.requestedBy || "Customer Service",
-            agentRole: "call_center" as StaffRole,
-            customerName: "Inquiry Check",
-            vehicleDetails: `Lead #${item.leadId.slice(0, 8)}`,
-            incidentType: "arrival_reversal",
-            incidentLabel: "Arrival Reversal Request",
-            reason: item.reason || "Reversal requested by CSR",
-            timestamp: item.requestedAt || new Date().toISOString(),
-            status: "pending_approval",
-            approvedBy: "Pending Sir Nash Approval",
-          }));
-
-        if (pendingItems.length > 0) {
-          const existingIds = new Set(apiRecords.map((r) => r.id));
-          const newItems = pendingItems.filter((p) => !existingIds.has(p.id));
-          apiRecords = [...newItems, ...apiRecords];
-        }
-      }
-    } catch {
-      // Ignore localStorage parse errors
     }
 
     setRecords(apiRecords);
@@ -114,32 +78,42 @@ export function StaffErrorReport() {
     return names.sort();
   }, [records]);
 
-  // Filtered records for incident audit table
+  // Filtered records for incident audit table with status filter
   const filteredRecords = useMemo(() => {
     return filterStaffErrors(records, {
       query: searchQuery,
       period: selectedPeriod,
       agentName: selectedAgent,
+      status: selectedStatus,
     });
-  }, [records, searchQuery, selectedPeriod, selectedAgent]);
+  }, [records, searchQuery, selectedPeriod, selectedAgent, selectedStatus]);
 
-  // Handle CSV Download
-  function handleExportCsv() {
-    setIsExporting(true);
+  // Handle direct reversal approval or decline from Sir Nash
+  async function handleResolveReversal(
+    leadId: string,
+    action: "approve" | "decline",
+    reason?: string,
+    recordId?: string
+  ) {
+    if (recordId) setActionLoading(recordId);
     try {
-      const csv = generateStaffErrorsCsv(filteredRecords);
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      const timestamp = new Date().toISOString().split("T")[0];
-      link.href = url;
-      link.setAttribute("download", `carvibe-staff-error-report-${timestamp}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      const body =
+        action === "approve"
+          ? { arrival_status: "not_arrived", reason: reason || "Reversal approved by Sir Nash" }
+          : { decline_arrival_reversal: true };
+
+      const res = await fetch(`/api/leads/${leadId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        await loadAccurateData();
+      }
+    } catch (err) {
+      console.error("Failed to resolve arrival reversal:", err);
     } finally {
-      setIsExporting(false);
+      setActionLoading(null);
     }
   }
 
@@ -474,6 +448,21 @@ export function StaffErrorReport() {
             />
           </div>
 
+          {/* Status Filter (Default: Pending Review) */}
+          <select
+            value={selectedStatus}
+            onChange={(e) => {
+              setSelectedStatus(e.target.value as "pending" | "completed" | "all");
+              setIncidentPage(1);
+            }}
+            aria-label="Filter by status"
+            className="h-9 px-3 rounded-md bg-surface-2/60 border border-border/60 text-xs text-text focus:outline-none focus:ring-1 focus:ring-gold cursor-pointer"
+          >
+            <option value="pending" className="bg-[#141416] text-text">Pending Review (Default)</option>
+            <option value="completed" className="bg-[#141416] text-text">Completed / Reverted</option>
+            <option value="all" className="bg-[#141416] text-text">All Statuses</option>
+          </select>
+
           {/* Period Filter */}
           <select
             value={selectedPeriod}
@@ -522,7 +511,7 @@ export function StaffErrorReport() {
             Refresh
           </Button>
 
-          {(searchQuery || selectedPeriod !== "all" || selectedAgent !== "all") && (
+          {(searchQuery || selectedPeriod !== "all" || selectedAgent !== "all" || selectedStatus !== "pending") && (
             <Button
               variant="outline"
               size="sm"
@@ -530,6 +519,7 @@ export function StaffErrorReport() {
                 setSearchQuery("");
                 setSelectedPeriod("all");
                 setSelectedAgent("all");
+                setSelectedStatus("pending");
                 setIncidentPage(1);
               }}
               className="h-9 text-xs px-2.5"
@@ -538,16 +528,6 @@ export function StaffErrorReport() {
             </Button>
           )}
         </div>
-
-        {/* Export CSV Button */}
-        <Button
-          onClick={handleExportCsv}
-          disabled={isExporting || filteredRecords.length === 0}
-          className="h-9 text-xs bg-gold/20 hover:bg-gold/30 text-gold border border-gold/40 font-medium whitespace-nowrap self-stretch md:self-auto"
-        >
-          <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5" />
-          Export Report (CSV)
-        </Button>
       </div>
 
       {/* ─── Incident Records Table / List (Accurate with Pagination) ─── */}
@@ -578,9 +558,19 @@ export function StaffErrorReport() {
                   <td colSpan={7} className="py-12 text-center text-text-muted text-xs">
                     <div className="max-w-md mx-auto space-y-2">
                       <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
-                      <div className="text-text font-medium">No Reversals or Staff Errors Recorded</div>
+                      <div className="text-text font-medium">
+                        {selectedStatus === "pending"
+                          ? "No Pending Arrival Reversals"
+                          : selectedStatus === "completed"
+                          ? "No Completed Reversals Found"
+                          : "No Reversals or Staff Errors Recorded"}
+                      </div>
                       <p className="text-text-muted text-[11px]">
-                        All arrival check-ins and operational actions are currently accurate and in good standing.
+                        {selectedStatus === "pending"
+                          ? "There are currently no arrival reversal requests awaiting Sir Nash review."
+                          : selectedStatus === "completed"
+                          ? "No completed or cleared arrival reversions match the selected filters."
+                          : "All arrival check-ins and operational actions are currently accurate and in good standing."}
                       </p>
                     </div>
                   </td>
@@ -621,12 +611,34 @@ export function StaffErrorReport() {
                       </div>
                     </td>
 
-                    {/* Status */}
+                    {/* Status & Resolution */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       {rec.status === "pending_approval" ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                          Pending Sir Nash Review
-                        </span>
+                        <div className="space-y-1.5">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/25">
+                            Pending Sir Nash Review
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              disabled={actionLoading === rec.id}
+                              onClick={() => handleResolveReversal(rec.leadId, "approve", rec.reason, rec.id)}
+                              className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/30 transition-colors disabled:opacity-50 cursor-pointer"
+                              title="Approve request and turn off customer arrival"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              type="button"
+                              disabled={actionLoading === rec.id}
+                              onClick={() => handleResolveReversal(rec.leadId, "decline", undefined, rec.id)}
+                              className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-800 text-text-muted hover:text-white hover:bg-zinc-700 border border-white/10 transition-colors disabled:opacity-50 cursor-pointer"
+                              title="Decline request and keep customer marked as arrived"
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        </div>
                       ) : (
                         <div>
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">

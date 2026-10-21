@@ -3,6 +3,8 @@ import {
   formatNewLeadText,
   formatCustomerArrivalText,
   formatCustomerArrivalHtml,
+  formatArrivalReversalText,
+  formatArrivalReversalHtml,
   isLeadNotificationConfigured,
 } from "@/lib/server/lead-notifications";
 
@@ -93,5 +95,38 @@ describe("lead notification SMTP configuration", () => {
     expect(html).toContain("Purchaser John");
     expect(html).toContain("/admin/leads/lead-123");
   });
-});
 
+  it("formats arrival reversal approval request notification for Sir Nash", () => {
+    const text = formatArrivalReversalText({
+      leadId: "lead-456",
+      customerName: "Sultan Al Qasimi",
+      vehicle: "2024 Nissan Patrol",
+      requesterName: "Agent1",
+      requesterRole: "call_center",
+      reason: "Customer rescheduled to tomorrow; clicked arrival by mistake",
+      requestedAt: "22 Oct 2026, 01:45 (UAE)",
+    });
+
+    expect(text).toContain("Arrival Reversal Approval Request");
+    expect(text).toContain("Agent1 (Customer Service (Call Centre))");
+    expect(text).toContain("Sultan Al Qasimi");
+    expect(text).toContain("2024 Nissan Patrol");
+    expect(text).toContain("Customer rescheduled to tomorrow");
+
+    const html = formatArrivalReversalHtml({
+      leadId: "lead-456",
+      customerName: "Sultan Al Qasimi",
+      vehicle: "2024 Nissan Patrol",
+      requesterName: "Agent1",
+      requesterRole: "call_center",
+      reason: "Customer rescheduled to tomorrow; clicked arrival by mistake",
+      requestedAt: "22 Oct 2026, 01:45 (UAE)",
+    });
+
+    expect(html).toContain("Customer Arrival Reversal Request");
+    expect(html).toContain("Agent1");
+    expect(html).toContain("Customer Service (Call Centre)");
+    expect(html).toContain("Sultan Al Qasimi");
+    expect(html).toContain("/admin/leads/lead-456");
+  });
+});
