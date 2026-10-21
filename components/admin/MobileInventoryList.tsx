@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { BadgeDollarSign, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { formatAed, formatDate } from "@/lib/format";
+import { formatDate, formatNumber } from "@/lib/format";
 import { ScrapInquiryBadge } from "@/components/admin/ScrapInquiryBadge";
 import {
   INVENTORY_STATUS_LABEL,
@@ -107,18 +107,18 @@ export function MobileInventoryList({
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.04] pt-2.5 text-xs">
                 <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 tabular-nums">
                   <span className="text-text-muted">
-                    Paid: <strong className="font-semibold text-text">{formatAed(item.purchasePriceAed)}</strong>
+                    Paid: <strong className="font-semibold text-text">{item.purchasePriceAed == null ? "—" : formatNumber(item.purchasePriceAed)}</strong>
                   </span>
                   {isSold && item.salePriceAed != null && (
                     <span className="text-text-muted">
-                      Paid amount: <strong className="font-semibold text-emerald-400">{formatAed(item.salePriceAed)}</strong>
+                      Paid amount: <strong className="font-semibold text-emerald-400">{formatNumber(item.salePriceAed)}</strong>
                     </span>
                   )}
-                  {isSold && <span className="text-text-muted">Expenses: <strong className="font-semibold text-text">{formatAed(item.expenseTotalAed)}</strong></span>}
+                  {isSold && <span className="text-text-muted">Expenses: <strong className="font-semibold text-text">{formatNumber(item.expenseTotalAed)}</strong></span>}
                   {isSold && item.financialStatus === "awaiting_confirmation" && <span className="text-warning">Net: <strong>Review expenses</strong></span>}
                   {isSold && item.financialStatus !== "awaiting_confirmation" && item.netProfitAed !== null && (
                     <span className={item.netProfitAed < 0 ? "text-danger" : "text-gold"}>
-                      Net: <strong>{formatAed(item.netProfitAed)}</strong>
+                      Net: <strong>{formatNumber(item.netProfitAed)}</strong>
                     </span>
                   )}
                 </div>

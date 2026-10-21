@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { BadgeDollarSign } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { formatAed, formatDate, formatNumber } from "@/lib/format";
+import { formatDate, formatNumber } from "@/lib/format";
 import { ScrapInquiryBadge } from "@/components/admin/ScrapInquiryBadge";
 import {
   INVENTORY_STATUS_LABEL,
@@ -49,18 +49,18 @@ export function InventoryTable({ items, roleFilter, viewerRole, onSell }: Props)
             <th className="py-3 px-4 font-medium">Car</th>
             <th className="py-3 px-4 font-medium">Chassis / VIN Number</th>
             <th className="py-3 px-4 font-medium">Sold date</th>
-            <th className="py-3 px-4 text-right font-medium">Paid</th>
-            <th className="py-3 px-4 text-right font-medium">Paid amount</th>
-            <th className="py-3 px-4 text-right font-medium">Expenses</th>
-            <th className="py-3 px-4 text-right font-medium">Net profit</th>
+            <th className="py-3 px-4 text-right font-medium">Paid (AED)</th>
+            <th className="py-3 px-4 text-right font-medium">Paid amount (AED)</th>
+            <th className="py-3 px-4 text-right font-medium">Expenses (AED)</th>
+            <th className="py-3 px-4 text-right font-medium">Net profit (AED)</th>
             {showCallCenter && (
-              <th className="py-3 px-4 text-right font-medium">Call Centre AED</th>
+              <th className="py-3 px-4 text-right font-medium">Call Centre (AED)</th>
             )}
             {showPurchaser && (
-              <th className="py-3 px-4 text-right font-medium">Purchaser AED</th>
+              <th className="py-3 px-4 text-right font-medium">Purchaser (AED)</th>
             )}
             {showDeveloper && (
-              <th className="py-3 px-4 text-right font-medium">Developer AED</th>
+              <th className="py-3 px-4 text-right font-medium">Developer (AED)</th>
             )}
             <th className="py-3 px-4 font-medium">Status</th>
             <th className="py-3 pr-2 pl-4 text-right font-medium">Actions</th>
@@ -86,13 +86,13 @@ export function InventoryTable({ items, roleFilter, viewerRole, onSell }: Props)
               </td>
               <td className="py-3.5 px-4 text-text-muted whitespace-nowrap text-xs">{formatDate(item.purchasedAt)}</td>
               <td className="py-3.5 px-4 text-right tabular-nums text-text font-medium whitespace-nowrap text-xs sm:text-sm">
-                {formatAed(item.purchasePriceAed)}
+                {item.purchasePriceAed == null ? "—" : formatNumber(item.purchasePriceAed)}
               </td>
               <td className="py-3.5 px-4 text-right tabular-nums text-text font-medium whitespace-nowrap text-xs sm:text-sm">
-                {formatAed(item.salePriceAed)}
+                {item.salePriceAed == null ? "—" : formatNumber(item.salePriceAed)}
               </td>
               <td className="py-3.5 px-4 text-right tabular-nums text-text font-medium whitespace-nowrap text-xs sm:text-sm">
-                {formatAed(item.expenseTotalAed)}
+                {item.expenseTotalAed == null ? "—" : formatNumber(item.expenseTotalAed)}
               </td>
               <td
                 className={`py-3.5 px-4 text-right tabular-nums font-semibold whitespace-nowrap text-xs sm:text-sm ${
@@ -102,8 +102,8 @@ export function InventoryTable({ items, roleFilter, viewerRole, onSell }: Props)
                 {item.financialStatus === "awaiting_confirmation"
                   ? "Review expenses"
                   : item.netProfitAed !== null
-                    ? formatAed(item.netProfitAed)
-                    : item.commission ? formatAed(item.commission.profitAed) : "—"}
+                    ? formatNumber(item.netProfitAed)
+                    : item.commission ? formatNumber(item.commission.profitAed) : "—"}
               </td>
               {showCallCenter && (
                 <td className="py-3.5 px-4 text-right tabular-nums text-gold font-semibold whitespace-nowrap text-xs sm:text-sm">

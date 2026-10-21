@@ -1135,7 +1135,7 @@ function DeveloperCommissionView({
         </Card>
       ) : (
         <details className="rounded-card border border-border bg-surface-2 px-4 py-3">
-          <summary className="cursor-pointer text-sm font-medium text-text">View monthly breakdown ({monthlyStatements.length})</summary>
+          <summary className="cursor-pointer text-sm font-medium text-text">View monthly breakdown (AED) ({monthlyStatements.length})</summary>
           <ul className="mt-3 divide-y divide-border border-t border-border">
             {monthlyStatements.map((statement) => (
               <li key={statement.id} className="flex flex-wrap items-center justify-between gap-x-5 gap-y-1 py-3 text-sm">
@@ -1145,7 +1145,7 @@ function DeveloperCommissionView({
                   {statement.carriedCount > 0 && <span className="ml-2 text-xs text-warning">Includes {statement.carriedCount} carried forward</span>}
                 </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
-                  <span className="tabular-nums text-gold">{formatAed(statement.totalCommissionAed)}</span>
+                  <span className="tabular-nums text-gold">{formatNumber(statement.totalCommissionAed)}</span>
                   <span>{statement.status === "paid" && statement.paidAt ? `Paid ${formatDate(statement.paidAt)}` : "Unpaid"}</span>
                 </div>
               </li>

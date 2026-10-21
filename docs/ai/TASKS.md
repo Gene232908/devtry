@@ -1,10 +1,12 @@
 # TASKS.md
 
-- [x] 2026-10-22 Commission Payout Summary & Staff Table Currency Label Cleanup (`app/(admin)/admin/commission/commission-client.tsx`):
-  - Removed redundant "AED" currency prefixes from the Staff commissions and Developer share breakdown lines in the Payout Summary card so they display numbers only (`formatNumber`), while preserving the AED currency prefix on the final combined payout total (`formatAed`).
-  - Added "(AED)" currency suffix to the Staff Commissions table column headers ("Paid amount (AED)", "Expenses (AED)", "Net profit (AED)", "Commission (AED)", and "Total Profit (AED)").
-  - Converted table cell values in the Staff Commissions table from `formatAed(...)` to `formatNumber(...)` so rows display clean numeric values without repetitive currency symbols.
-  - Verified with Vitest unit tests, TypeScript check (`npx tsc --noEmit`), and ESLint (`npm run lint`) (all 0 errors). Pushed to `devtry` on branch `final`.
+- [x] 2026-10-22 Admin Tables & Commission Currency Label Cleanup (`components/admin/InventoryTable.tsx`, `components/admin/MobileInventoryList.tsx`, `app/(admin)/admin/commission/commission-client.tsx`, `components/admin/leads-table/index.tsx`, `components/admin/leads-table/row.tsx`):
+  - Removed redundant "AED" currency prefixes across Inventory and Commission tables, ensuring row values display clean digits only (`formatNumber`), while moving the currency indicator into column headers (`(AED)`).
+  - Updated `InventoryTable.tsx`: Headers now specify `Paid (AED)`, `Paid amount (AED)`, `Expenses (AED)`, `Net profit (AED)`, `Call Centre (AED)`, `Purchaser (AED)`, `Developer (AED)`; table cells format numbers via `formatNumber`.
+  - Updated `MobileInventoryList.tsx`: Formatted numeric metrics with `formatNumber`.
+  - Updated `commission-client.tsx`: Cleaned Payout Summary breakdown to numeric values; added `(AED)` to Developer monthly breakdown summary and formatted monthly items as clean numbers.
+  - Updated `leads-table`: Header now specifies `Est. Value (AED)` and row values use `formatNumber`.
+  - Verified with Vitest unit tests (314 passed), TypeScript (`npx tsc --noEmit`), and ESLint (`npm run lint`) (all 0 errors/warnings). Pushed to `devtry` on branch `final`.
 
 
 - [x] 2026-10-21 Sir Nash System Verification Checklist & Online Live Guide (`app/verification-checklist/page.tsx`, `docs/client/Sir_Nash_Verification_Checklist.md`, `.docx`, `.html`, `scripts/generate_verification_checklist_docx.mjs`):

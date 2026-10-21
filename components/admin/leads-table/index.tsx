@@ -296,7 +296,7 @@ function LeadsTableContent({
               </th>
               <th className="py-3 pr-3 min-w-[110px] whitespace-nowrap">
                 <button className="flex items-center gap-1 hover:text-text transition-colors" onClick={() => filter.toggleSort("value")}>
-                  Est. Value <ArrowUpDown className="h-3 w-3" />
+                  Est. Value (AED) <ArrowUpDown className="h-3 w-3" />
                 </button>
               </th>
               <th className="py-3 pr-3 min-w-[115px] whitespace-nowrap">Status</th>

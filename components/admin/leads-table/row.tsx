@@ -4,7 +4,7 @@ import { memo } from "react";
 import Link from "next/link";
 import { StatusPill } from "@/components/ui/Pill";
 import { Lead } from "@/config/mock-data";
-import { formatAed, formatDate, formatMileage } from "@/lib/format";
+import { formatDate, formatMileage, formatNumber } from "@/lib/format";
 
 type Props = { lead: Lead; duplicateReview?: boolean; showArrivalStatus?: boolean };
 
@@ -51,7 +51,7 @@ export const LeadRow = memo(function LeadRow({ lead, duplicateReview = false, sh
         {formatDate(lead.createdAt)}
       </td>
       <td className="py-3.5 pr-3 min-w-[110px] text-text-muted whitespace-nowrap tabular-nums text-xs">
-        {formatAed(lead.estimatedValueAed)}
+        {lead.estimatedValueAed == null ? "—" : formatNumber(lead.estimatedValueAed)}
       </td>
       <td className="py-3.5 pr-3 min-w-[115px] whitespace-nowrap">
         <StatusPill status={lead.status} />
