@@ -60,6 +60,7 @@ describe("ROLE_CAPABILITIES", () => {
     expect(ROLE_CAPABILITIES.call_center).toContain("viewCommissions");
     expect(ROLE_CAPABILITIES.call_center).toContain("viewIncompleteForms");
     expect(ROLE_CAPABILITIES.call_center).toContain("viewBlockedNumbers");
+    expect(ROLE_CAPABILITIES.call_center).toContain("manageBlocklist");
     expect(ROLE_CAPABILITIES.call_center).toContain("createLeads");
     expect(ROLE_CAPABILITIES.call_center).not.toContain("viewPrices");
     expect(ROLE_CAPABILITIES.call_center).not.toContain("viewDashboard");

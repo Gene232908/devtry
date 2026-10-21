@@ -97,12 +97,13 @@ export const ROLE_CAPABILITIES: Record<StaffRole, Capability[]> = {
     "viewSettings",
   ],
   call_center: [
-    // Agent: see assigned leads, contact info, own commission, incomplete forms, and blocked numbers.
+    // Agent: see assigned leads, contact info, own commission, incomplete forms, and manage blocked numbers.
     "viewScrapInquiries",
     "viewLeadContact",
     "viewCommissions",
     "viewIncompleteForms",
     "viewBlockedNumbers",
+    "manageBlocklist",
     "createLeads",
   ],
   purchaser: [

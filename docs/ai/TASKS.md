@@ -1,5 +1,10 @@
 # TASKS.md
 
+- [x] 2026-10-21 Customer Service Number Blocking Activation (`lib/auth/permissions.ts`, `app/api/admin/blocked-numbers/route.ts`, `app/api/admin/blocked-numbers/route.test.ts`):
+  - Enabled the number blocking system for the Customer Service (`call_center`) role by granting the `manageBlocklist` capability in `lib/auth/permissions.ts`.
+  - Updated `POST` and `DELETE` endpoints in `app/api/admin/blocked-numbers/route.ts` to authorize staff with `manageBlocklist` (Super Admin, Owner, and Customer Service) instead of hardcoding `requireAdmin()`.
+  - Verified Customer Service can successfully block numbers from Lead Detail (`MarkSpamAction`), Incomplete Forms (`PartialLeadDetail` and `incomplete-client`), and unblock if needed.
+  - Added dedicated unit test coverage in `app/api/admin/blocked-numbers/route.test.ts` and updated `lib/auth/permissions.test.ts` (100% passing across 40 test suites, 306 tests).
 - [x] 2026-10-21 Inventory Typography Balance & Removal of "Unverified Number" Badges (`components/admin/InventoryTable.tsx`, `components/admin/MobileInventoryList.tsx`):
   - Removed misleading "Unverified number" warning badges from the inventory table and mobile list, adhering to the temporary public WhatsApp OTP bypass where OTP is paused.
   - Balanced and enlarged font sizes across `InventoryTable` from tiny `text-fluid--1` to readable, proportional `text-xs sm:text-sm` typography with clear vehicle links, prominent tabular numbers, and consistent header styling.

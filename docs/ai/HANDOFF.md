@@ -8,8 +8,9 @@
     2. Vehicle Expenses module under `/admin/expenses` with time period filtering (Day, Weekly, Monthly, Yearly, All Time), itemized breakdown modal, clickable vehicle hyperlinks to customer records, maximum 10-per-page pagination, and integrated header total metric widget.
     3. High-precision vector PDF generation via `pdf-lib` exporting data-only rows, minimal gold header, and zero browser tab clutter.
     4. Unified single "Export ▾" dropdown for PDF and Excel (.csv).
-    5. Cleaned up Inventory Table typography and removed "Unverified Number" badges in compliance with the temporary public WhatsApp OTP bypass.
-  - Verification: 100% clean production build (`npm run build:check`), strict TypeScript (`npx tsc --noEmit`), ESLint (`npm run lint`), and 39 test suites (302/302 tests passing). Branch is committed and pushed to `devtry/final`.
+    5. Cleaned up Inventory Table typography and retained "Sold date" naming convention per owner decision.
+    6. Activated number blocking system for Customer Service role by granting `manageBlocklist` capability and updating `/api/admin/blocked-numbers` authorization.
+  - Verification: 100% clean production build (`npm run build:check`), strict TypeScript (`npx tsc --noEmit`), ESLint (`npm run lint`), and 40 test suites (306/306 tests passing). Branch is committed and pushed to `devtry/final`.
   Scrap Inquiries (`lib/admin/use-leads-filter.ts`, `components/admin/leads-table/*`,
   `components/admin/Sidebar.tsx`, `components/admin/LeadDetail.tsx`, `incomplete-client.tsx`):
   - Solved cross-scope filter bleed between Leads and Scrap Inquiries by keying `LeadsTableContent`

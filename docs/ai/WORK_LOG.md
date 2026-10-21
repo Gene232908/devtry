@@ -8,6 +8,12 @@ Update it after meaningful completed work. Do not invent hours, tests, or dates.
  
 ### Completed
  
+- Customer Service Number Blocking Activation:
+  - Enabled the number blocking system for the Customer Service (`call_center`) role by granting the `manageBlocklist` capability in [lib/auth/permissions.ts](file:///e:/Github/carvibe/lib/auth/permissions.ts).
+  - Updated `POST` and `DELETE` endpoints in [app/api/admin/blocked-numbers/route.ts](file:///e:/Github/carvibe/app/api/admin/blocked-numbers/route.ts) to authorize staff with `manageBlocklist` (Super Admin, Owner, and Customer Service) instead of hardcoding `requireAdmin()`.
+  - Customer Service agents can now directly block spam numbers from Lead Detail ([components/admin/MarkSpamAction.tsx](file:///e:/Github/carvibe/components/admin/MarkSpamAction.tsx)), Incomplete Forms ([components/admin/PartialLeadDetail.tsx](file:///e:/Github/carvibe/components/admin/PartialLeadDetail.tsx) and [incomplete-client.tsx](file:///e:/Github/carvibe/app/(admin)/admin/incomplete/incomplete-client.tsx)), and manage entries in Blocked Numbers.
+  - Added dedicated unit test suite in [app/api/admin/blocked-numbers/route.test.ts](file:///e:/Github/carvibe/app/api/admin/blocked-numbers/route.test.ts) and updated [lib/auth/permissions.test.ts](file:///e:/Github/carvibe/lib/auth/permissions.test.ts).
+  - Verified: `npm run lint` (0 errors, 0 warnings), `npx tsc --noEmit` (0 errors), `npm test` (40 suites, 306 tests passing).
 - Inventory Typography Balance & Removal of "Unverified Number" Badges:
   - Removed misleading "Unverified number" warning badges from [components/admin/InventoryTable.tsx](file:///e:/Github/carvibe/components/admin/InventoryTable.tsx) and [components/admin/MobileInventoryList.tsx](file:///e:/Github/carvibe/components/admin/MobileInventoryList.tsx) in alignment with the active WhatsApp OTP bypass.
   - Balanced and enlarged font sizes across `InventoryTable` from tiny `text-fluid--1` to readable, proportional `text-xs sm:text-sm` typography with clear vehicle links and tabular numbers.
