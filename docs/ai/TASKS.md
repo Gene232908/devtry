@@ -1,5 +1,10 @@
 # TASKS.md
 
+- [x] 2026-10-22 Commission Payout Summary Currency Label Cleanup (`app/(admin)/admin/commission/commission-client.tsx`):
+  - Removed redundant "AED" currency prefixes from the Staff commissions and Developer share breakdown lines in the Payout Summary card so they display numbers only (`formatNumber`), while preserving the AED currency prefix on the final combined payout total (`formatAed`).
+  - Verified with TypeScript check and ESLint (0 errors). Pushed to `devtry` on branch `final`.
+
+
 - [x] 2026-10-21 Sir Nash System Verification Checklist & Online Live Guide (`app/verification-checklist/page.tsx`, `docs/client/Sir_Nash_Verification_Checklist.md`, `.docx`, `.html`, `scripts/generate_verification_checklist_docx.mjs`):
   - Extracted and structured all 14 operational requirements from the Oct 18, 2026 Strategy Meeting into a simplified, non-technical, plain-English verification checklist.
   - Built an interactive, responsive online checklist page at `app/verification-checklist/page.tsx` (`http://localhost:3000/verification-checklist`) with live progress tracker, persistent checkboxes via `localStorage`, 1-click "Copy for Google Docs", and "Print / Save PDF".
