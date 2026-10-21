@@ -50,17 +50,39 @@ export async function PATCH(
   const { email, password, displayName, role, isActive } = parsed.data;
   const supabase = getSupabaseAdmin();
 
+  // Fetch target profile first to check existence and current values
+  const { data: targetProfile, error: targetError } = await supabase
+    .from("profiles")
+    .select("id, email, display_name, role, is_active")
+    .eq("id", targetId)
+    .single();
+
+  if (targetError || !targetProfile) {
+    return bad("Staff member not found.", 404);
+  }
+
+  // Pre-flight duplicate email check if email is changing
+  const targetCurrentEmail = (targetProfile.email ?? "").trim().toLowerCase();
+  const nextEmail = email ? email.trim().toLowerCase() : "";
+  const isEmailChanging = nextEmail.length > 0 && nextEmail !== targetCurrentEmail;
+
+  if (isEmailChanging) {
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .ilike("email", nextEmail)
+      .neq("id", targetId)
+      .maybeSingle();
+
+    if (existingProfile) {
+      return bad("An account with that email address already exists.", 409);
+    }
+  }
+
   // Last-owner protection:
   // If deactivating or demoting an owner away from admin/manager, verify we don't leave zero owners.
   if (isActive === false || (role !== undefined && role !== "admin" && role !== "manager")) {
-    const { data: targetProfile } = await supabase
-      .from("profiles")
-      .select("role, is_active")
-      .eq("id", targetId)
-      .single();
-
     const isCurrentOwner =
-      targetProfile &&
       (targetProfile.role === "admin" || targetProfile.role === "manager") &&
       targetProfile.is_active !== false;
 
@@ -81,7 +103,7 @@ export async function PATCH(
     }
   }
 
-  // Update Auth credentials if email, password, or display name is provided
+  // Update Auth credentials if email (when changed), password, or display name is provided
   const authUpdates: {
     email?: string;
     password?: string;
@@ -89,7 +111,7 @@ export async function PATCH(
     user_metadata?: Record<string, unknown>;
   } = {};
 
-  if (email && email.trim().length > 0) {
+  if (isEmailChanging && email) {
     authUpdates.email = email.trim();
     authUpdates.email_confirm = true;
   }
@@ -103,11 +125,20 @@ export async function PATCH(
   if (Object.keys(authUpdates).length > 0) {
     const { error: authError } = await supabase.auth.admin.updateUserById(targetId, authUpdates);
     if (authError) {
-      const message =
-        authError.message?.toLowerCase().includes("already") ||
-        authError.message?.toLowerCase().includes("exists")
-          ? "An account with that email already exists."
-          : authError.message ?? "Failed to update auth credentials.";
+      const rawMsg = authError.message ?? "";
+      const isAlready =
+        rawMsg.toLowerCase().includes("already") ||
+        rawMsg.toLowerCase().includes("exists") ||
+        rawMsg.toLowerCase().includes("duplicate") ||
+        rawMsg === "{}" ||
+        authError.status === 422 ||
+        authError.status === 500;
+
+      const message = isAlready
+        ? "An account with that email address already exists."
+        : rawMsg && rawMsg !== "{}"
+          ? rawMsg
+          : "Failed to update user credentials.";
       return bad(message, 400);
     }
   }

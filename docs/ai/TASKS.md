@@ -4,9 +4,11 @@
   - Enabled Super Admins to edit Email, Password (reset/update credentials), and Role for staff and owner accounts directly from Staff Management.
   - Updated `lib/admin/staff-schema.ts` to include `admin` (Super Admin) in `ASSIGNABLE_ROLE_VALUES`, allowing Super Admin assignment, and expanded `staffPatchSchema` to accept optional `email` and optional `password` (>= 6 chars or blank).
   - Updated `PATCH /api/admin/staff/[id]` to update Supabase Auth user credentials (`email`, `password`, `user_metadata`) via `supabase.auth.admin.updateUserById()` and sync `public.profiles` (`email`, `display_name`, `role`, `is_active`).
+  - Added pre-flight duplicate email collision check in `PATCH /api/admin/staff/[id]` returning clear 409 error ("An account with that email address already exists.") instead of raw Supabase Auth `{}` empty object error.
+  - Conditioned Auth email update to only trigger when the email actually changes, preventing redundant Auth re-confirmations.
   - Hardened last-owner protection in `PATCH /api/admin/staff/[id]` to prevent demoting or disabling the last active owner (`would_remove_last_owner`).
   - Updated `POST /api/admin/staff` to support provisioning new Super Admin accounts directly.
-  - Updated `StaffAccounts.tsx` to keep email field editable, show optional password input on edit, include Super Admin in role select, and display edit controls for owner accounts with self-disable safeguards and `(You)` badge.
+  - Updated `StaffAccounts.tsx` to keep email field editable, show optional password input on edit, include Super Admin in role select, display edit controls for owner accounts with self-disable safeguards and `(You)` badge, and sanitize error banners.
   - Added unit test suite in `lib/admin/staff-schema.test.ts` (100% passing across 41 test suites, 314 tests) and verified visually with browser subagent.
 
 - [x] 2026-10-21 Customer Service Number Blocking Activation (`lib/auth/permissions.ts`, `app/api/admin/blocked-numbers/route.ts`, `app/api/admin/blocked-numbers/route.test.ts`):

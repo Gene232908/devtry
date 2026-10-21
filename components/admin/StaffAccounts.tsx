@@ -126,7 +126,12 @@ export function StaffAccounts({ viewer, initialStaff, canManageStaff }: Props) {
         const json = await res.json().catch(() => null);
         if (!res.ok || !json?.ok) {
           setMutation("error");
-          setMutationError(json?.error?.message ?? `Save failed (${res.status}).`);
+          const msg = json?.error?.message;
+          setMutationError(
+            msg && msg !== "{}"
+              ? msg
+              : `Save failed (${res.status}). Please check credentials or email.`,
+          );
           return;
         }
         setStaff((prev) =>
@@ -142,7 +147,12 @@ export function StaffAccounts({ viewer, initialStaff, canManageStaff }: Props) {
         const json = await res.json().catch(() => null);
         if (!res.ok || !json?.ok) {
           setMutation("error");
-          setMutationError(json?.error?.message ?? `Create failed (${res.status}).`);
+          const msg = json?.error?.message;
+          setMutationError(
+            msg && msg !== "{}"
+              ? msg
+              : `Create failed (${res.status}). Please check credentials or email.`,
+          );
           return;
         }
         setStaff((prev) => [...prev, json.data.staff as StaffSummary]);
