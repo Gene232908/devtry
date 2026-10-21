@@ -6,7 +6,7 @@ import { CheckCircle2, Download, Eye, RefreshCw, ShieldAlert, X } from "lucide-r
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { formatAed, formatDate } from "@/lib/format";
+import { formatAed, formatDate, formatNumber } from "@/lib/format";
 import { useFreshServerData, useServerState } from "@/lib/admin/use-fresh-server-data";
 import { COMMISSION_RATE } from "@/lib/admin/inventory";
 import {
@@ -475,8 +475,8 @@ export default function CommissionClient({
               <p className="tabular-nums text-2xl font-semibold text-gold">{formatAed(selectedStaffOutstanding + (showsDeveloperCommission ? devOutstanding : 0))}</p>
             </div>
             <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-text-muted">
-              <span>Staff commissions: <strong className="text-text">{formatAed(selectedStaffOutstanding)}</strong></span>
-              {showsDeveloperCommission && <span>Developer share: <strong className="text-text">{formatAed(devOutstanding)}</strong></span>}
+              <span>Staff commissions: <strong className="text-text">{formatNumber(selectedStaffOutstanding)}</strong></span>
+              {showsDeveloperCommission && <span>Developer share: <strong className="text-text">{formatNumber(devOutstanding)}</strong></span>}
             </div>
           </div>
           <div>
