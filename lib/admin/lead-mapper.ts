@@ -35,6 +35,8 @@ export type DbLead = {
    *  both readers fall back to querying without (see GET /api/admin/leads). */
   inspection_scheduled_at?: string | null;
   arrival_status?: "not_arrived" | "arrived" | null;
+  arrived_by?: string | null;
+  arrived_at?: string | null;
 };
 
 // Maps a Supabase row to the camelCase `Lead` shape the admin UI already expects,
@@ -71,5 +73,7 @@ export function mapDbLead(r: DbLead): Lead {
     purchaserId: r.purchaser_id ?? null,
     inspectionScheduledAt: r.inspection_scheduled_at ?? undefined,
     arrivalStatus: r.arrival_status ?? "not_arrived",
+    arrivedBy: r.arrived_by ?? null,
+    arrivedAt: r.arrived_at ?? null,
   };
 }

@@ -58,6 +58,63 @@ export function defaultStatusesForRole(role: StaffRole | undefined): LeadStatus[
   return [];
 }
 
+function normalizePhoneVariants(phone: string): string[] {
+  const digits = phone.replace(/\D/g, "");
+  const variants = [phone.toLowerCase(), digits];
+  if (digits.startsWith("971")) {
+    variants.push("0" + digits.slice(3));
+    variants.push(digits.slice(3));
+  } else if (digits.startsWith("0")) {
+    variants.push("971" + digits.slice(1));
+    variants.push(digits.slice(1));
+  }
+  return variants;
+}
+
+function matchesPhoneSearch(phone: string | null | undefined, q: string): boolean {
+  if (!phone) return false;
+  const qClean = q.toLowerCase();
+  const qDigits = q.replace(/\D/g, "");
+  const variants = normalizePhoneVariants(phone);
+
+  if (variants.some((v) => v.includes(qClean))) return true;
+  if (qDigits.length >= 3 && variants.some((v) => v.includes(qDigits))) return true;
+  if (qDigits.startsWith("0") && qDigits.length >= 4) {
+    const withoutZero = qDigits.slice(1);
+    if (variants.some((v) => v.includes(withoutZero))) return true;
+  }
+  return false;
+}
+
+/**
+ * Role-based search filter:
+ * - Customer Service (call_center): strictly phone number only (case-insensitive & format-tolerant).
+ * - Purchaser (purchaser): strictly customer name only (case-insensitive).
+ * - Super Admin (admin/manager) or default: matches either customer name or phone number.
+ */
+export function filterLeadsBySearch<T extends { fullName?: string | null; phoneE164?: string | null }>(
+  items: T[],
+  search: string,
+  role?: StaffRole,
+): T[] {
+  const q = search.trim().toLowerCase();
+  if (!q) return items;
+
+  if (role === "call_center") {
+    return items.filter((l) => matchesPhoneSearch(l.phoneE164, q));
+  }
+
+  if (role === "purchaser") {
+    return items.filter((l) => l.fullName?.toLowerCase().includes(q) ?? false);
+  }
+
+  return items.filter((l) => {
+    const nameMatches = l.fullName?.toLowerCase().includes(q) ?? false;
+    const phoneMatches = matchesPhoneSearch(l.phoneE164, q);
+    return nameMatches || phoneMatches;
+  });
+}
+
 /**
  * Where a lead sits in this role's work queue: lowest number floats to the
  * top, regardless of whatever column sort is picked — a queue whose most
@@ -283,14 +340,7 @@ export function useLeadsFilter(
     }
 
     if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      // Both are optional, not just possibly empty: a purchaser's leads never
-      // carry `fullName`/`phoneE164` at all — they're redacted server-side for
-      // privacy (see projectLeadForPurchaser) — so this crashed on the very
-      // first character typed into the search box for that role.
-      result = result.filter(
-        (l) => (l.fullName?.toLowerCase().includes(q) ?? false) || (l.phoneE164?.includes(q) ?? false),
-      );
+      result = filterLeadsBySearch(result, search, role);
     }
     // Within one filter the ticked options are OR'd (show New *or* Pending);
     // across filters they are AND'd (a New lead *and* a Toyota). That is what

@@ -871,13 +871,13 @@ function StaffDetailModal({
           </div>
           {!hideProfit && (
             <div className="rounded-card border border-border bg-surface-2 p-3 text-center">
-              <p className="text-[0.72rem] text-text-faint">Total Profit</p>
-              <p className="mt-1 tabular-nums text-fluid-0 text-text">{formatAed(staff.totalProfit)}</p>
+              <p className="text-[0.72rem] text-text-faint">Total Profit (AED)</p>
+              <p className="mt-1 tabular-nums text-fluid-0 text-text">{staff.totalProfit.toLocaleString()}</p>
             </div>
           )}
           <div className="rounded-card border border-gold/40 bg-gold/5 p-3 text-center">
-            <p className="text-[0.72rem] text-text-faint">Commission</p>
-            <p className="mt-1 tabular-nums text-fluid-0 text-gold">{formatAed(staff.totalCommission)}</p>
+            <p className="text-[0.72rem] text-text-faint">Commission (AED)</p>
+            <p className="mt-1 tabular-nums text-fluid-0 text-gold">{staff.totalCommission.toLocaleString()}</p>
           </div>
         </div>
 
@@ -888,7 +888,7 @@ function StaffDetailModal({
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-text-faint">Closed car sales</p>
               {canPay && selectedCount > 0 && (
                 <span className="text-xs font-medium text-gold">
-                  {selectedCount} of {roleEntries.length} selected ({formatAed(selectedAmount)})
+                  {selectedCount} of {roleEntries.length} selected ({selectedAmount.toLocaleString()} AED)
                 </span>
               )}
             </div>
@@ -914,16 +914,18 @@ function StaffDetailModal({
                       <p className="font-medium text-text">{entry.leadName}</p>
                       <p className="mt-1 text-sm text-text-muted">{entry.carDetails}</p>
                     </div>
-                    <span className="shrink-0 tabular-nums font-medium text-gold">{formatAed(entry.commission)}</span>
+                    <span className="shrink-0 tabular-nums font-medium text-gold">
+                      {entry.commission.toLocaleString(undefined, { minimumFractionDigits: entry.commission % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}
+                    </span>
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
                     <DetailMetric label="Sold date" value={formatDate(entry.soldAt)} />
                     {hasFinancialReview && <>
-                      <DetailMetric label="Paid amount" value={entry.financialReview?.salePrice == null ? "—" : formatAed(entry.financialReview.salePrice)} />
-                      <DetailMetric label="Expenses" value={entry.financialReview ? formatAed(entry.financialReview.expenses) : "—"} />
-                      <DetailMetric label="Net profit" value={entry.financialReview?.netProfit == null ? "Pending review" : formatAed(entry.financialReview.netProfit)} />
+                      <DetailMetric label="Paid amount (AED)" value={entry.financialReview?.salePrice == null ? "—" : entry.financialReview.salePrice.toLocaleString()} />
+                      <DetailMetric label="Expenses (AED)" value={entry.financialReview ? entry.financialReview.expenses.toLocaleString() : "—"} />
+                      <DetailMetric label="Net profit (AED)" value={entry.financialReview?.netProfit == null ? "Pending review" : entry.financialReview.netProfit.toLocaleString()} />
                     </>}
-                    {!hideProfit && <DetailMetric label="Profit" value={entry.profit === null ? "—" : formatAed(entry.profit)} />}
+                    {!hideProfit && <DetailMetric label="Profit (AED)" value={entry.profit === null ? "—" : entry.profit.toLocaleString()} />}
                   </div>
                 </div>
               ))}
@@ -947,12 +949,12 @@ function StaffDetailModal({
                     <th className="py-2 pr-4 font-normal">Car</th>
                     <th className="py-2 pr-4 font-normal">Sold Date</th>
                     {hasFinancialReview && <>
-                      <th className="py-2 pr-4 text-right font-normal">Paid amount</th>
-                      <th className="py-2 pr-4 text-right font-normal">Expenses</th>
-                      <th className="py-2 pr-4 text-right font-normal">Net profit</th>
+                      <th className="py-2 pr-4 text-right font-normal">Paid amount (AED)</th>
+                      <th className="py-2 pr-4 text-right font-normal">Expenses (AED)</th>
+                      <th className="py-2 pr-4 text-right font-normal">Net profit (AED)</th>
                     </>}
-                    {!hideProfit && <th className="py-2 pr-4 text-right font-normal">Profit</th>}
-                    <th className="py-2 pr-1 text-right font-normal">Commission</th>
+                    {!hideProfit && <th className="py-2 pr-4 text-right font-normal">Profit (AED)</th>}
+                    <th className="py-2 pr-1 text-right font-normal">Commission (AED)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -979,19 +981,19 @@ function StaffDetailModal({
                       <td className="py-2.5 pr-4 text-text-muted">{entry.carDetails}</td>
                       <td className="py-2.5 pr-4 text-text-muted">{formatDate(entry.soldAt)}</td>
                       {hasFinancialReview && <>
-                        <td className="py-2.5 pr-4 text-right tabular-nums text-text-muted">{entry.financialReview?.salePrice == null ? "—" : formatAed(entry.financialReview.salePrice)}</td>
+                        <td className="py-2.5 pr-4 text-right tabular-nums text-text-muted">{entry.financialReview?.salePrice == null ? "—" : entry.financialReview.salePrice.toLocaleString()}</td>
                         <td className="py-2.5 pr-4 text-right tabular-nums text-text-muted">
-                          {entry.financialReview ? formatAed(entry.financialReview.expenses) : "—"}
+                          {entry.financialReview ? entry.financialReview.expenses.toLocaleString() : "—"}
                         </td>
-                        <td className="py-2.5 pr-4 text-right tabular-nums text-text-muted">{entry.financialReview?.netProfit == null ? "Pending review" : formatAed(entry.financialReview.netProfit)}</td>
+                        <td className="py-2.5 pr-4 text-right tabular-nums text-text-muted">{entry.financialReview?.netProfit == null ? "Pending review" : entry.financialReview.netProfit.toLocaleString()}</td>
                       </>}
                       {!hideProfit && (
                         <td className="py-2.5 pr-4 text-right tabular-nums text-text-muted">
-                          {entry.profit === null ? "—" : formatAed(entry.profit)}
+                          {entry.profit === null ? "—" : entry.profit.toLocaleString()}
                         </td>
                       )}
                       <td className="py-2.5 pr-1 text-right tabular-nums text-gold">
-                        {formatAed(entry.commission)}
+                        {entry.commission.toLocaleString(undefined, { minimumFractionDigits: entry.commission % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 })}
                       </td>
                     </tr>
                   ))}

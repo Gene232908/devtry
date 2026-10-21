@@ -75,11 +75,10 @@ export function OperationalAlerts({
 
 export function FollowUpPanel({
   data,
-  range,
   isLoading,
 }: {
   data: ExecutiveOverview["pipelineSnapshot"];
-  range: OverviewRange;
+  range?: OverviewRange;
   isLoading?: boolean;
 }) {
   const stageHref = (status: string) => `/admin/leads?status=${status}`;

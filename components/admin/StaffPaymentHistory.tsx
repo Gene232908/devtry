@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { Check, Copy, Download, Search } from "lucide-react";
-import { formatAed } from "@/lib/format";
 import { formatUaeDateTime } from "@/lib/uae-time";
 import { downloadStaffPaymentReceiptPdf } from "@/lib/admin/pdf-invoice";
 import { paymentMatchesSearch, paymentReceiptId } from "@/lib/admin/payment-history-search";
@@ -10,6 +9,17 @@ import type { StaffCommissionPayment, StaffCommission } from "@/lib/admin/commis
 import { Dialog } from "@/components/ui/Dialog";
 
 type PaymentWithStaff = StaffCommissionPayment & { staffName: string; roleLabel: string };
+
+function formatAmount(val: number) {
+  return val.toLocaleString("en-US", {
+    minimumFractionDigits: val % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function formatPaymentDate(paidAt: string): string {
+  return formatUaeDateTime(paidAt).replace(/\s*UAE$/gi, "").trim();
+}
 
 export function StaffPaymentHistory({
   payments,
@@ -41,7 +51,7 @@ export function StaffPaymentHistory({
     <section className="border-t border-border px-5 py-4">
       <div className="flex items-baseline justify-between gap-3">
         <div>
-          <h3 className="font-medium text-text">Payment history</h3>
+          <h3 className="font-medium text-text">Payment history (AED)</h3>
           <p className="mt-1 text-xs text-text-muted">Permanent record of confirmed staff payouts.</p>
         </div>
         <span className="shrink-0 text-xs text-text-faint">{payments.length} recorded</span>
@@ -71,17 +81,17 @@ export function StaffPaymentHistory({
               <details key={payment.id} className="rounded-card border border-border bg-surface-2 px-3 py-3">
                 <summary className="flex cursor-pointer list-none items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-medium text-text">Paid {formatUaeDateTime(payment.paidAt)}</p>
+                    <p className="font-medium text-text">Paid {formatPaymentDate(payment.paidAt)}</p>
                     <p className="mt-1 text-xs text-text-muted">Confirmed by {payment.paidByName} - {payment.entryCount} {payment.entryCount === 1 ? "sale" : "sales"}</p>
                     <p className="mt-1 text-xs text-text-muted">Receipt ID: <code className="font-mono font-semibold tracking-wide text-text">{receiptId}</code></p>
                   </div>
-                  <span className="shrink-0 tabular-nums font-medium text-gold">{formatAed(payment.totalAmount)}</span>
+                  <span className="shrink-0 tabular-nums font-medium text-gold">{formatAmount(payment.totalAmount)}</span>
                 </summary>
                 <ul className="mt-3 space-y-2 border-t border-border pt-3 text-sm">
                   {payment.entries.map((entry) => (
                     <li key={entry.id} className="flex items-start justify-between gap-3">
                       <span className="min-w-0 text-text-muted">{entry.leadName} - {entry.carDetails}</span>
-                      <span className="shrink-0 tabular-nums text-text">{formatAed(entry.commission)}</span>
+                      <span className="shrink-0 tabular-nums text-text">{formatAmount(entry.commission)}</span>
                     </li>
                   ))}
                 </ul>
@@ -131,7 +141,7 @@ export function RecentStaffPayments({ payments }: { payments: PaymentWithStaff[]
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-text">Recent payments</h2>
-            <p className="mt-1 text-sm text-text-muted">Latest confirmed staff payouts. Times are UAE.</p>
+            <p className="mt-1 text-sm text-text-muted">Latest confirmed staff payouts.</p>
           </div>
           {payments.length > recentPayments.length && (
             <button
@@ -151,8 +161,8 @@ export function RecentStaffPayments({ payments }: { payments: PaymentWithStaff[]
                 <span className="ml-2 text-xs text-text-muted">{payment.roleLabel}</span>
               </div>
               <div className="flex min-w-0 flex-wrap items-center justify-end gap-x-3 gap-y-1 text-xs text-text-muted">
-                <span className="whitespace-nowrap tabular-nums font-semibold text-gold">{formatAed(payment.totalAmount)}</span>
-                <span className="whitespace-nowrap">{formatUaeDateTime(payment.paidAt)}</span>
+                <span className="whitespace-nowrap tabular-nums font-semibold text-gold">{formatAmount(payment.totalAmount)}</span>
+                <span className="whitespace-nowrap">{formatPaymentDate(payment.paidAt)}</span>
                 <span className="whitespace-nowrap">Confirmed by {payment.paidByName}</span>
               </div>
             </li>
@@ -160,19 +170,19 @@ export function RecentStaffPayments({ payments }: { payments: PaymentWithStaff[]
         </ul>
       </section>
 
-      <Dialog open={showAll} onClose={() => setShowAll(false)} title={`Payment history (${payments.length})`} className="max-w-3xl p-0">
+      <Dialog open={showAll} onClose={() => setShowAll(false)} title="Payment History (AED)" className="max-w-3xl p-0">
         <div className="max-h-[70vh] overflow-y-auto px-5 pb-5 sm:px-6 sm:pb-6">
-          <p className="mb-4 text-sm text-text-muted">All confirmed staff payouts. Times are UAE.</p>
+          <p className="mb-4 text-sm text-text-muted">All confirmed staff payouts.</p>
           <ul className="divide-y divide-border border-y border-border">
             {payments.map((payment) => (
               <li key={payment.id} className="py-4">
                 <div className="flex flex-wrap items-start justify-between gap-x-5 gap-y-2">
                   <div className="min-w-0">
                     <p className="font-medium text-text">{payment.staffName} <span className="text-xs font-normal text-text-muted">{payment.roleLabel}</span></p>
-                    <p className="mt-1 text-xs text-text-muted">{formatUaeDateTime(payment.paidAt)} - Confirmed by {payment.paidByName}</p>
+                    <p className="mt-1 text-xs text-text-muted">{formatPaymentDate(payment.paidAt)} - Confirmed by {payment.paidByName}</p>
                     <p className="mt-1 text-xs text-text-muted">Receipt ID: <code className="font-mono font-semibold tracking-wide text-text">{paymentReceiptId(payment.id)}</code></p>
                   </div>
-                  <span className="shrink-0 tabular-nums font-semibold text-gold">{formatAed(payment.totalAmount)}</span>
+                  <span className="shrink-0 tabular-nums font-semibold text-gold">{formatAmount(payment.totalAmount)}</span>
                 </div>
               </li>
             ))}

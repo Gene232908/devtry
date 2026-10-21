@@ -83,7 +83,13 @@ export function LeadsToolbar({
           <input
             value={search}
             onChange={(e) => onSearch(e.target.value)}
-            placeholder="Search name or number…"
+            placeholder={
+              role === "call_center"
+                ? "Search by phone number…"
+                : role === "purchaser"
+                ? "Search by customer name…"
+                : "Search name or phone…"
+            }
             className="h-10 w-full rounded-card border border-border bg-surface-2 pl-9 pr-8 text-fluid--1 text-text outline-none focus:gold-glow focus:border-gold"
           />
           {search && (

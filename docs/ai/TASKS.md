@@ -1,5 +1,78 @@
 # TASKS.md
 
+- [x] 2026-10-21 Inventory Typography Balance & Removal of "Unverified Number" Badges (`components/admin/InventoryTable.tsx`, `components/admin/MobileInventoryList.tsx`):
+  - Removed misleading "Unverified number" warning badges from the inventory table and mobile list, adhering to the temporary public WhatsApp OTP bypass where OTP is paused.
+  - Balanced and enlarged font sizes across `InventoryTable` from tiny `text-fluid--1` to readable, proportional `text-xs sm:text-sm` typography with clear vehicle links, prominent tabular numbers, and consistent header styling.
+  - Verified across desktop viewports via browser subagent, passed all 39 test suites (301 tests) and TypeScript typecheck with 0 errors.
+- [x] 2026-10-21 Vehicle Expenses Pagination, Simplified Single KPI Card, Time Period Filtering & Itemized Breakdown Modal (`app/(admin)/admin/expenses/expenses-client.tsx`, `lib/admin/expenses.ts`, `lib/admin/expenses.test.ts`):
+  - Added table pagination capped at 10 items per page with responsive page numbers, previous/next controls, and dynamic entry range indicators.
+  - Eliminated wide empty space by replacing the standalone 1/3 card with an integrated Executive Total Widget in the page header adjacent to action controls, paired with a dedicated high-contrast `<tfoot>` ledger row directly under the Amount column in the data table and a compact mobile summary strip.
+  - Removed category filter chips per user request and replaced them with Day, Weekly, Monthly (default), Yearly, and All Time period filtering computed in UAE timezone; converted time period filter from segmented buttons into a styled dropdown select matching the admin dark theme with custom chevron.
+  - Replaced the "Description" column with an "Action" column featuring a "View Breakdown" eye button that opens a dedicated modal displaying all itemized expenses for that vehicle, individual amounts, and a prominent Total Vehicle Expenses summary.
+  - Made the vehicle name itself a direct clickable hyperlink to the customer record (`/admin/leads/[id]`) and eliminated the separate "View" link.
+  - Consolidated export controls into a single unified "Export" button with a sleek dropdown for PDF Document (.pdf) and Excel Spreadsheet (.csv).
+  - Implemented balanced, high-precision vector PDF generation via `pdf-lib` in `lib/admin/expenses.ts` (`downloadExpensesPdf` / `generateExpensesPdfBlob`) rendering clean table data only (no window.print, browser tab, or UI chrome), complete with executive gold header banner, exact column alignments, zebra striping, and multi-page support.
+  - Stripped out all cluttered header metadata (`Generated: ...`, `Aggregated vehicle operational costs...`, `Total Filtered: ...`), making the PDF layout strictly minimal, executive, and readable with 8.5 pt high-contrast typography and 8 pt cell padding.
+  - Verified across viewports in browser subagent, vitest (39 suites, 302 tests passing), and production build check.
+- [x] 2026-10-21 Preserve Customer Service Account in Staff Error & Arrival Reversals (`app/api/leads/[id]/route.ts`, `app/api/admin/staff-errors/route.ts`, `components/admin/LeadArrivalCard.tsx`, `components/admin/LeadDetail.tsx`, `lib/admin/leads-store.tsx`, `lib/admin/staff-errors.test.ts`):
+  - Fixed issue where reversing customer arrival wiped the original Customer Service agent's record from audit reports by preserving `original_arrived_by` and `original_arrived_at` in `arrival_reverted` event metadata before clearing `leads.arrived_by`.
+  - Updated `GET /api/admin/staff-errors` to accurately resolve `STAFF MEMBER` to the Customer Service agent who checked in the customer, while attributing `STATUS & RESOLUTION` to Sir Nash (Super Admin) as the approver who cleared the mistake.
+  - Added server-side tracking for Customer Service arrival reversal requests (`arrival_reversal_requested`), marking them as `Pending Sir Nash Approval` in the audit report.
+  - Added optional reversal note/reason input in Super Admin turn-off modal so reasons are recorded in the audit trail.
+  - Added unit test coverage in `lib/admin/staff-errors.test.ts` and verified with browser subagent.
+  - Organized `/admin/staff` into clean, switchable tabs: "Staff Accounts & Directory" (account creation, role assignment, status toggling) and "Staff Error & Reversal Report" (audit view tracking mistake footprint and arrival reversals).
+  - Eliminated all synthetic/mock seed data (`BASE_STAFF_ERRORS`); API queries strictly real `lead_events` (`arrival_reverted`, `staff_error`) from Supabase.
+  - Resolved accurate customer name from `leads.full_name` (e.g. `gene`) and accurate car details (`2026 Avatr Avatr 11`), eliminating fallback placeholders ("Customer", "Vehicle").
+  - Resolved actor and approver names from `profiles.display_name` and `profiles.role` (e.g. `Developer (test) (Super Admin)`), eliminating raw UUID strings.
+  - Converted "Staff Reversal Frequency" from heavy 2-column cards into a high-performance tabular list with dedicated staff search, ranked rows (#), circular avatars, role badges, reversal counts, monthly counts, UAE timestamps, relative impact gradient bars, and active filter toggling.
+  - Added fast, memoized pagination capped at maximum 10 items per page with responsive page controls for both the Staff Frequency list and the Incident Records table.
+  - Unit tests in `lib/admin/staff-errors.test.ts` (100% passing). Verified in browser with subagent: 0 lint warnings, 0 typecheck errors, 299/299 tests passing.
+- [x] 2026-10-21 Complete Removal of "UAE" Suffix from Staff Payment History (`lib/uae-time.ts`, `components/admin/StaffPaymentHistory.tsx`):
+  - Hardened `formatUaeDateTime()` in `lib/uae-time.ts` to sanitize and unconditionally strip any incoming or outgoing trailing `UAE` string.
+  - Added dedicated `formatPaymentDate()` sanitizer in `components/admin/StaffPaymentHistory.tsx` ensuring payment dates render cleanly without `UAE` (e.g. `Paid 20 Oct 2026, 22:29`, `Paid 09 Oct 2026, 17:22`).
+  - Confirmed `Expenses` navigation link is active and visible between `Inventory` and `Commission` in the admin sidebar.
+  - Verified in browser subagent, passed all 38 test suites (294 tests) and TypeScript typecheck with 0 errors.
+- [x] 2026-10-20 Expenses Summary Tab & Monthly Overview in Admin Sidebar (`lib/admin/expenses.ts`, `app/api/admin/expenses/route.ts`, `app/(admin)/admin/expenses/page.tsx`, `app/(admin)/admin/expenses/expenses-client.tsx`, `components/admin/Sidebar.tsx`, `lib/admin/expenses.test.ts`):
+  - Created dedicated Expenses Summary Tab under `/admin/expenses`, accessible to Super Admin, Manager, and Purchaser via `viewInventory` capability.
+  - Streamlined executive KPI cards into a clean 2-card overview: "This Month's Expenses" (filtered for the active calendar month in UAE timezone, e.g. October 2026) and "All-Time Total Expenses", eliminating visual clutter and statistical overwhelm.
+  - Implemented dynamic search (car make/model/chassis, description, staff name), origin tabs (All Origins, Valuation, Scrap), category filter chips (Towing & Recovery, RTA & Inspection, Detailing & Wash, Repairs & Maintenance), and sorting controls.
+  - Added one-click CSV export generating formatted expense logs (`CarVibe_Expenses_Summary_YYYY-MM-DD.csv`).
+  - Added unit test suite in `lib/admin/expenses.test.ts` verifying calculation accuracy, monthly summaries, and CSV output.
+  - Verified across desktop and mobile in browser subagent, passed ESLint (0 errors, 0 warnings), all 38 test suites (294 tests), and TypeScript typecheck.
+- [x] 2026-10-20 Customer Arrival Email Dispatch to Registered Purchaser & Super Admin (`lib/server/lead-notifications.ts`, `app/api/leads/[id]/route.ts`, `lib/server/lead-notifications.test.ts`):
+  - Implemented automated customer arrival email notification: when Customer Service confirms arrival via mobile number verification, system queries `profiles` for the assigned purchaser's registered account email (e.g. `genemathew232@gmail.com`).
+  - Dispatches branded HTML and plain-text arrival notification to the purchaser's registered email AND to Sir Nash at `carvibe@cresvcs.com`.
+  - Added unit test assertions covering arrival email text and HTML format.
+- [x] 2026-10-20 Comprehensive Operational User Manual & Training Guide in Word .docx (`docs/client/CarVibe_User_Manual_and_Training_Guide.docx`, `.html`, `.md`, `scripts/generate_user_manual_docx.mjs`):
+  - Drafted complete, executive-ready User Manual covering role boundaries, security matrix, 20-step lifecycle, and dry-run testing checklist for Call Center, Purchaser, and Super Admin.
+  - Generated native Microsoft Word `.docx` file using `docx` library with styled cover header, metadata grid, color-coded permission tables, numbered step cards, and 10-point simulation checklist for Sir Nyash.
+- [x] 2026-10-20 Remove UAE Suffix from Payment History Timestamps (`lib/uae-time.ts`, `components/admin/StaffPaymentHistory.tsx`):
+  - Removed " UAE" string suffix from `formatUaeDateTime()` so audit timestamps across payment history lists and receipts render clean date/times (e.g. `Paid 09 Oct 2026, 17:22`, `Paid 27 Sept 2026, 19:02`).
+  - Removed redundant "Times are UAE." helper text from Recent Payments and Payment History modal headers.
+  - Verified: `npx tsc --noEmit` (0 errors), `npm test` (37 suites, 290 tests passing).
+- [x] 2026-10-20 Role-Based Search Filters & Inspection Form Fast-Track Pass All (`lib/admin/use-leads-filter.ts`, `components/admin/leads-table/toolbar.tsx`, `app/(admin)/admin/incomplete/incomplete-client.tsx`, `components/admin/InspectionWorkspace.tsx`):
+  - Implemented role-based search filtering across Leads Directory, Scrap Inquiries, and Incomplete Forms:
+    - Customer Service (`call_center`): Strictly searches by phone number only (case-insensitive and format-tolerant for UAE local `05x`, international `971`, spaces, and dashes). Does not match customer names. Placeholder: `"Search by phone number…"`.
+    - Purchaser (`purchaser`): Strictly searches by customer name only (case-insensitive). Does not match phone numbers. Placeholder: `"Search by customer name…"`.
+    - Super Admin / Manager (`admin`, `manager`): Searches both customer name and phone number. Placeholder: `"Search name or phone…"`.
+  - Added "Pass All Components" / "Select All (Pass)" capability to the Inspection Workspace (`/admin/leads/[id]/inspection`):
+    - Added global "Pass All Components" quick-action banner above the checklist to mark all external body, mechanical, and tyre items as passed in one click.
+    - Added per-section "Select All (Pass)" buttons for External Body Condition, Mechanical Components, and Tyres, enabling inspectors to batch-pass and then manually toggle defects ('X' / fail) on specific damaged items.
+  - Added unit test suite in `lib/admin/use-leads-filter.test.ts` covering all role-based search rules and phone format variations.
+- [x] 2026-10-20 Staff Invoice / Payment Receipt PDF Layout & Spacing Balance (`lib/admin/pdf-invoice.ts`, `lib/admin/pdf-invoice.test.ts`):
+  - Removed "AED" from `Payment Status:` label so it cleanly displays `Payment Status: PAID` (or `UNPAID / OUTSTANDING`) without redundant currency prefix on status values.
+  - Resolved text collision and tight spacing around the gray summary box: positioned metadata rows at Y=705, 688, 671, 654 with consistent line heights, set gray summary box from Y=594..630 providing 24pt top breathing room, balanced internal vertical text centering (Y=607), and spaced black table header at Y=552..574 (20pt gap) for both paid and unpaid invoices.
+  - Added unit test assertions ensuring `Payment Status:` does not contain "AED".
+- [x] 2026-10-20 Super Admin Arrival Turn-Off / Reversal Fix (`app/api/leads/[id]/route.ts`, `components/admin/LeadDetail.tsx`, `components/admin/LeadArrivalCard.tsx`):
+  - Fixed Super Admin direct arrival turn-off in `PATCH /api/leads/[id]`: allowed `arrival_status: "not_arrived"` for admin and manager roles, clearing `arrived_at` and `arrived_by` and recording `arrival_reverted` audit event in `lead_events`.
+  - Returned Promise from `onConfirmArrival` and `onRevertArrival` in `LeadDetail.tsx` so asynchronous arrival updates are properly awaited by `LeadArrivalCard.tsx` before closing modals.
+  - Verified in browser with subagent: Super Admin clicking toggle, confirming turn-off in modal, correctly reverts arrival status to "Not yet arrived" (grey toggle) and persists on refresh.
+- [x] 2026-10-19 Payment History & Commission AED Redundancy Cleanup and Customer Arrival Phone Verification & Reversal Approval Workflow (`components/admin/StaffPaymentHistory.tsx`, `app/(admin)/admin/commission/commission-client.tsx`, `lib/admin/pdf-invoice.ts`, `components/admin/LeadArrivalCard.tsx`, `components/admin/LeadDetail.tsx`):
+  - Changed Payment History modal title and section headers to "Payment History (AED)" / "Payment history (AED)".
+  - Removed redundant inline "AED " prefixes from numeric table cells, summary cards, and payment history lists so that values render as clean numbers (e.g. 15,000, 520, 4,480, 89.60).
+  - Updated PDF invoice generator to use "Payment Status: AED" and cleaned row table numbers.
+  - Implemented phone number verification modal when toggling Customer Arrived: requires entering the customer's phone number to verify legitimacy before marking as arrived; blocks arrival if the entered number does not match.
+  - Implemented arrival reversal workflow: if Customer Service attempts to toggle off arrival, a reason input modal prompts for explanation and sends the request to Sir Nash (Super Admin) as pending; Sir Nash reviews the submitted reason and can approve or decline the reversal.
 - [x] 2026-10-18 Isolated Leads Directory vs Scrap Inquiries filter state and fixed Sidebar active indicator on Customer Records (`components/admin/leads-table/index.tsx`, `lib/admin/use-leads-filter.ts`, `components/admin/Sidebar.tsx`, `components/admin/leads-table/row.tsx`, `components/admin/leads-table/mobile-list.tsx`):
   - Solved cross-scope filter bleed between Leads (`/admin/leads`) and Scrap Inquiries (`/admin/leads?origin=scrap`) by keying the table component with `key={sessionScope}` and synchronizing `useLeadsFilter` on storage key changes to prevent stale scope state overwrite.
   - Selecting, changing, or clearing filters in Leads has zero impact on Scrap Inquiries filters, and vice-versa.

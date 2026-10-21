@@ -277,6 +277,33 @@ export function LeadDetail({ lead }: { lead: Lead }) {
     void fetchTimeline();
   }
 
+  async function revertArrival(reason?: string) {
+    if (lead.arrivalStatus !== "arrived") return;
+    setMarkingArrival(true);
+    setSaveError(null);
+    const ok = await updateLead(lead.id, {
+      arrivalStatus: "not_arrived",
+      reason,
+      originalArrivedBy: lead.arrivedBy ?? undefined,
+    });
+    setMarkingArrival(false);
+    if (!ok) {
+      setSaveError("Couldn't revert customer arrival. Please try again.");
+      return;
+    }
+    router.refresh();
+    void fetchTimeline();
+  }
+
+  async function requestArrivalReversal(reason: string) {
+    await updateLead(lead.id, {
+      requestArrivalReversal: true,
+      reason,
+    });
+    router.refresh();
+    void fetchTimeline();
+  }
+
   return (
     <div className="flex flex-col gap-6 font-sans">
       {/* Breadcrumb */}
@@ -434,12 +461,19 @@ export function LeadDetail({ lead }: { lead: Lead }) {
             />
 
             <LeadArrivalCard
+              leadId={lead.id}
+              customerPhone={lead.phoneE164}
               arrivalStatus={lead.arrivalStatus}
               canConfirmArrival={canConfirmArrival}
               arrivalEligible={arrivalEligible}
               markingArrival={markingArrival}
-              onConfirmArrival={() => void confirmArrival()}
+              onConfirmArrival={() => confirmArrival()}
+              onRevertArrival={(reason) => revertArrival(reason)}
+              onRequestReversal={(reason) => requestArrivalReversal(reason)}
               showCard={canConfirmArrival || isPurchaser || lead.arrivalStatus === "arrived" || Boolean(scheduledInspectionAt)}
+              isSuperAdmin={identity?.role === "admin" || identity?.role === "manager"}
+              staffRole={identity?.role}
+              staffName={identity?.displayName || "Customer Service"}
             />
 
             {priceRequired && (

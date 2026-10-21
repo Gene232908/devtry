@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Ban, Trash2, UsersRound, X } from "lucide-react";
+import { Ban, Search, Trash2, UsersRound, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { StatusPill } from "@/components/ui/Pill";
@@ -29,6 +29,28 @@ import { useStaffIdentity } from "@/lib/admin/staff-identity-context";
 // in a list.
 
 type PendingAction = { kind: "delete" | "block"; row: PartialLead };
+
+function matchesIncompletePhoneSearch(phone: string | null | undefined, q: string): boolean {
+  if (!phone) return false;
+  const qClean = q.toLowerCase();
+  const qDigits = q.replace(/\D/g, "");
+  const digits = phone.replace(/\D/g, "");
+  const variants = [phone.toLowerCase(), digits];
+  if (digits.startsWith("971")) {
+    variants.push("0" + digits.slice(3));
+    variants.push(digits.slice(3));
+  } else if (digits.startsWith("0")) {
+    variants.push("971" + digits.slice(1));
+    variants.push(digits.slice(1));
+  }
+  if (variants.some((v) => v.includes(qClean))) return true;
+  if (qDigits.length >= 3 && variants.some((v) => v.includes(qDigits))) return true;
+  if (qDigits.startsWith("0") && qDigits.length >= 4) {
+    const withoutZero = qDigits.slice(1);
+    if (variants.some((v) => v.includes(withoutZero))) return true;
+  }
+  return false;
+}
 
 /**
  * `initialRows` is fetched by the server in `page.tsx`, so the table is present
@@ -87,10 +109,36 @@ export default function IncompleteValuationsClient({
   // ~160ms, which read as a second, different warning appearing.
   const [pending, setPending] = useState<PendingAction | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const visibleRows = useMemo(
-    () => inquiryFilter === "all" ? rows : rows.filter((row) => partialInquiryType(row) === inquiryFilter),
-    [inquiryFilter, rows],
-  );
+  const [search, setSearch] = useState("");
+
+  const searchPlaceholder =
+    role === "call_center"
+      ? "Search by phone number…"
+      : role === "purchaser"
+      ? "Search by customer name…"
+      : "Search name or phone…";
+
+  const visibleRows = useMemo(() => {
+    let list = inquiryFilter === "all" ? rows : rows.filter((row) => partialInquiryType(row) === inquiryFilter);
+
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+
+      if (role === "call_center") {
+        list = list.filter((r) => matchesIncompletePhoneSearch(r.phone_e164, q));
+      } else if (role === "purchaser") {
+        list = list.filter((r) => r.full_name?.toLowerCase().includes(q) ?? false);
+      } else {
+        list = list.filter((r) => {
+          const nameMatches = r.full_name?.toLowerCase().includes(q) ?? false;
+          const phoneMatches = matchesIncompletePhoneSearch(r.phone_e164, q);
+          return nameMatches || phoneMatches;
+        });
+      }
+    }
+
+    return list;
+  }, [inquiryFilter, rows, search, role]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -255,23 +303,45 @@ export default function IncompleteValuationsClient({
                 without pressing it first. */}
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Filter incomplete forms">
-            {([
-              ["all", "All"],
-              ["valuation", "Valuations"],
-              ["scrap", "Scrap Inquiries"],
-            ] as const).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => handleInquiryFilterChange(value)}
-                className={`min-h-10 rounded-btn border px-3 text-xs font-medium transition-colors ${
-                  inquiryFilter === value ? "border-gold bg-gold/10 text-gold" : "border-border text-text-muted hover:border-gold/60 hover:text-text"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Filter incomplete forms">
+              {([
+                ["all", "All"],
+                ["valuation", "Valuations"],
+                ["scrap", "Scrap Inquiries"],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => handleInquiryFilterChange(value)}
+                  className={`min-h-10 rounded-btn border px-3 text-xs font-medium transition-colors ${
+                    inquiryFilter === value ? "border-gold bg-gold/10 text-gold" : "border-border text-text-muted hover:border-gold/60 hover:text-text"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative w-full sm:max-w-xs md:max-w-sm">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-faint" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={searchPlaceholder}
+                className="h-10 w-full rounded-card border border-border bg-surface-2 pl-9 pr-8 text-fluid--1 text-text outline-none focus:gold-glow focus:border-gold"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-faint hover:text-text transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="mt-5 overflow-x-auto">

@@ -51,6 +51,8 @@ export type Lead = {
   inspectionScheduledAt?: string | null;
   /** A scheduled customer's on-site arrival; deliberately separate from lead status. */
   arrivalStatus?: "not_arrived" | "arrived";
+  arrivedBy?: string | null;
+  arrivedAt?: string | null;
 };
 
 export type LeadEvent = {

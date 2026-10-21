@@ -7,6 +7,7 @@ import { pickNextAssignee } from "@/lib/server/lead-assignment";
 import { canRoleSetStatus, canSeeLead } from "@/lib/auth/lead-visibility";
 import { createInspectionScheduleNotifications } from "@/lib/server/inspection-schedule-notifications";
 import { arrivalResetForRescheduledInspection } from "@/lib/server/inspection-reschedule";
+import { dispatchArrivalNotification } from "@/lib/server/lead-notifications";
 
 // "deal" = the customer agreed to sell; "closed" = met but no agreement.
 // "valuation_sent" stays accepted so historical rows can still be written back,
@@ -63,6 +64,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     inspection_scheduled_at?: unknown;
     purchaser_id?: unknown;
     arrival_status?: unknown;
+    original_arrived_by?: unknown;
+    reason?: unknown;
+    request_arrival_reversal?: unknown;
+    decline_arrival_reversal?: unknown;
   };
   try {
     body = await req.json();
@@ -78,14 +83,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const loadCurrent = (fields: string) => supabase.from("leads").select(fields).eq("id", id).single();
 
   let { data: currentRow, error: loadError } = await loadCurrent(
-    "id, full_name, status, inquiry_type, estimated_value_aed, notes, is_spam, call_center_id, purchaser_id, inspection_scheduled_at, arrival_status",
+    "id, full_name, status, inquiry_type, estimated_value_aed, notes, is_spam, call_center_id, purchaser_id, inspection_scheduled_at, arrival_status, arrived_by, arrived_at, year, make, model, trim",
   );
 
   // Same fallback as GET /api/admin/leads: a live database that has not run
   // migration 0024 yet must still be able to save a lead.
-  if (loadError && /inspection_scheduled_at|arrival_status/.test(loadError.message ?? "")) {
+  if (loadError && /inspection_scheduled_at|arrival_status|arrived_by|arrived_at/.test(loadError.message ?? "")) {
     ({ data: currentRow, error: loadError } = await loadCurrent(
-      "id, full_name, status, estimated_value_aed, notes, is_spam, call_center_id, purchaser_id",
+      "id, full_name, status, estimated_value_aed, notes, is_spam, call_center_id, purchaser_id, year, make, model, trim",
     ));
   }
 
@@ -105,6 +110,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     inquiry_type?: "valuation" | "scrap" | null;
     inspection_scheduled_at?: string | null;
     arrival_status?: "not_arrived" | "arrived" | null;
+    arrived_by?: string | null;
+    arrived_at?: string | null;
+    year?: number | null;
+    make?: string | null;
+    model?: string | null;
+    trim?: string | null;
   };
 
   // Ownership. A lead belongs to exactly one agent and, once handed over, to
@@ -374,19 +385,65 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (role !== "call_center" && role !== "admin" && role !== "manager") {
       return NextResponse.json({ ok: false, error: { message: "Only Call Centre or Admin can record customer arrival." } }, { status: 403 });
     }
-    if (body.arrival_status !== "arrived") {
-      return NextResponse.json({ ok: false, error: { message: "Arrival can only be confirmed once." } }, { status: 400 });
+    if (body.arrival_status !== "arrived" && body.arrival_status !== "not_arrived") {
+      return NextResponse.json({ ok: false, error: { message: "Invalid arrival status value." } }, { status: 400 });
     }
-    const ALLOWED_ARRIVAL_STAGES = new Set(["inspection_scheduled", "inspected", "negotiating", "deal"]);
-    if (!ALLOWED_ARRIVAL_STAGES.has(current.status) || !current.purchaser_id) {
-      return NextResponse.json({ ok: false, error: { message: "Arrival is available only for a saved inspection with an assigned Purchaser." } }, { status: 409 });
+
+    if (body.arrival_status === "not_arrived") {
+      if (role !== "admin" && role !== "manager") {
+        return NextResponse.json({ ok: false, error: { message: "Only Admin can turn off customer arrival." } }, { status: 403 });
+      }
+      if (current.arrival_status !== "not_arrived") {
+        const originalArrivedBy =
+          current.arrived_by ||
+          (typeof body.original_arrived_by === "string" ? body.original_arrived_by : null);
+        const originalArrivedAt = current.arrived_at || null;
+        const reason =
+          typeof body.reason === "string" && body.reason.trim()
+            ? body.reason.trim()
+            : "Customer arrival status turned off (Reverted to Not Yet Arrived)";
+
+        update.arrival_status = "not_arrived";
+        update.arrived_at = null;
+        update.arrived_by = null;
+        events.push({
+          lead_id: id,
+          type: "arrival_reverted",
+          meta: eventMeta({
+            arrival_status: "not_arrived",
+            reverted_by: userId,
+            original_arrived_by: originalArrivedBy,
+            original_arrived_at: originalArrivedAt,
+            reason,
+          }),
+        });
+      }
+    } else {
+      const ALLOWED_ARRIVAL_STAGES = new Set(["inspection_scheduled", "inspected", "negotiating", "deal"]);
+      if (!ALLOWED_ARRIVAL_STAGES.has(current.status) || !current.purchaser_id) {
+        return NextResponse.json({ ok: false, error: { message: "Arrival is available only for a saved inspection with an assigned Purchaser." } }, { status: 409 });
+      }
+      if (current.arrival_status !== "arrived") {
+        update.arrival_status = "arrived";
+        update.arrived_at = new Date().toISOString();
+        update.arrived_by = userId;
+        events.push({ lead_id: id, type: "arrival_confirmed", meta: eventMeta({ arrival_status: "arrived" }) });
+      }
     }
-    if (current.arrival_status !== "arrived") {
-      update.arrival_status = "arrived";
-      update.arrived_at = new Date().toISOString();
-      update.arrived_by = userId;
-      events.push({ lead_id: id, type: "arrival_confirmed", meta: eventMeta({ arrival_status: "arrived" }) });
-    }
+  }
+
+  // Customer Service requesting arrival reversal from Sir Nash
+  if (body.request_arrival_reversal === true && typeof body.reason === "string" && body.reason.trim()) {
+    events.push({
+      lead_id: id,
+      type: "arrival_reversal_requested",
+      meta: eventMeta({
+        reason: body.reason.trim(),
+        requested_by: userId,
+        requested_by_name: auth.identity.displayName || "Customer Service",
+        requested_by_role: auth.identity.role || "call_center",
+      }),
+    });
   }
 
   // Only "nothing happened" when there is also nothing to record. Recording a
@@ -447,5 +504,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
   }
 
+  if (update.arrival_status === "arrived") {
+    const vehicle = [current.year, current.make, current.model, current.trim].filter(Boolean).join(" ");
+    void dispatchArrivalNotification(supabase, {
+      leadId: id,
+      customerName: current.full_name,
+      vehicle,
+      inquiryType: current.inquiry_type ?? "valuation",
+      purchaserId: typeof update.purchaser_id === "string" ? update.purchaser_id : current.purchaser_id,
+      actorDisplayName: auth.identity.displayName,
+    });
+  }
+
   return NextResponse.json({ ok: true, data: { id } });
 }
+

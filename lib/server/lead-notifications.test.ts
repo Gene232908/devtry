@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { formatNewLeadText, isLeadNotificationConfigured } from "@/lib/server/lead-notifications";
+import {
+  formatNewLeadText,
+  formatCustomerArrivalText,
+  formatCustomerArrivalHtml,
+  isLeadNotificationConfigured,
+} from "@/lib/server/lead-notifications";
 
 const originalUser = process.env.LEAD_NOTIFICATION_SMTP_USER;
 const originalPassword = process.env.LEAD_NOTIFICATION_SMTP_APP_PASSWORD;
@@ -55,4 +60,38 @@ describe("lead notification SMTP configuration", () => {
     expect(text).not.toContain("Email:");
     expect(text).not.toContain("Not provided");
   });
+
+  it("formats arrival notification text with vehicle, purchaser, and time", () => {
+    const text = formatCustomerArrivalText({
+      leadId: "lead-123",
+      customerName: "Mohammed Al Hashimi",
+      vehicle: "2026 Jetour T2 Luxury",
+      purchaserName: "Purchaser John",
+      confirmedByName: "Agent Sarah",
+      arrivedAt: "20 Oct 2026, 17:30 (UAE)",
+      inquiryType: "valuation",
+    });
+
+    expect(text).toContain("Customer Name: Mohammed Al Hashimi");
+    expect(text).toContain("Vehicle: 2026 Jetour T2 Luxury");
+    expect(text).toContain("Assigned Purchaser: Purchaser John");
+    expect(text).toContain("Confirmed By: Agent Sarah");
+    expect(text).toContain("Arrival Time: 20 Oct 2026, 17:30 (UAE)");
+
+    const html = formatCustomerArrivalHtml({
+      leadId: "lead-123",
+      customerName: "Mohammed Al Hashimi",
+      vehicle: "2026 Jetour T2 Luxury",
+      purchaserName: "Purchaser John",
+      confirmedByName: "Agent Sarah",
+      arrivedAt: "20 Oct 2026, 17:30 (UAE)",
+      inquiryType: "valuation",
+    });
+
+    expect(html).toContain("Mohammed Al Hashimi");
+    expect(html).toContain("2026 Jetour T2 Luxury");
+    expect(html).toContain("Purchaser John");
+    expect(html).toContain("/admin/leads/lead-123");
+  });
 });
+

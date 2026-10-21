@@ -40,11 +40,14 @@ export function formatUaeDate(date: Date = new Date()): string {
   }).format(date);
 }
 
-/** Formats an audit timestamp in the business timezone, e.g. "27 Sep 2026, 14:35 UAE". */
+/** Formats an audit timestamp in the business timezone, e.g. "27 Sep 2026, 14:35". */
 export function formatUaeDateTime(date: Date | string): string {
-  const value = typeof date === "string" ? new Date(date) : date;
-  if (Number.isNaN(value.getTime())) return typeof date === "string" ? date : "—";
-  return `${new Intl.DateTimeFormat("en-GB", {
+  const cleaned = typeof date === "string" ? date.replace(/\s*UAE$/i, "").trim() : date;
+  const value = typeof cleaned === "string" ? new Date(cleaned) : cleaned;
+  if (Number.isNaN(value.getTime())) {
+    return typeof cleaned === "string" ? cleaned.replace(/\s*UAE$/i, "").trim() : "—";
+  }
+  return new Intl.DateTimeFormat("en-GB", {
     timeZone: "Asia/Dubai",
     day: "2-digit",
     month: "short",
@@ -52,7 +55,7 @@ export function formatUaeDateTime(date: Date | string): string {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-  }).format(value)} UAE`;
+  }).format(value).replace(/\s*UAE$/i, "").trim();
 }
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;

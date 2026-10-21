@@ -15,7 +15,6 @@ import {
   EMPTY_INSPECTION_REPORT,
   EXTERNAL_BODY_ITEMS,
   MECHANICAL_ITEMS,
-  PHOTO_ANGLES,
   PHOTO_REQUIREMENTS,
   SCRAP_PHOTO_REQUIREMENTS,
   type InspectionReportData,
@@ -92,7 +91,6 @@ export function InspectionWorkspace({ leadId }: { leadId: string }) {
   const { makes, specifications } = useVehicleCatalog();
   const [data, setData] = useState<InspectionReportData>(EMPTY_INSPECTION_REPORT);
   const [leadInquiryType, setLeadInquiryType] = useState<"valuation" | "scrap">("valuation");
-  const [leadCustomerName, setLeadCustomerName] = useState<string>("");
   const [arrivalStatus, setArrivalStatus] = useState<"not_arrived" | "arrived" | undefined>(undefined);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [ready, setReady] = useState(false);
@@ -192,7 +190,6 @@ export function InspectionWorkspace({ leadId }: { leadId: string }) {
     if (!response.ok || !body?.ok) throw new Error(body?.error?.message ?? "Couldn't load the inspection.");
     const loaded = body.data as Loaded;
     setLeadInquiryType(loaded.lead.inquiry_type === "scrap" ? "scrap" : "valuation");
-    setLeadCustomerName(loaded.lead.full_name || "");
     const initial = loaded.report.data;
     setData({
       ...initial,
@@ -214,6 +211,33 @@ export function InspectionWorkspace({ leadId }: { leadId: string }) {
   }
   function setCheck(section: "externalBody" | "mechanical", item: string, result: InspectionResult) {
     setData((current) => ({ ...current, [section]: { ...current[section], [item]: result } }));
+  }
+  function setPassAll(section: "externalBody" | "mechanical") {
+    const items = section === "externalBody" ? EXTERNAL_BODY_ITEMS : MECHANICAL_ITEMS;
+    setData((current) => {
+      const nextSection = { ...current[section] };
+      for (const item of items) {
+        nextSection[item] = "pass";
+      }
+      return { ...current, [section]: nextSection };
+    });
+  }
+  function setPassAllTyres() {
+    setData((current) => ({
+      ...current,
+      tyres: {
+        ...current.tyres,
+        driverFront: { ...current.tyres.driverFront, result: "pass" },
+        driverRear: { ...current.tyres.driverRear, result: "pass" },
+        passengerFront: { ...current.tyres.passengerFront, result: "pass" },
+        passengerRear: { ...current.tyres.passengerRear, result: "pass" },
+      },
+    }));
+  }
+  function setPassAllComponents() {
+    setPassAll("externalBody");
+    setPassAll("mechanical");
+    setPassAllTyres();
   }
   function setFailureNote(item: string, note: string) { setData((current) => ({ ...current, failureNotes: { ...current.failureNotes, [item]: note } })); }
 
@@ -451,9 +475,30 @@ export function InspectionWorkspace({ leadId }: { leadId: string }) {
         <TextArea label="Basic Notes" value={data.basicNotes} onChange={(value) => setField("basicNotes", value)} />
       </Card>
 
-      <div id="inspection-external" className={highlightedSections.includes("external") ? "rounded-card ring-2 ring-danger/70" : ""}><Checklist title="External Body Condition" items={EXTERNAL_BODY_ITEMS} values={data.externalBody} notes={data.failureNotes} iconOnly onChange={(item, result) => setCheck("externalBody", item, result)} onNote={setFailureNote} /></div>
-      <div id="inspection-mechanical" className={highlightedSections.includes("mechanical") ? "rounded-card ring-2 ring-danger/70" : ""}><Checklist title="Mechanical Components" items={MECHANICAL_ITEMS} values={data.mechanical} notes={data.failureNotes} onChange={(item, result) => setCheck("mechanical", item, result)} onNote={setFailureNote} /></div>
-      <Card id="inspection-tyres" className={`p-5 ${highlightedSections.includes("tyres") ? "ring-2 ring-danger/70" : ""}`}><SectionTitle title="Tyres, accessories and interior" />
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-emerald-500/35 bg-emerald-500/10 p-4">
+        <div>
+          <div className="flex items-center gap-2 text-sm font-semibold text-emerald-300">
+            <Check className="h-4 w-4" />
+            <span>Fast-Track Components Pass</span>
+          </div>
+          <p className="mt-0.5 text-xs text-text-muted">
+            Automatically marks all External Body, Mechanical, and Tyre checks as Pass. You can then manually mark any damaged or defective item as &times; (Fail).
+          </p>
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          onClick={setPassAllComponents}
+          className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs h-9 px-3.5 shadow"
+        >
+          <Check className="h-4 w-4" />
+          Pass All Components
+        </Button>
+      </div>
+
+      <div id="inspection-external" className={highlightedSections.includes("external") ? "rounded-card ring-2 ring-danger/70" : ""}><Checklist title="External Body Condition" items={EXTERNAL_BODY_ITEMS} values={data.externalBody} notes={data.failureNotes} iconOnly onChange={(item, result) => setCheck("externalBody", item, result)} onNote={setFailureNote} onPassAll={() => setPassAll("externalBody")} /></div>
+      <div id="inspection-mechanical" className={highlightedSections.includes("mechanical") ? "rounded-card ring-2 ring-danger/70" : ""}><Checklist title="Mechanical Components" items={MECHANICAL_ITEMS} values={data.mechanical} notes={data.failureNotes} onChange={(item, result) => setCheck("mechanical", item, result)} onNote={setFailureNote} onPassAll={() => setPassAll("mechanical")} /></div>
+      <Card id="inspection-tyres" className={`p-5 ${highlightedSections.includes("tyres") ? "ring-2 ring-danger/70" : ""}`}><SectionTitle title="Tyres, accessories and interior" action={<button type="button" onClick={setPassAllTyres} className="inline-flex items-center gap-1.5 rounded-btn border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/60 transition-colors"><Check className="h-3.5 w-3.5" /> Pass All Tyres</button>} />
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">{([['driverFront','Driver Side Front Tyre'],['driverRear','Driver Side Rear Tyre'],['passengerFront','Passenger Side Front Tyre'],['passengerRear','Passenger Side Rear Tyre']] as const).map(([key,label]) => <Tyre key={key} label={label} value={data.tyres[key]} onChange={(value) => setData((current) => ({ ...current, tyres: { ...current.tyres, [key]: value } }))} />)}</div>
         <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3"><Choice label="Spare Tyre" value={data.tyres.spareTyre} onChange={(value) => setData((current) => ({ ...current, tyres: { ...current.tyres, spareTyre: value } }))} /><Choice label="Truck Tools Available" value={data.tyres.truckToolsAvailable} onChange={(value) => setData((current) => ({ ...current, tyres: { ...current.tyres, truckToolsAvailable: value } }))} /><Choice label="Service Book" value={data.tyres.serviceBook} onChange={(value) => setData((current) => ({ ...current, tyres: { ...current.tyres, serviceBook: value } }))} /></div>
         <div className="mt-5"><Select label="Interior Seats" value={data.interiorSeatType} options={[{label:'Leather seats',value:'leather'},{label:'Fabric seats',value:'fabric'},{label:'Other',value:'other'},{label:'Unknown',value:'unknown'}]} onChange={(value) => setField("interiorSeatType", value as InspectionReportData["interiorSeatType"])} /></div><TextArea label="Interior Notes" value={data.interiorNotes} onChange={(value) => setField("interiorNotes", value)} />
@@ -556,9 +601,66 @@ export function InspectionWorkspace({ leadId }: { leadId: string }) {
   );
 }
 
-function SectionTitle({ title, detail }: { title: string; detail?: string }) { return <div className="mb-5 flex flex-wrap items-baseline justify-between gap-2"><h2 className="text-lg font-semibold text-text">{title}</h2>{detail && <span className="text-xs text-text-muted">{detail}</span>}</div>; }
+function SectionTitle({ title, detail, action }: { title: string; detail?: string; action?: React.ReactNode }) { return <div className="mb-5 flex flex-wrap items-center justify-between gap-2"><div><h2 className="text-lg font-semibold text-text">{title}</h2>{detail && <span className="text-xs text-text-muted">{detail}</span>}</div>{action}</div>; }
 function TextInput({ label, value, type = "text", disabled = false, error, onChange }: { label:string; value:string; type?:string; disabled?:boolean; error?:boolean; onChange:(value:string)=>void }) { return <label className="flex flex-col gap-1.5 text-xs font-medium uppercase tracking-wide text-text-muted">{label}<input type={type} value={value} disabled={disabled} onChange={(event)=>onChange(event.target.value)} className={`h-10 rounded-card border bg-bg px-3 text-sm normal-case tracking-normal text-text outline-none focus:border-gold disabled:opacity-60 ${error ? "border-danger ring-2 ring-danger/25" : "border-border"}`} /></label>; }
 function TextArea({ label,value,disabled=false,onChange}:{label:string;value:string;disabled?:boolean;onChange:(value:string)=>void}) { return <label className="mt-5 flex flex-col gap-1.5 text-xs font-medium uppercase tracking-wide text-text-muted">{label}<textarea rows={3} value={value} disabled={disabled} onChange={(event)=>onChange(event.target.value)} className="resize-y rounded-card border border-border bg-bg p-3 text-sm normal-case tracking-normal text-text outline-none focus:border-gold disabled:opacity-60" /></label>; }
 function Choice({ label,value,disabled=false,onChange}:{label:string;value:Choice;disabled?:boolean;onChange:(value:Choice)=>void}) { return <div><p className="mb-2 text-xs font-medium uppercase tracking-wide text-text-muted">{label}</p><div className="flex gap-1">{choiceOptions().map((option)=><button key={option} type="button" disabled={disabled} onClick={()=>onChange(option)} className={`min-h-9 flex-1 rounded-card border px-2 text-xs capitalize ${value===option?'border-gold bg-gold/10 text-gold':'border-border text-text-muted'} disabled:opacity-60`}>{option}</button>)}</div></div>; }
-function Checklist({title,items,values,notes,disabled=false,iconOnly,onChange,onNote}:{title:string;items:readonly string[];values:Record<string,InspectionResult|undefined>;notes:Record<string,string>;disabled?:boolean;iconOnly?:boolean;onChange:(item:string,result:InspectionResult)=>void;onNote:(item:string,note:string)=>void}) { return <Card className="p-5"><SectionTitle title={title} /><div className="grid grid-cols-1 gap-3 lg:grid-cols-2">{items.map((item)=><div key={item} className="rounded-card border border-border bg-surface-2 p-3"><div className="flex items-center justify-between gap-3"><span className="text-sm text-text">{item}</span><div className="flex gap-1">{(['pass','fail'] as const).map((result)=><button key={result} type="button" disabled={disabled} title={iconOnly ? (result === 'pass' ? 'Pass' : 'Fail') : undefined} aria-label={`${item}: ${iconOnly ? (result === 'pass' ? 'Pass' : 'Fail') : result}`} onClick={()=>onChange(item,result)} className={`flex h-8 items-center justify-center rounded-card border ${iconOnly ? 'w-9 px-0' : 'px-3'} text-xs capitalize ${values[item]===result?(result==='pass'?'border-emerald-500 bg-emerald-500/10 text-emerald-300':'border-danger bg-danger/10 text-danger'):'border-border text-text-muted'} disabled:opacity-60`}>{iconOnly ? (result === 'pass' ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />) : result}</button>)}</div></div>{values[item]==='fail'&&<input value={notes[item]??''} disabled={disabled} onChange={(event)=>onNote(item,event.target.value)} placeholder="Reason or note required for failure" className="mt-3 h-9 w-full rounded-card border border-danger/40 bg-bg px-3 text-xs text-text outline-none focus:border-danger" />}</div>)}</div></Card>; }
+function Checklist({title,items,values,notes,disabled=false,iconOnly,onChange,onNote,onPassAll}:{title:string;items:readonly string[];values:Record<string,InspectionResult|undefined>;notes:Record<string,string>;disabled?:boolean;iconOnly?:boolean;onChange:(item:string,result:InspectionResult)=>void;onNote:(item:string,note:string)=>void;onPassAll?:()=>void}) {
+  const passCount = items.filter((item) => values[item] === "pass").length;
+  const failCount = items.filter((item) => values[item] === "fail").length;
+  return (
+    <Card className="p-5">
+      <SectionTitle
+        title={title}
+        detail={`${passCount} passed · ${failCount} failed · ${items.length} total`}
+        action={
+          onPassAll && (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={onPassAll}
+              className="inline-flex items-center gap-1.5 rounded-btn border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/60 transition-colors disabled:opacity-50"
+            >
+              <Check className="h-3.5 w-3.5" />
+              Select All (Pass)
+            </button>
+          )
+        }
+      />
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        {items.map((item) => (
+          <div key={item} className="rounded-card border border-border bg-surface-2 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm text-text">{item}</span>
+              <div className="flex gap-1">
+                {(['pass','fail'] as const).map((result) => (
+                  <button
+                    key={result}
+                    type="button"
+                    disabled={disabled}
+                    title={iconOnly ? (result === 'pass' ? 'Pass' : 'Fail') : undefined}
+                    aria-label={`${item}: ${iconOnly ? (result === 'pass' ? 'Pass' : 'Fail') : result}`}
+                    onClick={() => onChange(item, result)}
+                    className={`flex h-8 items-center justify-center rounded-card border ${iconOnly ? 'w-9 px-0' : 'px-3'} text-xs capitalize ${values[item] === result ? (result === 'pass' ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300' : 'border-danger bg-danger/10 text-danger') : 'border-border text-text-muted hover:text-text'} disabled:opacity-60`}
+                  >
+                    {iconOnly ? (result === 'pass' ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />) : result}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {values[item] === 'fail' && (
+              <input
+                value={notes[item] ?? ''}
+                disabled={disabled}
+                onChange={(event) => onNote(item, event.target.value)}
+                placeholder="Reason or note required for failure"
+                className="mt-3 h-9 w-full rounded-card border border-danger/40 bg-bg px-3 text-xs text-text outline-none focus:border-danger"
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
 function Tyre({label,value,disabled=false,onChange}:{label:string;value:InspectionReportData['tyres']['driverFront'];disabled?:boolean;onChange:(value:InspectionReportData['tyres']['driverFront'])=>void}) { return <div className="rounded-card border border-border bg-surface-2 p-3"><p className="text-sm text-text">{label}</p><div className="mt-3 grid grid-cols-[1fr_5rem] gap-2"><div className="flex gap-1">{(['pass','fail'] as const).map((result)=><button key={result} type="button" disabled={disabled} onClick={()=>onChange({...value,result})} className={`h-9 flex-1 rounded-card border text-xs capitalize ${value.result===result?(result==='pass'?'border-emerald-500 text-emerald-300':'border-danger text-danger'):'border-border text-text-muted'} disabled:opacity-60`}>{result}</button>)}</div><input value={value.year} disabled={disabled} onChange={(event)=>onChange({...value,year:event.target.value})} placeholder="Year" maxLength={4} className="h-9 rounded-card border border-border bg-bg px-2 text-xs text-text outline-none focus:border-gold" /></div>{value.result==='fail'&&<input value={value.note} disabled={disabled} onChange={(event)=>onChange({...value,note:event.target.value})} placeholder="Failure reason or note" className="mt-2 h-9 w-full rounded-card border border-danger/40 bg-bg px-3 text-xs text-text outline-none focus:border-danger" />}</div>; }

@@ -4,6 +4,105 @@ This is the factual source for reports.
 
 Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
+## 2026-10-21
+ 
+### Completed
+ 
+- Inventory Typography Balance & Removal of "Unverified Number" Badges:
+  - Removed misleading "Unverified number" warning badges from [components/admin/InventoryTable.tsx](file:///e:/Github/carvibe/components/admin/InventoryTable.tsx) and [components/admin/MobileInventoryList.tsx](file:///e:/Github/carvibe/components/admin/MobileInventoryList.tsx) in alignment with the active WhatsApp OTP bypass.
+  - Balanced and enlarged font sizes across `InventoryTable` from tiny `text-fluid--1` to readable, proportional `text-xs sm:text-sm` typography with clear vehicle links and tabular numbers.
+  - Verified: `npm run lint` (0 errors, 0 warnings), `npx tsc --noEmit` (0 errors), `npm test` (39 suites, 301 tests passing), and verified in live browser subagent.
+- Vehicle Expenses Pagination, Font Alignment, Period Filter & Itemized Breakdown Modal:
+  - Implemented pagination with a maximum of 10 entries per page on `/admin/expenses` in [app/(admin)/admin/expenses/expenses-client.tsx](file:///e:/Github/carvibe/app/(admin)/admin/expenses/expenses-client.tsx).
+  - Eliminated awkward wide empty space by replacing the standalone 1/3 card with a sleek Executive Total Widget in the page header adjacent to action controls, paired with a dedicated high-contrast `<tfoot>` ledger row directly under the Amount column in the data table and a compact mobile summary strip.
+  - Removed category filter chips and added time period filtering: Day, Weekly, Monthly (default), Yearly, and All Time via [lib/admin/expenses.ts](file:///e:/Github/carvibe/lib/admin/expenses.ts), converted into a sleek dark theme dropdown select with custom chevron.
+  - Replaced the "Description" column with an "Action" column containing an Eye "View Breakdown" button opening a detailed modal with itemized expenses for that vehicle, logged staff details, and a prominent Total Vehicle Expenses summary box.
+  - Consolidated export buttons into a single unified "Export" button with a luxury dropdown for PDF Document (.pdf) and Excel Spreadsheet (.csv).
+  - Implemented high-precision vector PDF report generation via `pdf-lib` in [lib/admin/expenses.ts](file:///e:/Github/carvibe/lib/admin/expenses.ts) exporting strictly clean data table rows, balanced margins, gold branding, and summary totals (without window.print or browser page clutter).
+  - Cleaned up PDF layout to be strictly minimal, removing cluttered header metadata (`Generated: ...`, `Aggregated vehicle operational costs...`, `Total Filtered: ...`) and optimizing typography (8.5 pt font, 8 pt padding) for maximum readability.
+  - Added unit test in [lib/admin/expenses.test.ts](file:///e:/Github/carvibe/lib/admin/expenses.test.ts) covering PDF document generation.
+- Accurate Customer Service Attribution in Staff Error & Arrival Reversals:
+  - Fixed issue where reversing customer arrival wiped the original Customer Service agent's record from audit reports by preserving `original_arrived_by` and `original_arrived_at` in `arrival_reverted` event metadata before clearing `leads.arrived_by` in [app/api/leads/[id]/route.ts](file:///e:/Github/carvibe/app/api/leads/[id]/route.ts).
+  - Updated [app/api/admin/staff-errors/route.ts](file:///e:/Github/carvibe/app/api/admin/staff-errors/route.ts) to attribute `STAFF MEMBER` to the Customer Service agent who checked in the customer, and `STATUS & RESOLUTION` to Sir Nash (Super Admin) as the approver who cleared the mistake.
+  - Supported server-side tracking for Customer Service arrival reversal requests (`arrival_reversal_requested`) in [components/admin/LeadArrivalCard.tsx](file:///e:/Github/carvibe/components/admin/LeadArrivalCard.tsx) and [components/admin/LeadDetail.tsx](file:///e:/Github/carvibe/components/admin/LeadDetail.tsx).
+  - Added optional reversal note/reason input in Super Admin turn-off modal so reasons are recorded in the audit trail.
+  - Added unit test coverage in [lib/admin/staff-errors.test.ts](file:///e:/Github/carvibe/lib/admin/staff-errors.test.ts).
+  - Verified: `npx tsc --noEmit` (0 errors), `npm test` (39 suites, 301 tests passing), and verified in live browser subagent.
+  - Removed all synthetic/mock seed data (`BASE_STAFF_ERRORS`) from [app/api/admin/staff-errors/route.ts](file:///e:/Github/carvibe/app/api/admin/staff-errors/route.ts) and [components/admin/StaffErrorReport.tsx](file:///e:/Github/carvibe/components/admin/StaffErrorReport.tsx).
+  - Fixed column mapping from `leads.full_name` (e.g. `gene`) and vehicle details (`2026 Avatr Avatr 11`), eliminating fallback placeholders ("Customer", "Vehicle").
+  - Mapped approver UUIDs to actual display names from `profiles` (e.g. `Developer (test) (Super Admin)` or `Sir Nash (Super Admin)`), eliminating raw UUID strings in the report.
+  - Converted "Staff Reversal Frequency" from cards into a high-performance tabular list with search, avatar rank, relative frequency bars, filter toggles, and maximum 10-per-page pagination.
+  - Added 10-per-page pagination to the Incident Records audit table to ensure fast, scalable rendering for large staff and event volumes.
+  - Verified: `npm run lint` (0 errors, 0 warnings), `npx tsc --noEmit` (0 errors), `npm test` (39 suites, 301 tests passing), and verified in live browser subagent.
+- Complete Removal of "UAE" Suffix from Staff Payment History:
+  - Hardened [lib/uae-time.ts](file:///e:/Github/carvibe/lib/uae-time.ts) `formatUaeDateTime()` to strip any trailing `UAE` string from input dates and formatted results.
+  - Added `formatPaymentDate()` sanitizer in [components/admin/StaffPaymentHistory.tsx](file:///e:/Github/carvibe/components/admin/StaffPaymentHistory.tsx) to ensure timestamps display cleanly without `UAE` (e.g. `Paid 20 Oct 2026, 22:29`, `Paid 09 Oct 2026, 17:22`).
+  - Confirmed and verified that `Expenses` is active and visible in the admin sidebar between `Inventory` and `Commission`.
+  - Verified: `npm run lint` (0 errors, 0 warnings), `npx tsc --noEmit` (0 errors), `npm test` (38 suites, 294 tests passing), and verified in browser subagent.
+
+## 2026-10-20
+ 
+### Completed
+ 
+- Expenses Summary Tab & Monthly Overview in Admin Sidebar:
+  - Created [lib/admin/expenses.ts](file:///e:/Github/carvibe/lib/admin/expenses.ts) defining `CompanyExpenseItem`, `ExpensesSummary`, `fetchCompanyExpenses()`, `calculateExpensesSummary()`, demo datasets, and `formatExpenseCsv()`.
+  - Built [app/api/admin/expenses/route.ts](file:///e:/Github/carvibe/app/api/admin/expenses/route.ts) providing a secure GET endpoint returning aggregated vehicle expenses for authorized staff (`viewInventory`).
+  - Implemented server page [app/(admin)/admin/expenses/page.tsx](file:///e:/Github/carvibe/app/(admin)/admin/expenses/page.tsx) and rich client workspace [app/(admin)/admin/expenses/expenses-client.tsx](file:///e:/Github/carvibe/app/(admin)/admin/expenses/expenses-client.tsx) with a streamlined 2-card executive overview: "This Month's Expenses" (e.g. October 2026) and "All-Time Total Expenses", eliminating card clutter while preserving live search, origin toggle (All Origins, Valuation, Scrap), category filter chips (Towing & Recovery, RTA & Inspection, Detailing & Wash, Repairs & Maintenance), sorting, clean numbers without redundant currency letter prefixes, and one-click CSV export.
+  - Registered route in [components/admin/Sidebar.tsx](file:///e:/Github/carvibe/components/admin/Sidebar.tsx) under Inventory with `ReceiptText` icon and active glow indicator.
+  - Added unit test suite in [lib/admin/expenses.test.ts](file:///e:/Github/carvibe/lib/admin/expenses.test.ts) covering monthly summaries, total aggregation, and CSV formatting.
+  - Cleaned up all unused variables across the codebase; verified: `npm run lint` (0 errors, 0 warnings), `npx tsc --noEmit` (0 errors), `npm test` (38 suites, 294 tests passing), and tested in browser subagent at `/admin/expenses`.
+- Customer Arrival Automated Email Dispatch:
+  - Updated [lib/server/lead-notifications.ts](file:///e:/Github/carvibe/lib/server/lead-notifications.ts) to add `CustomerArrivalNotification`, `formatCustomerArrivalText()`, `formatCustomerArrivalHtml()`, `sendCustomerArrivalNotification()`, and `dispatchArrivalNotification()`.
+  - Updated [app/api/leads/[id]/route.ts](file:///e:/Github/carvibe/app/api/leads/[id]/route.ts) to query the assigned purchaser's registered account email from `profiles` when arrival is confirmed. Dispatches notifications to the purchaser's registered email AND to Sir Nash at `carvibe@cresvcs.com`.
+  - Added unit test assertions in [lib/server/lead-notifications.test.ts](file:///e:/Github/carvibe/lib/server/lead-notifications.test.ts).
+  - Verified: `npx tsc --noEmit` (0 errors), `npm test` (37 suites, 291 tests passing).
+- Comprehensive Operational User Manual in Word DOCX:
+  - Created [docs/client/CarVibe_User_Manual_and_Training_Guide.docx](file:///e:/Github/carvibe/docs/client/CarVibe_User_Manual_and_Training_Guide.docx), alongside [CarVibe_User_Manual_and_Training_Guide.html](file:///e:/Github/carvibe/docs/client/CarVibe_User_Manual_and_Training_Guide.html) and [CarVibe_User_Manual_and_Training_Guide.md](file:///e:/Github/carvibe/docs/client/CarVibe_User_Manual_and_Training_Guide.md).
+  - Built via [scripts/generate_user_manual_docx.mjs](file:///e:/Github/carvibe/scripts/generate_user_manual_docx.mjs) containing executive cover header, role permission security tables, Call Center, Purchaser, and Super Admin workflows, and a 10-point simulation testing checklist for Sir Nyash.
+- Payment History Timestamp Clean-up (Removed "UAE" suffix):
+  - Updated [lib/uae-time.ts](file:///e:/Github/carvibe/lib/uae-time.ts) `formatUaeDateTime()` to return clean date and time strings without the trailing " UAE" suffix (e.g. `Paid 09 Oct 2026, 17:22`, `Paid 27 Sept 2026, 19:02`).
+  - Updated [components/admin/StaffPaymentHistory.tsx](file:///e:/Github/carvibe/components/admin/StaffPaymentHistory.tsx) to remove "Times are UAE." from the helper descriptions in Recent Payments and the Payment History modal.
+  - Verified: `npx tsc --noEmit` (0 errors), `npm test` (37 suites, 290 tests passing).
+- Role-Based Search Filters & Inspection Form Fast-Track Pass All:
+  - Updated [lib/admin/use-leads-filter.ts](file:///e:/Github/carvibe/lib/admin/use-leads-filter.ts) and [components/admin/leads-table/toolbar.tsx](file:///e:/Github/carvibe/components/admin/leads-table/toolbar.tsx) to implement role-based search:
+    - Customer Service (`call_center`): Strictly searches by phone number only (case-insensitive and format-tolerant for UAE local `05x`, international `971`, spaces, and dashes). Does not match customer names. Placeholder: `"Search by phone number…"`.
+    - Purchaser (`purchaser`): Strictly searches by customer name only (case-insensitive). Does not match phone numbers. Placeholder: `"Search by customer name…"`.
+    - Super Admin / Manager (`admin`, `manager`): Searches both customer name and phone number. Placeholder: `"Search name or phone…"`.
+  - Updated [app/(admin)/admin/incomplete/incomplete-client.tsx](file:///e:/Github/carvibe/app/(admin)/admin/incomplete/incomplete-client.tsx) to add search bar with role-based filtering matching Leads Directory (phone-only for Customer Service, name-only for Purchaser, both for Super Admin).
+  - Updated [components/admin/InspectionWorkspace.tsx](file:///e:/Github/carvibe/components/admin/InspectionWorkspace.tsx) to add "Pass All Components" quick-action banner and per-section "Select All (Pass)" buttons for External Body, Mechanical Components, and Tyres, enabling inspectors to batch-pass all checklist items and manually toggle defect ('X') on damaged items.
+  - Added unit test suite in [lib/admin/use-leads-filter.test.ts](file:///e:/Github/carvibe/lib/admin/use-leads-filter.test.ts) covering all role-based search behaviors and phone variants.
+- Staff Invoice / Payment Receipt PDF Layout & Spacing Balance:
+  - Updated [lib/admin/pdf-invoice.ts](file:///e:/Github/carvibe/lib/admin/pdf-invoice.ts) to remove "AED" from `Payment Status:` so it cleanly displays `Payment Status: PAID` (or `UNPAID / OUTSTANDING`).
+  - Fixed tight spacing and text overlap above the gray summary box: standardized metadata row Y-coordinates (Y=705, 688, 671, 654), lowered gray summary box from Y=610 to Y=594 (height 36pt, top Y=630) to give 24pt top breathing room below `Receipt ID:`, centered internal summary metrics vertically (Y=607), and adjusted table header (Y=552..574) and row positions (Y=528) for design balance across both paid receipts and unpaid invoices.
+  - Added unit test assertions in [lib/admin/pdf-invoice.test.ts](file:///e:/Github/carvibe/lib/admin/pdf-invoice.test.ts) ensuring `Payment Status:` is rendered without "AED".
+- Super Admin Customer Arrival Turn-Off & Reversal Fix:
+  - Updated [app/api/leads/[id]/route.ts](file:///e:/Github/carvibe/app/api/leads/[id]/route.ts) to support reverting arrival (`arrival_status: "not_arrived"`) for `admin` and `manager` roles, clearing `arrived_at` and `arrived_by` columns in Supabase and recording `arrival_reverted` activity event.
+  - Updated [components/admin/LeadDetail.tsx](file:///e:/Github/carvibe/components/admin/LeadDetail.tsx) so `onRevertArrival` and `onConfirmArrival` callbacks return the underlying Promise to [components/admin/LeadArrivalCard.tsx](file:///e:/Github/carvibe/components/admin/LeadArrivalCard.tsx) to prevent race conditions when awaiting state updates.
+  - Verified in browser with subagent: Super Admin clicking arrival toggle and confirming in the dialog resets toggle to grey ("Not yet arrived") and persists across page reloads.
+- Verification:
+  - `npx tsc --noEmit` (0 errors).
+  - `npm test` (37 suites, 287 tests passing).
+  - Browser subagent verified toggle, modal confirmation, state change, and database persistence.
+ 
+## 2026-10-19
+
+### Completed
+
+- Payment History & Commission Redundant AED Cleanup:
+  - Updated `components/admin/StaffPaymentHistory.tsx` to display section title and modal title as "Payment History (AED)" / "Payment history (AED)".
+  - Removed redundant inline "AED " string prefixes from payment rows, details breakdown, and recent payment dialogs so numeric values format cleanly (e.g. 217, 1,800, 1,350).
+  - Updated `app/(admin)/admin/commission/commission-client.tsx` Closed Car Sales table headers to indicate AED (`Paid amount (AED)`, `Expenses (AED)`, `Net profit (AED)`, `Profit (AED)`, `Commission (AED)`) and removed redundant inline "AED " prefixes from table cells and summary cards.
+  - Updated `lib/admin/pdf-invoice.ts` to output "Payment Status: AED" and formatted table cells without repeating currency codes.
+- Customer Arrival Phone Verification & CSR Reversal Request Flow:
+  - Enhanced `components/admin/LeadArrivalCard.tsx` and `components/admin/LeadDetail.tsx` with a phone verification modal when switching Customer Arrived to ON.
+  - Validates entered phone against `customerPhone` (supporting international `+971` and local `05x` formats); blocks arrival confirmation if numbers do not match.
+  - Implemented CSR reversal request workflow: when Customer Service attempts to toggle off arrival, a modal requires entering a reason, creating a pending request for Sir Nash (Super Admin).
+  - Provided Sir Nash with alert review banner containing the reason, with actions to "Approve & Turn Off Arrival" or "Decline Request".
+- Verification:
+  - `npx tsc --noEmit` (0 errors).
+  - `npm test` (37 suites, 287 tests passing).
+  - Browser subagent verification of workflow and UI rendering.
+
 ## 2026-10-18
 
 ### Completed

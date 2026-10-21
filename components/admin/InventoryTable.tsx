@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BadgeDollarSign, ShieldAlert } from "lucide-react";
+import { BadgeDollarSign } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { formatAed, formatDate, formatNumber } from "@/lib/format";
 import { ScrapInquiryBadge } from "@/components/admin/ScrapInquiryBadge";
@@ -23,7 +23,7 @@ const STATUS_STYLE: Record<InventoryStatus, string> = {
 
 export function StatusChip({ status }: { status: InventoryStatus }) {
   return (
-    <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-fluid--1 ${STATUS_STYLE[status]}`}>
+    <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLE[status]}`}>
       {INVENTORY_STATUS_LABEL[status]}
     </span>
   );
@@ -43,62 +43,60 @@ export function InventoryTable({ items, roleFilter, viewerRole, onSell }: Props)
   const showDeveloper = isOwner && roleFilter.includes("developer");
   return (
     <div className="mt-5 overflow-x-auto">
-      <table className="w-full min-w-[1120px] text-left text-fluid--1">
+      <table className="w-full min-w-[1120px] text-left text-xs sm:text-sm">
         <thead>
-          <tr className="border-b border-border text-text-faint">
-            <th className="py-2 pr-4 font-normal">Car</th>
-            <th className="py-2 pr-4 font-normal">Chassis / VIN Number</th>
-            <th className="py-2 pr-4 font-normal">Sold date</th>
-            <th className="py-2 pr-4 text-right font-normal">Paid</th>
-            <th className="py-2 pr-4 text-right font-normal">Paid amount</th>
-            <th className="py-2 pr-4 text-right font-normal">Expenses</th>
-            <th className="py-2 pr-4 text-right font-normal">Net profit</th>
+          <tr className="border-b border-border/70 text-text-muted font-mono uppercase text-[11px] tracking-wider bg-surface-2/30">
+            <th className="py-3 px-4 font-medium">Car</th>
+            <th className="py-3 px-4 font-medium">Chassis / VIN Number</th>
+            <th className="py-3 px-4 font-medium">Sold date</th>
+            <th className="py-3 px-4 text-right font-medium">Paid</th>
+            <th className="py-3 px-4 text-right font-medium">Paid amount</th>
+            <th className="py-3 px-4 text-right font-medium">Expenses</th>
+            <th className="py-3 px-4 text-right font-medium">Net profit</th>
             {showCallCenter && (
-              <th className="py-2 pr-4 text-right font-normal">Call Centre AED</th>
+              <th className="py-3 px-4 text-right font-medium">Call Centre AED</th>
             )}
             {showPurchaser && (
-              <th className="py-2 pr-4 text-right font-normal">Purchaser AED</th>
+              <th className="py-3 px-4 text-right font-medium">Purchaser AED</th>
             )}
             {showDeveloper && (
-              <th className="py-2 pr-4 text-right font-normal">Developer AED</th>
+              <th className="py-3 px-4 text-right font-medium">Developer AED</th>
             )}
-            <th className="py-2 pr-4 font-normal">Status</th>
-            <th className="py-2 pr-1 text-right font-normal">Actions</th>
+            <th className="py-3 px-4 font-medium">Status</th>
+            <th className="py-3 pr-2 pl-4 text-right font-medium">Actions</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-border/40">
           {items.map((item) => (
-            <tr key={item.id} className="border-b border-border last:border-0 hover:bg-surface-2/50">
-              <td className="py-3 pr-4">
-                <Link href={`/admin/leads/${item.leadId}`} className="text-text hover:text-gold">
+            <tr key={item.id} className="hover:bg-surface-2/40 transition-colors">
+              <td className="py-3.5 px-4">
+                <Link
+                  href={`/admin/leads/${item.leadId}`}
+                  className="font-semibold text-text hover:text-gold transition text-xs sm:text-sm"
+                >
                   {item.year} {item.make} {item.model}
                 </Link>
-                {item.trim && <span className="block text-text-faint">{item.trim}</span>}
+                {item.trim && <span className="block text-xs text-text-muted mt-0.5">{item.trim}</span>}
                 {item.inquiryType === "scrap" && (
                   <ScrapInquiryBadge compact className="mt-1" />
                 )}
-                {item.fromUnverifiedLead && (
-                  <span className="mt-0.5 inline-flex items-center gap-1 text-fluid--1 text-warning">
-                    <ShieldAlert className="h-3.5 w-3.5" /> Unverified number
-                  </span>
-                )}
               </td>
-              <td className="py-3 pr-4 text-text-muted">
+              <td className="py-3.5 px-4 font-mono text-xs text-text-muted">
                 {item.chassisNumber || "—"}
               </td>
-              <td className="py-3 pr-4 text-text-muted whitespace-nowrap">{formatDate(item.purchasedAt)}</td>
-              <td className="py-3 pr-4 text-right tabular-nums text-text-muted whitespace-nowrap">
+              <td className="py-3.5 px-4 text-text-muted whitespace-nowrap text-xs">{formatDate(item.purchasedAt)}</td>
+              <td className="py-3.5 px-4 text-right tabular-nums text-text font-medium whitespace-nowrap text-xs sm:text-sm">
                 {formatAed(item.purchasePriceAed)}
               </td>
-              <td className="py-3 pr-4 text-right tabular-nums text-text-muted whitespace-nowrap">
+              <td className="py-3.5 px-4 text-right tabular-nums text-text font-medium whitespace-nowrap text-xs sm:text-sm">
                 {formatAed(item.salePriceAed)}
               </td>
-              <td className="py-3 pr-4 text-right tabular-nums text-text-muted whitespace-nowrap">
+              <td className="py-3.5 px-4 text-right tabular-nums text-text font-medium whitespace-nowrap text-xs sm:text-sm">
                 {formatAed(item.expenseTotalAed)}
               </td>
               <td
-                className={`py-3 pr-4 text-right tabular-nums whitespace-nowrap ${
-                  (item.netProfitAed ?? item.commission?.profitAed ?? 0) < 0 ? "text-danger" : "text-text"
+                className={`py-3.5 px-4 text-right tabular-nums font-semibold whitespace-nowrap text-xs sm:text-sm ${
+                  (item.netProfitAed ?? item.commission?.profitAed ?? 0) < 0 ? "text-danger" : "text-emerald-400"
                 }`}
               >
                 {item.financialStatus === "awaiting_confirmation"
@@ -108,34 +106,35 @@ export function InventoryTable({ items, roleFilter, viewerRole, onSell }: Props)
                     : item.commission ? formatAed(item.commission.profitAed) : "—"}
               </td>
               {showCallCenter && (
-                <td className="py-3 pr-4 text-right tabular-nums text-gold whitespace-nowrap">
+                <td className="py-3.5 px-4 text-right tabular-nums text-gold font-semibold whitespace-nowrap text-xs sm:text-sm">
                   {item.callCenterCommissionAed === null ? "—" : formatNumber(item.callCenterCommissionAed)}
                 </td>
               )}
               {showPurchaser && (
-                <td className="py-3 pr-4 text-right tabular-nums text-gold whitespace-nowrap">
+                <td className="py-3.5 px-4 text-right tabular-nums text-gold font-semibold whitespace-nowrap text-xs sm:text-sm">
                   {item.purchaserCommissionAed === null ? "—" : formatNumber(item.purchaserCommissionAed)}
                 </td>
               )}
               {showDeveloper && (
-                <td className="py-3 pr-4 text-right tabular-nums text-gold whitespace-nowrap">
+                <td className="py-3.5 px-4 text-right tabular-nums text-gold font-semibold whitespace-nowrap text-xs sm:text-sm">
                   {item.commission ? formatNumber(item.commission.commissionAed) : "—"}
                 </td>
               )}
-              <td className="py-3 pr-4 whitespace-nowrap">
+              <td className="py-3.5 px-4 whitespace-nowrap">
                 <StatusChip status={item.status} />
               </td>
-              <td className="py-3 pl-2 pr-1 text-right whitespace-nowrap">
+              <td className="py-3.5 pr-2 pl-4 text-right whitespace-nowrap">
                 {item.status === "sold" || item.status === "withdrawn" ? (
                   <span className="text-text-faint">—</span>
                 ) : (
                   <Button
                     variant="outline"
-                    className="px-3"
+                    size="sm"
+                    className="px-3 text-xs"
                     onClick={() => onSell(item)}
                     title={ADMIN_PREVIEW ? PREVIEW_NOTICE : "Record the price this car sold for"}
                   >
-                    <BadgeDollarSign className="h-4 w-4" /> Mark sold
+                    <BadgeDollarSign className="h-4 w-4 mr-1" /> Mark sold
                   </Button>
                 )}
               </td>

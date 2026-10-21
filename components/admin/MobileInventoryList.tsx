@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BadgeDollarSign, ChevronRight, ShieldAlert } from "lucide-react";
+import { BadgeDollarSign, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { formatAed, formatDate } from "@/lib/format";
 import { ScrapInquiryBadge } from "@/components/admin/ScrapInquiryBadge";
@@ -94,18 +94,13 @@ export function MobileInventoryList({
               </div>
 
               {/* Chassis / VIN & Metadata */}
-              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-faint">
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
                 {item.chassisNumber && (
                   <span className="font-mono text-zinc-300">
                     VIN: {item.chassisNumber}
                   </span>
                 )}
                 <span>Sold date: {formatDate(item.purchasedAt)}</span>
-                {item.fromUnverifiedLead && (
-                  <span className="inline-flex items-center gap-1 text-[11px] text-warning">
-                    <ShieldAlert className="h-3 w-3" /> Unverified number
-                  </span>
-                )}
               </div>
 
               {/* Pricing and Action Row */}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { defaultStatusesForRole, filterStatusOptionsForRole, queuePriority } from "./use-leads-filter";
+import { defaultStatusesForRole, filterLeadsBySearch, filterStatusOptionsForRole, queuePriority } from "./use-leads-filter";
 
 describe("defaultStatusesForRole", () => {
   it("does not hide converted incomplete forms from Customer Service or owners", () => {
@@ -82,3 +82,51 @@ describe("filterStatusOptionsForRole", () => {
     );
   });
 });
+
+describe("filterLeadsBySearch", () => {
+  const sampleLeads = [
+    { id: "1", fullName: "Gene Mathew", phoneE164: "+971501234567" },
+    { id: "2", fullName: "Ahmed Ali", phoneE164: "+971589876543" },
+    { id: "3", fullName: "Sarah Connor", phoneE164: "+971509998888" },
+  ];
+
+  it("strictly filters only by phone number for call_center role", () => {
+    // Searching name "Gene" returns nothing for call_center
+    const nameMatch = filterLeadsBySearch(sampleLeads, "Gene", "call_center");
+    expect(nameMatch).toHaveLength(0);
+
+    // Searching phone digits or partial returns the matching lead
+    const phoneMatch = filterLeadsBySearch(sampleLeads, "050123", "call_center");
+    expect(phoneMatch).toHaveLength(1);
+    expect(phoneMatch[0].id).toBe("1");
+
+    // Case-insensitive / format-tolerant
+    const intlMatch = filterLeadsBySearch(sampleLeads, "+97158", "call_center");
+    expect(intlMatch).toHaveLength(1);
+    expect(intlMatch[0].id).toBe("2");
+  });
+
+  it("strictly filters only by customer name for purchaser role", () => {
+    // Searching phone returns nothing for purchaser
+    const phoneMatch = filterLeadsBySearch(sampleLeads, "050123", "purchaser");
+    expect(phoneMatch).toHaveLength(0);
+
+    // Searching name returns matching lead (case-insensitive)
+    const nameMatch = filterLeadsBySearch(sampleLeads, "gene", "purchaser");
+    expect(nameMatch).toHaveLength(1);
+    expect(nameMatch[0].id).toBe("1");
+  });
+
+  it("filters by both customer name and phone number for super admin roles", () => {
+    // Name match
+    const nameMatch = filterLeadsBySearch(sampleLeads, "Sarah", "admin");
+    expect(nameMatch).toHaveLength(1);
+    expect(nameMatch[0].id).toBe("3");
+
+    // Phone match
+    const phoneMatch = filterLeadsBySearch(sampleLeads, "9876543", "admin");
+    expect(phoneMatch).toHaveLength(1);
+    expect(phoneMatch[0].id).toBe("2");
+  });
+});
+

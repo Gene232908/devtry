@@ -1,4 +1,5 @@
-import { StaffAccounts } from "@/components/admin/StaffAccounts";
+import { Suspense } from "react";
+import { StaffPageClient } from "@/components/admin/StaffPageClient";
 import { requireAdmin } from "@/lib/server/require-admin";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
 import { ADMIN_PREVIEW } from "@/lib/admin/preview-mode";
@@ -8,11 +9,11 @@ import type { StaffSummary } from "@/lib/admin/staff-schema";
 export const dynamic = "force-dynamic";
 
 /**
- * Standalone Staff Accounts page — Super Admin only.
+ * Standalone Staff Management page — Super Admin only.
  *
- * Previously embedded inside the Settings page. Now has its own sidebar entry
- * and full-page layout so staff management doesn't compete with contact settings
- * for screen space.
+ * Includes switchable tabs:
+ * 1. Staff Accounts & Directory (account provisioning, role assignments, status)
+ * 2. Staff Error & Reversal Report (incident logs, undo reasons, mistake frequency)
  */
 export default async function AdminStaffPage() {
   // Preview mode: render with synthetic data
@@ -24,15 +25,9 @@ export default async function AdminStaffPage() {
       { id: "demo-3", email: "owner@carvibe.ae", displayName: "Sir Nash", role: "admin", isActive: true },
     ];
     return (
-      <div className="flex flex-col gap-6">
-        <div>
-          <h1 className="font-display text-fluid-3 text-text">Staff Accounts</h1>
-          <p className="mt-1 text-fluid--1 text-text-muted">
-            Create, edit, enable, and disable staff accounts. Assign roles to control what each person can see.
-          </p>
-        </div>
-        <StaffAccounts viewer={viewer} initialStaff={demoStaff} canManageStaff={true} />
-      </div>
+      <Suspense fallback={<div className="p-8 text-text-muted text-sm">Loading staff management...</div>}>
+        <StaffPageClient viewer={viewer} initialStaff={demoStaff} canManageStaff={true} />
+      </Suspense>
     );
   }
 
@@ -40,7 +35,7 @@ export default async function AdminStaffPage() {
   if (!admin.ok) {
     return (
       <div className="flex flex-col gap-6">
-        <h1 className="font-display text-fluid-3 text-text">Staff Accounts</h1>
+        <h1 className="font-display text-fluid-3 text-text">Staff Management</h1>
         <p className="text-fluid--1 text-danger">Only Super Admins can manage staff accounts.</p>
       </div>
     );
@@ -63,18 +58,12 @@ export default async function AdminStaffPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="font-display text-fluid-3 text-text">Staff Accounts</h1>
-        <p className="mt-1 text-fluid--1 text-text-muted">
-          Create, edit, enable, and disable staff accounts. Assign roles to control what each person can see.
-        </p>
-      </div>
-      <StaffAccounts
+    <Suspense fallback={<div className="p-8 text-text-muted text-sm">Loading staff management...</div>}>
+      <StaffPageClient
         viewer={admin.identity}
         initialStaff={initialStaff}
         canManageStaff={true}
       />
-    </div>
+    </Suspense>
   );
 }

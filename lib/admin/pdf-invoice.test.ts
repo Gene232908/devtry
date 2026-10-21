@@ -54,6 +54,8 @@ describe("staff payment receipt PDF", () => {
     expect(text).toContain("Developer Test");
     expect(text).toContain("John Carner");
     expect(text).toContain("TOTAL PAID");
+    expect(text).toContain("(Payment Status:) Tj");
+    expect(text).not.toContain("Payment Status: AED");
     expect(text).toContain("94.00");
     expect(click).toHaveBeenCalledOnce();
     expect(removeChild).toHaveBeenCalledOnce();

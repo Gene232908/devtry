@@ -47,7 +47,7 @@ export function downloadStaffInvoicePdf(staff: StaffCommissionForPdf) {
 
   const formatAedNum = (num: number) =>
     "AED " + num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const formatTableAed = (num: number) => "AED " + num.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  const formatTableAed = (num: number) => num.toLocaleString("en-US", { maximumFractionDigits: 0 });
   const fitText = (value: string, maxLength: number) => value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
   const formatClosedDate = (value: string) => {
     const date = new Date(value);
@@ -65,12 +65,12 @@ export function downloadStaffInvoicePdf(staff: StaffCommissionForPdf) {
 
   const isPaymentReceipt = Boolean(staff.confirmedBy);
   const referralBlock = !isPaymentReceipt && referralEntries.length > 0
-    ? `BT\n/F2 9 Tf\n330 688 Td\n(Referral Incentive:) Tj\nET\n` +
-      `BT\n/F2 9 Tf\n460 688 Td\n(${esc(formatAedNum(referralTotal))}) Tj\nET\n` +
-      `BT\n/F2 9 Tf\n330 671 Td\n(Customers Referred:) Tj\nET\n` +
-      `BT\n/F2 9 Tf\n460 671 Td\n(${referralEntries.length}) Tj\nET\n`
+    ? `BT\n/F2 9 Tf\n310 671 Td\n(Referral Incentive:) Tj\nET\n` +
+      `BT\n/F2 9 Tf\n410 671 Td\n(${esc(formatAedNum(referralTotal))}) Tj\nET\n` +
+      `BT\n/F2 9 Tf\n310 654 Td\n(Customers Referred:) Tj\nET\n` +
+      `BT\n/F2 9 Tf\n410 654 Td\n(${referralEntries.length}) Tj\nET\n`
     : "";
-  const paymentStatusY = !isPaymentReceipt && referralEntries.length > 0 ? 654 : 688;
+  const paymentStatusY = 688;
   const receiptConfirmedY = 671;
   const receiptIdY = 654;
   const paymentReceiptBlock = staff.confirmedBy
@@ -86,38 +86,39 @@ export function downloadStaffInvoicePdf(staff: StaffCommissionForPdf) {
     `BT\n/F1 10 Tf\n130 671 Td\n(${rateLabel}) Tj\nET\n` +
     `BT\n/F2 10 Tf\n310 705 Td\n(${dateLabel}) Tj\nET\n` +
     `BT\n/F1 10 Tf\n410 705 Td\n(${esc(now)}) Tj\nET\n` +
-    referralBlock +
     `BT\n/F2 9 Tf\n310 ${paymentStatusY} Td\n(Payment Status:) Tj\nET\n` +
-    `BT\n/F2 10 Tf\n410 ${paymentStatusY} Td\n(${staff.isPaidThisMonth ? "PAID" : "UNPAID / OUTSTANDING"}) Tj\nET\n` + paymentReceiptBlock;
+    `BT\n/F2 10 Tf\n410 ${paymentStatusY} Td\n(${staff.isPaidThisMonth ? "PAID" : "UNPAID / OUTSTANDING"}) Tj\nET\n` +
+    referralBlock +
+    paymentReceiptBlock;
 
   const summaryBox = hidesProfit
-    ? "0.96 0.96 0.96 rg\n40 610 515 42 re\nf\n0.8 0.8 0.8 RG\n40 610 515 42 re\nS\n0 0 0 rg\n" +
-      `BT\n/F2 10 Tf\n55 627 Td\n(Cars Closed: ${staff.totalCarsSold}) Tj\nET\n` +
-      `BT\n/F2 10 Tf\n340 627 Td\n(Total Commission: ${esc(formatAedNum(staff.totalCommission))}) Tj\nET\n`
+    ? "0.96 0.96 0.96 rg\n40 594 515 36 re\nf\n0.8 0.8 0.8 RG\n40 594 515 36 re\nS\n0 0 0 rg\n" +
+      `BT\n/F2 9.5 Tf\n55 607 Td\n(Cars Closed: ${staff.totalCarsSold}) Tj\nET\n` +
+      `BT\n/F2 9.5 Tf\n340 607 Td\n(Total Commission: ${esc(formatAedNum(staff.totalCommission))}) Tj\nET\n`
     :
-    "0.96 0.96 0.96 rg\n40 610 515 42 re\nf\n0.8 0.8 0.8 RG\n40 610 515 42 re\nS\n0 0 0 rg\n" +
-    `BT\n/F2 10 Tf\n55 627 Td\n(Cars Closed: ${staff.totalCarsSold}) Tj\nET\n` +
-    `BT\n/F2 10 Tf\n185 627 Td\n(Total Profit: ${esc(formatAedNum(staff.totalProfit))}) Tj\nET\n` +
-    `BT\n/F2 10 Tf\n370 627 Td\n(Total Commission: ${esc(formatAedNum(staff.totalCommission))}) Tj\nET\n`;
+    "0.96 0.96 0.96 rg\n40 594 515 36 re\nf\n0.8 0.8 0.8 RG\n40 594 515 36 re\nS\n0 0 0 rg\n" +
+    `BT\n/F2 9.5 Tf\n55 607 Td\n(Cars Closed: ${staff.totalCarsSold}) Tj\nET\n` +
+    `BT\n/F2 9.5 Tf\n185 607 Td\n(Total Profit: ${esc(formatAedNum(staff.totalProfit))}) Tj\nET\n` +
+    `BT\n/F2 9.5 Tf\n370 607 Td\n(Total Commission: ${esc(formatAedNum(staff.totalCommission))}) Tj\nET\n`;
 
   const tableHeader = hidesProfit
-    ? "0.12 0.12 0.12 rg\n40 575 515 22 re\nf\n1 1 1 rg\n" +
-      `BT\n/F2 8 Tf\n48 582 Td\n(CUSTOMER) Tj\nET\n` +
-      `BT\n/F2 8 Tf\n180 582 Td\n(CAR DETAILS) Tj\nET\n` +
-      `BT\n/F2 8 Tf\n350 582 Td\n(DATE CLOSED) Tj\nET\n` +
-      `BT\n/F2 8 Tf\n455 582 Td\n(COMMISSION) Tj\nET\n` +
+    ? "0.12 0.12 0.12 rg\n40 552 515 22 re\nf\n1 1 1 rg\n" +
+      `BT\n/F2 8 Tf\n48 559 Td\n(CUSTOMER) Tj\nET\n` +
+      `BT\n/F2 8 Tf\n180 559 Td\n(CAR DETAILS) Tj\nET\n` +
+      `BT\n/F2 8 Tf\n350 559 Td\n(DATE CLOSED) Tj\nET\n` +
+      `BT\n/F2 8 Tf\n455 559 Td\n(COMMISSION) Tj\nET\n` +
       "0 0 0 rg\n"
     :
-    "0.12 0.12 0.12 rg\n40 575 515 22 re\nf\n1 1 1 rg\n" +
-    `BT\n/F2 8 Tf\n48 582 Td\n(CUSTOMER) Tj\nET\n` +
-    `BT\n/F2 8 Tf\n150 582 Td\n(CAR DETAILS) Tj\nET\n` +
-    `BT\n/F2 8 Tf\n290 582 Td\n(DATE CLOSED) Tj\nET\n` +
-    `BT\n/F2 8 Tf\n370 582 Td\n(PROFIT) Tj\nET\n` +
-    `BT\n/F2 8 Tf\n458 582 Td\n(COMMISSION) Tj\nET\n` +
+    "0.12 0.12 0.12 rg\n40 552 515 22 re\nf\n1 1 1 rg\n" +
+    `BT\n/F2 8 Tf\n48 559 Td\n(CUSTOMER) Tj\nET\n` +
+    `BT\n/F2 8 Tf\n150 559 Td\n(CAR DETAILS) Tj\nET\n` +
+    `BT\n/F2 8 Tf\n290 559 Td\n(DATE CLOSED) Tj\nET\n` +
+    `BT\n/F2 8 Tf\n370 559 Td\n(PROFIT) Tj\nET\n` +
+    `BT\n/F2 8 Tf\n458 559 Td\n(COMMISSION) Tj\nET\n` +
     "0 0 0 rg\n";
 
   let tableRows = "";
-  let currentY = 550;
+  let currentY = 528;
 
   roleEntries.forEach((e) => {
     tableRows += `0.9 0.9 0.9 RG\n1 w\n40 ${currentY} m\n555 ${currentY} l\nS\n0 0 0 rg\n`;

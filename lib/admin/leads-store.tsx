@@ -46,6 +46,9 @@ export type LeadPatch = Partial<Lead> & {
   purchasePriceAed?: number;
   /** ISO date. Defaults to now on the server when omitted. */
   purchasedAt?: string;
+  reason?: string;
+  originalArrivedBy?: string;
+  requestArrivalReversal?: boolean;
 };
 
 type LeadsContextValue = {
@@ -246,6 +249,9 @@ export function LeadsProvider({ children, enabled = true }: { children: React.Re
         // without the assignLeads capability.
         if (patch.inspectionScheduledAt !== undefined) body.inspection_scheduled_at = patch.inspectionScheduledAt;
         if (patch.arrivalStatus !== undefined) body.arrival_status = patch.arrivalStatus;
+        if (patch.reason !== undefined) body.reason = patch.reason;
+        if (patch.originalArrivedBy !== undefined) body.original_arrived_by = patch.originalArrivedBy;
+        if (patch.requestArrivalReversal !== undefined) body.request_arrival_reversal = patch.requestArrivalReversal;
         if (patch.estimatedValueAed !== undefined) body.estimated_value_aed = patch.estimatedValueAed;
         if (patch.notes !== undefined) body.notes = patch.notes;
         if (patch.isSpam !== undefined) body.is_spam = patch.isSpam;
