@@ -6,7 +6,7 @@ import { Search, ShieldAlert, X } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { SellCarDialog } from "@/components/admin/SellCarDialog";
-import { formatAed } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import { formatUaeMonth, uaeMonthKey } from "@/lib/uae-time";
 import {
   INVENTORY_FILTER_OPTIONS,
@@ -310,20 +310,20 @@ export default function InventoryClient({
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Summary label="Cars owned" value={String(summary.inStock)} />
-        <Summary label="Capital tied up" value={formatAed(summary.capital)} />
-        <Summary label="Profit from sales" value={formatAed(summary.profit)} />
+        <Summary label="Capital tied up (AED)" value={formatNumber(summary.capital)} />
+        <Summary label="Profit from sales (AED)" value={formatNumber(summary.profit)} />
         <Summary
-          label={isPurchaser ? "Outstanding purchaser commission (10%)" : "Total commission (14%)"}
-          value={formatAed(summary.totalCommission)}
+          label={isPurchaser ? "Outstanding purchaser commission (10%) (AED)" : "Total commission (14%) (AED)"}
+          value={formatNumber(summary.totalCommission)}
           accent
         />
       </div>
 
       {isOwner && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Summary label="Call Centre commission (2%)" value={formatAed(summary.roleProfit.callCenter)} />
-          <Summary label="Purchaser commission (10%)" value={formatAed(summary.roleProfit.purchaser)} />
-          <Summary label="Developer commission (2%)" value={formatAed(summary.roleProfit.developer)} />
+          <Summary label="Call Centre commission (2%) (AED)" value={formatNumber(summary.roleProfit.callCenter)} />
+          <Summary label="Purchaser commission (10%) (AED)" value={formatNumber(summary.roleProfit.purchaser)} />
+          <Summary label="Developer commission (2%) (AED)" value={formatNumber(summary.roleProfit.developer)} />
         </div>
       )}
 

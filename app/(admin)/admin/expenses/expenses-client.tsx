@@ -727,7 +727,7 @@ export default function ExpensesClient({
                       <th className="py-2.5 px-3">Date</th>
                       <th className="py-2.5 px-3">Description / Purpose</th>
                       <th className="py-2.5 px-3">Logged By</th>
-                      <th className="py-2.5 px-3 text-right">Amount</th>
+                      <th className="py-2.5 px-3 text-right">Amount (AED)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
@@ -748,7 +748,7 @@ export default function ExpensesClient({
                           )}
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono font-bold text-gold whitespace-nowrap">
-                          {formatNumber(exp.amountAed)} AED
+                          {formatNumber(exp.amountAed)}
                         </td>
                       </tr>
                     ))}

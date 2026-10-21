@@ -1,11 +1,9 @@
 # TASKS.md
 
-- [x] 2026-10-22 Admin Tables & Commission Currency Label Cleanup (`components/admin/InventoryTable.tsx`, `components/admin/MobileInventoryList.tsx`, `app/(admin)/admin/commission/commission-client.tsx`, `components/admin/leads-table/index.tsx`, `components/admin/leads-table/row.tsx`):
-  - Removed redundant "AED" currency prefixes across Inventory and Commission tables, ensuring row values display clean digits only (`formatNumber`), while moving the currency indicator into column headers (`(AED)`).
-  - Updated `InventoryTable.tsx`: Headers now specify `Paid (AED)`, `Paid amount (AED)`, `Expenses (AED)`, `Net profit (AED)`, `Call Centre (AED)`, `Purchaser (AED)`, `Developer (AED)`; table cells format numbers via `formatNumber`.
-  - Updated `MobileInventoryList.tsx`: Formatted numeric metrics with `formatNumber`.
-  - Updated `commission-client.tsx`: Cleaned Payout Summary breakdown to numeric values; added `(AED)` to Developer monthly breakdown summary and formatted monthly items as clean numbers.
-  - Updated `leads-table`: Header now specifies `Est. Value (AED)` and row values use `formatNumber`.
+- [x] 2026-10-22 Admin Tables, Inventory Cards & Expenses Modal Currency Cleanup (`app/(admin)/admin/expenses/expenses-client.tsx`, `app/(admin)/admin/inventory/inventory-client.tsx`, `components/admin/InventoryTable.tsx`, `components/admin/MobileInventoryList.tsx`, `app/(admin)/admin/commission/commission-client.tsx`, `components/admin/leads-table/index.tsx`, `components/admin/leads-table/row.tsx`):
+  - Cleaned up redundant "AED" currency labels across Inventory KPI cards, Vehicle Expenses breakdown modal, tables, and commission views so rows and cards display clean digits (`formatNumber`), reserving currency indicator for column headers (`(AED)`) and final totals.
+  - Updated `app/(admin)/admin/inventory/inventory-client.tsx`: Summary cards now specify `(AED)` in labels (`Capital tied up (AED)`, `Profit from sales (AED)`, `Total commission (14%) (AED)`, `Call Centre commission (2%) (AED)`, etc.) and display numbers only via `formatNumber`.
+  - Updated `app/(admin)/admin/expenses/expenses-client.tsx`: Vehicle Expenses Breakdown modal header updated to `Amount (AED)` and item rows show digits only (`formatNumber`), preserving `AED` on the final Total Vehicle Expenses card.
   - Verified with Vitest unit tests (314 passed), TypeScript (`npx tsc --noEmit`), and ESLint (`npm run lint`) (all 0 errors/warnings). Pushed to `devtry` on branch `final`.
 
 
