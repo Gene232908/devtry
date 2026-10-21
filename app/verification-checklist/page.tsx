@@ -12,24 +12,36 @@ type CheckItem = {
   see: string;
 };
 
-const CHECKLIST: CheckItem[] = [
-  // 1. Call Center & Booking
+const MEETING_CHECKLIST: CheckItem[] = [
+  // 1. Display & Formatting
   {
     id: "clean-numbers",
-    category: "1. Call Center & Customer Booking",
-    title: "Clean Numbers (No Currency Text Clutter)",
+    category: "1. Display & Formatting",
+    title: "Remove Currency Labels (AED) from Table Columns",
     what: 'Numbers in tables show clean values only. "AED" text is removed from grid columns and only shown on final totals so reports look neat and export cleanly to Excel.',
     how: [
-      "Open the Commission or Inventory tab in the admin dashboard.",
-      "Look at the columns showing amounts (e.g. Purchase Price, Commission).",
+      "Open Commission or Inventory in the admin dashboard.",
+      "Look at the columns showing figures (e.g. Purchase Price, Commission).",
     ],
-    see: 'Numbers are clean without repetitive "AED" text on every single line. Final totals clearly show "AED".',
+    see: 'Numbers are clean digits without repetitive "AED" text on every single line. Final totals clearly show "AED".',
   },
   {
+    id: "clean-dates",
+    category: "1. Display & Formatting",
+    title: "Standardize Date Displays",
+    what: "Date formats across the system are standardized to a clean, consistent format without confusing text or extra letters.",
+    how: [
+      "Check dates displayed in Payment History, Inventory, and Leads.",
+    ],
+    see: "Dates appear clean, uniform, and easy to read across all screens.",
+  },
+
+  // 2. Role-Based Search & Privacy
+  {
     id: "call-center-search",
-    category: "1. Call Center & Customer Booking",
+    category: "2. Role-Based Search & Security",
     title: "Call Center Search (Phone Number Only)",
-    what: "Call Center agents search customers using their mobile number only. Searching by name is blocked to prevent mixing up common UAE names like Mohammed or Ahmed.",
+    what: "Call Center agents search customers by their mobile number only. Searching by name is blocked to prevent mixing up common UAE names like Mohammed or Ahmed.",
     how: [
       "Log in as Call Center (agent@gmail.com).",
       "Type a customer's name in the top search bar (notice it does not filter).",
@@ -37,15 +49,27 @@ const CHECKLIST: CheckItem[] = [
     ],
     see: "The exact matching customer appears immediately with zero risk of wrong records.",
   },
+  {
+    id: "purchaser-privacy",
+    category: "2. Role-Based Search & Security",
+    title: "Purchaser Search (Name Only & Hidden Phone Numbers)",
+    what: "Purchasers can only search by customer name and car details. Customer phone numbers are strictly hidden from purchasers to protect company data.",
+    how: [
+      "Log in as Purchaser (purchaser@gmail.com).",
+      "Search for a customer by name in the top search bar.",
+      "Open the customer record.",
+    ],
+    see: "Customer name and car details are visible, but the customer phone number is hidden/redacted.",
+  },
 
-  // 2. Arrival & Mistakes
+  // 3. Customer Arrival & Mistake Correction
   {
     id: "arrival-phone-verification",
-    category: "2. Customer Arrival & Mistake Correction",
-    title: "Customer Arrival Verification (Phone Number Required)",
-    what: "When a customer arrives at the shop, the agent must enter their phone number before confirming arrival status to guarantee their identity.",
+    category: "3. Customer Arrival & Mistake Correction",
+    title: "Customer Arrival Mobile Number Verification",
+    what: "When a customer arrives at the shop, the agent must enter the customer's registered phone number before marking them as 'Arrived' to guarantee their identity.",
     how: [
-      "Open any customer with an Inspection Scheduled status.",
+      "In Call Center view, open a customer with an Inspection Scheduled status.",
       "Click to confirm Customer Arrived.",
       "Enter the customer's registered mobile number when prompted.",
     ],
@@ -53,9 +77,9 @@ const CHECKLIST: CheckItem[] = [
   },
   {
     id: "revert-arrival-mistake",
-    category: "2. Customer Arrival & Mistake Correction",
-    title: "Fixing Mistakes: Reverting Arrived Status with Reason",
-    what: "If an agent accidentally marks the wrong customer as arrived, Super Admin (Sir Nash) can turn it off. Agents can submit a reversal request with a written reason.",
+    category: "3. Customer Arrival & Mistake Correction",
+    title: "Arrival Status Reversion with Mandatory Reason",
+    what: "If an agent accidentally marks the wrong customer as arrived, Super Admin (Sir Nash) can turn it off. Agents can submit a reversal request with a mandatory reason.",
     how: [
       "As Super Admin, open a lead that was marked arrived.",
       "Click to turn off arrival status.",
@@ -65,7 +89,7 @@ const CHECKLIST: CheckItem[] = [
   },
   {
     id: "staff-error-report",
-    category: "2. Customer Arrival & Mistake Correction",
+    category: "3. Customer Arrival & Mistake Correction",
     title: "Staff Mistake & Reversal Report",
     what: "A dedicated audit report where Sir Nash can see which staff member made arrival mistakes, the reasons entered, and how often it happened this month.",
     how: [
@@ -76,32 +100,21 @@ const CHECKLIST: CheckItem[] = [
   },
   {
     id: "purchaser-arrival-alert",
-    category: "2. Customer Arrival & Mistake Correction",
+    category: "3. Customer Arrival & Mistake Correction",
     title: "Purchaser Email Alert on Customer Arrival",
-    what: "When a customer is confirmed arrived at the shop, the assigned Purchaser receives an instant email alert so they know the customer is waiting outside.",
+    what: "When a customer is confirmed arrived at the shop, the assigned Purchaser receives an automated email notification so they know the customer is waiting outside.",
     how: [
       "Confirm a customer's arrival in the dashboard.",
     ],
     see: "An automated arrival alert email is triggered for the assigned Purchaser and management inbox.",
   },
 
-  // 3. Purchaser & Inspection
-  {
-    id: "purchaser-privacy",
-    category: "3. Vehicle Inspection Workflow",
-    title: "Purchaser Privacy (No Customer Phone Numbers)",
-    what: "Purchasers can only search by customer name and car details. Customer phone numbers are strictly hidden from Purchasers to protect company customer data.",
-    how: [
-      "Log in as Purchaser (purchaser@gmail.com).",
-      "Open any assigned customer record.",
-    ],
-    see: "Customer name and vehicle details are clearly visible, but phone numbers are hidden/redacted.",
-  },
+  // 4. Vehicle Inspection
   {
     id: "pass-all-inspection",
-    category: "3. Vehicle Inspection Workflow",
-    title: "Fast Vehicle Inspection ('Pass All' in One Click)",
-    what: "The inspection form has a 'Pass All Components' button to check all parts at once, saving the inspector 10 minutes of manual clicking.",
+    category: "4. Vehicle Inspection",
+    title: "Inspection Form 'Select All Pass' Button",
+    what: "The vehicle inspection form has a 'Pass All Components' button to check all parts at once, saving the inspector 10 minutes of manual clicking.",
     how: [
       "Open a lead as Purchaser and click 'Start Inspection'.",
       "Click the 'Pass All Components' button.",
@@ -111,79 +124,41 @@ const CHECKLIST: CheckItem[] = [
     see: "All items turn green instantly. Inspector only changes the defective parts and downloads a clean PDF report.",
   },
 
-  // 4. Expenses & Review
+  // 5. Expenses
   {
-    id: "car-specific-expenses",
-    category: "4. Expenses & Financial Review",
-    title: "Car-Specific Expenses (Coffee, Towing, Washing)",
-    what: "Operational costs (towing, coffee for customer, RTA inspection, washing) are added directly under that specific car's record.",
+    id: "car-expenses-tab",
+    category: "5. Expense Tracking",
+    title: "Car-Specific Expense Tracking & Summary Tab",
+    what: "Operational costs (towing, coffee for customer, washing) are added directly under that vehicle, and a dedicated Expenses tab shows all company expenses.",
     how: [
-      "Open a customer record under negotiation or after deal.",
-      "Click 'Add Expense', enter Towing (500 AED) or Coffee (10 AED), and save.",
+      "Open a customer record under negotiation or after deal, click 'Add Expense', enter Towing (500 AED) or Coffee (10 AED), and save.",
+      "Click Expenses in the sidebar to view the total summary filtered by Day, Week, Month, Year, or All Time.",
     ],
-    see: "The expense is attached directly to that vehicle and subtracted from the car's gross profit.",
-  },
-  {
-    id: "expenses-summary-tab",
-    category: "4. Expenses & Financial Review",
-    title: "Standalone Expenses Tab & Export (PDF & Excel)",
-    what: "A dedicated Expenses page in the sidebar allowing Sir Nash to view total expenses filtered by Day, Week, Month, Year, or All Time, with 1-click PDF/Excel export.",
-    how: [
-      "Click Expenses in the sidebar.",
-      "Change the time period filter (Day, Week, Month, Year).",
-      "Click the Export button and choose PDF or Excel.",
-    ],
-    see: "A clean, executive report showing total expenses, car details, date, and staff member, with clean formatting and no clutter.",
-  },
-  {
-    id: "super-admin-expense-review",
-    category: "4. Expenses & Financial Review",
-    title: "Super Admin Expense Review Before Finalizing Profit",
-    what: "Sir Nash reviews and confirms all pending expenses for a car before the deal is finalized, preventing surprise costs from hurting margins.",
-    how: [
-      "As Super Admin, open a purchased vehicle in Inventory.",
-      "Review the listed expenses. Add any missing cost (e.g. washing).",
-      "Click 'Confirm Expenses Complete'.",
-    ],
-    see: "The vehicle financials lock in, calculating the true net profit and staff commissions.",
+    see: "Expenses attach directly to the car, subtract from gross profit, and appear in the executive Expenses tab with 1-click PDF/Excel export.",
   },
 
-  // 5. Inventory, Sales & Commission
+  // 6. Super Admin Access & Control
   {
-    id: "inventory-sale-profit",
-    category: "5. Inventory, Sales & Commission",
-    title: "Vehicle Inventory & Net Profit Calculation",
-    what: "When a deal is agreed, the car moves into Inventory. When sold to a buyer, typing the sale price automatically computes net profit and commissions.",
+    id: "super-admin-access",
+    category: "6. Super Admin Access & Permissions",
+    title: "Unlimited Super Admin System Access",
+    what: "Super Admin accounts (Sir Nash) maintain complete, unrestricted access across all screens, financial records, expenses, and staff controls.",
     how: [
-      "In Inventory, find an unsold car bought for 10,000 AED.",
-      "Enter a sale price of 15,000 AED and mark it as Sold.",
+      "Log in as Super Admin.",
+      "Navigate across all sidebar tabs (Overview, Leads, Scrap Inquiries, Inventory, Expenses, Commission, Staff Management, Settings).",
     ],
-    see: "Net profit is calculated automatically (Sale Price minus Purchase Price minus Expenses).",
+    see: "Full access to view, edit, override, and manage all records across the entire system.",
   },
   {
-    id: "early-commission-payout",
-    category: "5. Inventory, Sales & Commission",
-    title: "Early Staff Commission Payout & Official Receipt",
-    what: "If a staff member needs an emergency advance before month-end, Sir Nash can select specific sales, pay them early, and print a receipt.",
+    id: "multi-device-login",
+    category: "6. Super Admin Access & Permissions",
+    title: "Super Admin Simultaneous Multi-Device Login",
+    what: "Company owners can log in to the Super Admin account from multiple devices or browsers at the same time without getting kicked out.",
     how: [
-      "Open Commission in the sidebar.",
-      "Select assisted sales for a staff member.",
-      "Click 'Pay Selected' and confirm.",
-      "Click 'Download Invoice'.",
+      "Log in to Super Admin on a laptop.",
+      "Log in to Super Admin on a second laptop or mobile browser at the same time.",
     ],
-    see: "Amount is subtracted from pending balance and a professional PDF receipt with a unique Receipt ID is generated.",
-  },
-  {
-    id: "staff-management-credentials",
-    category: "5. Inventory, Sales & Commission",
-    title: "Staff Management (Edit Email, Password & Super Admin Role)",
-    what: "Sir Nash can create staff accounts and edit their Email, Password (reset credentials), and Role (Super Admin, Call Centre, Purchaser). Multiple people can log in to Super Admin simultaneously.",
-    how: [
-      "Go to Staff Management in the sidebar.",
-      "Click the pencil (Edit) icon on any account.",
-      "Update email, password, or role, and click Save changes.",
-    ],
-    see: "Credentials update smoothly. If a duplicate email is entered, the system clearly alerts that the email is already in use.",
+    see: "Both sessions stay active simultaneously for administrative oversight.",
   },
 ];
 
@@ -194,7 +169,7 @@ export default function VerificationChecklistPage() {
   // Load from localStorage on mount
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("carvibe_nash_verification_v1");
+      const saved = localStorage.getItem("carvibe_nash_meeting_checklist_v2");
       if (saved) setCheckedMap(JSON.parse(saved));
     } catch {
       // ignore
@@ -205,7 +180,7 @@ export default function VerificationChecklistPage() {
     setCheckedMap((prev) => {
       const next = { ...prev, [id]: !prev[id] };
       try {
-        localStorage.setItem("carvibe_nash_verification_v1", JSON.stringify(next));
+        localStorage.setItem("carvibe_nash_meeting_checklist_v2", JSON.stringify(next));
       } catch {
         // ignore
       }
@@ -217,7 +192,7 @@ export default function VerificationChecklistPage() {
     if (confirm("Reset all verification checks back to uncompleted?")) {
       setCheckedMap({});
       try {
-        localStorage.removeItem("carvibe_nash_verification_v1");
+        localStorage.removeItem("carvibe_nash_meeting_checklist_v2");
       } catch {
         // ignore
       }
@@ -225,17 +200,17 @@ export default function VerificationChecklistPage() {
   }
 
   const completedCount = Object.values(checkedMap).filter(Boolean).length;
-  const progressPercent = Math.round((completedCount / CHECKLIST.length) * 100);
+  const progressPercent = Math.round((completedCount / MEETING_CHECKLIST.length) * 100);
 
   function copyForGoogleDocs() {
     let text = `# CarVibe Dubai — System Verification Checklist for Sir Nash\n\n`;
     text += `Target: Milestone 4 Go-Live & Simulation Testing\n`;
-    text += `Basis: Oct 18, 2026 Strategy Meeting & Updated System\n\n`;
-    text += `Progress: ${completedCount} of ${CHECKLIST.length} Completed (${progressPercent}%)\n\n`;
+    text += `Basis: October 18, 2026 Strategy Meeting Action Items\n\n`;
+    text += `Progress: ${completedCount} of ${MEETING_CHECKLIST.length} Completed (${progressPercent}%)\n\n`;
     text += `---\n\n`;
 
     let currentCategory = "";
-    for (const item of CHECKLIST) {
+    for (const item of MEETING_CHECKLIST) {
       if (item.category !== currentCategory) {
         currentCategory = item.category;
         text += `\n## ${currentCategory}\n\n`;
@@ -257,7 +232,7 @@ export default function VerificationChecklistPage() {
   }
 
   // Group by category
-  const categories = Array.from(new Set(CHECKLIST.map((item) => item.category)));
+  const categories = Array.from(new Set(MEETING_CHECKLIST.map((item) => item.category)));
 
   return (
     <div className="min-h-screen bg-[#0A0D12] text-[#F0F6FC] px-4 py-8 sm:px-6 lg:px-8 font-sans">
@@ -268,13 +243,13 @@ export default function VerificationChecklistPage() {
             <div>
               <div className="inline-flex items-center gap-2 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/30 px-3 py-1 text-xs font-semibold text-[#D4AF37] uppercase tracking-wider mb-2">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                Owner Simulation Testing
+                Meeting Action Items Verification
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
                 CarVibe Dubai Verification Checklist
               </h1>
               <p className="text-sm text-[#8B949E] mt-1">
-                Prepared for Sir Nash • Based on the October 18, 2026 Strategy Meeting
+                Prepared for Sir Nash • Based strictly on the October 18, 2026 Meeting Action Items
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -291,8 +266,8 @@ export default function VerificationChecklistPage() {
           </div>
 
           <p className="text-sm text-[#C9D1D9] leading-relaxed mb-6 bg-[#0D1117]/60 p-4 rounded-lg border border-[#30363D]">
-            Welcome, Sir Nash! This simplified checklist has <b>14 practical checks</b> covering every feature from our meeting.
-            No technical knowledge is required. Simply follow the short steps, check the result, and tick the box.
+            Welcome, Sir Nash! This checklist contains the <b>12 exact tasks</b> agreed upon in our October 18 meeting.
+            Nothing extra has been added. Simply follow the short steps for each feature, observe the result, and tick the verification box.
           </p>
 
           {/* Progress Bar */}
@@ -300,7 +275,7 @@ export default function VerificationChecklistPage() {
             <div className="flex items-center justify-between text-xs font-medium">
               <span className="text-[#8B949E]">Simulation Progress</span>
               <span className="text-[#D4AF37] font-semibold">
-                {completedCount} of {CHECKLIST.length} Verified ({progressPercent}%)
+                {completedCount} of {MEETING_CHECKLIST.length} Verified ({progressPercent}%)
               </span>
             </div>
             <div className="w-full bg-[#21262D] rounded-full h-2.5 overflow-hidden">
@@ -315,15 +290,15 @@ export default function VerificationChecklistPage() {
           <div className="flex flex-wrap items-center gap-3 mt-6 pt-4 border-t border-[#30363D]">
             <button
               onClick={copyForGoogleDocs}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#D4AF37] px-4 py-2 text-xs font-semibold text-black hover:bg-[#E6C65C] transition shadow-md"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#D4AF37] px-4 py-2 text-xs font-semibold text-black hover:bg-[#E6C65C] transition shadow-md cursor-pointer"
             >
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              {copied ? "Copied to Clipboard!" : "Copy for Google Docs"}
+              {copied ? "Copied to Clipboard!" : "Copy Clean Text for Google Docs"}
             </button>
 
             <button
               onClick={() => window.print()}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[#30363D] bg-[#21262D] px-3.5 py-2 text-xs font-medium text-white hover:bg-[#30363D] transition"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#30363D] bg-[#21262D] px-3.5 py-2 text-xs font-medium text-white hover:bg-[#30363D] transition cursor-pointer"
             >
               <Printer className="w-4 h-4 text-[#8B949E]" />
               Print / Save PDF
@@ -332,7 +307,7 @@ export default function VerificationChecklistPage() {
             {completedCount > 0 && (
               <button
                 onClick={resetAll}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-transparent px-3 py-2 text-xs font-medium text-[#8B949E] hover:text-[#F85149] transition ml-auto"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-transparent px-3 py-2 text-xs font-medium text-[#8B949E] hover:text-[#F85149] transition ml-auto cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 Reset
@@ -344,7 +319,7 @@ export default function VerificationChecklistPage() {
         {/* Checklist Categories */}
         <div className="space-y-8">
           {categories.map((category) => {
-            const categoryItems = CHECKLIST.filter((i) => i.category === category);
+            const categoryItems = MEETING_CHECKLIST.filter((i) => i.category === category);
             return (
               <section key={category} className="space-y-3">
                 <h2 className="text-lg font-semibold text-[#D4AF37] tracking-wide flex items-center gap-2 border-b border-[#21262D] pb-2">
@@ -415,7 +390,7 @@ export default function VerificationChecklistPage() {
 
         {/* Footer */}
         <div className="mt-12 text-center text-xs text-[#8B949E] border-t border-[#21262D] pt-6 pb-8">
-          <p>CarVibe Dubai • Milestone 4 Final Rollout • Simulation Readiness</p>
+          <p>CarVibe Dubai • Milestone 4 Final Rollout • Meeting Action Items Verification</p>
           <p className="mt-1">Reviewer: Sir Nyash (Owner) • October 2026</p>
         </div>
       </div>
