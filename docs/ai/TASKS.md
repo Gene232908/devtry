@@ -1,8 +1,10 @@
 # TASKS.md
 
-- [x] 2026-10-22 Commission Payout Summary Currency Label Cleanup (`app/(admin)/admin/commission/commission-client.tsx`):
+- [x] 2026-10-22 Commission Payout Summary & Staff Table Currency Label Cleanup (`app/(admin)/admin/commission/commission-client.tsx`):
   - Removed redundant "AED" currency prefixes from the Staff commissions and Developer share breakdown lines in the Payout Summary card so they display numbers only (`formatNumber`), while preserving the AED currency prefix on the final combined payout total (`formatAed`).
-  - Verified with TypeScript check and ESLint (0 errors). Pushed to `devtry` on branch `final`.
+  - Added "(AED)" currency suffix to the Staff Commissions table column headers ("Paid amount (AED)", "Expenses (AED)", "Net profit (AED)", "Commission (AED)", and "Total Profit (AED)").
+  - Converted table cell values in the Staff Commissions table from `formatAed(...)` to `formatNumber(...)` so rows display clean numeric values without repetitive currency symbols.
+  - Verified with Vitest unit tests, TypeScript check (`npx tsc --noEmit`), and ESLint (`npm run lint`) (all 0 errors). Pushed to `devtry` on branch `final`.
 
 
 - [x] 2026-10-21 Sir Nash System Verification Checklist & Online Live Guide (`app/verification-checklist/page.tsx`, `docs/client/Sir_Nash_Verification_Checklist.md`, `.docx`, `.html`, `scripts/generate_verification_checklist_docx.mjs`):

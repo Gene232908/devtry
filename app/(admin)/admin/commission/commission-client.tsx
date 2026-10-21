@@ -687,18 +687,18 @@ function StaffCommissionView({
                   <th className="w-[15%] py-2 pr-4 font-normal">Name</th>
                   <th className="w-[8%] py-2 pr-4 text-right font-normal">Unpaid Sales</th>
                   {showFinancialColumns && <>
-                    <th className="w-[12%] py-2 pr-4 text-right font-normal">Paid amount</th>
-                    <th className="w-[11%] py-2 pr-4 text-right font-normal">Expenses</th>
-                    <th className="w-[13%] py-2 pr-4 text-right font-normal">Net profit</th>
+                    <th className="w-[12%] py-2 pr-4 text-right font-normal">Paid amount (AED)</th>
+                    <th className="w-[11%] py-2 pr-4 text-right font-normal">Expenses (AED)</th>
+                    <th className="w-[13%] py-2 pr-4 text-right font-normal">Net profit (AED)</th>
                   </>}
-                  {!hideProfit && !showFinancialColumns && <th className="w-[15%] py-2 pr-4 text-right font-normal">Total Profit</th>}
+                  {!hideProfit && !showFinancialColumns && <th className="w-[15%] py-2 pr-4 text-right font-normal">Total Profit (AED)</th>}
                   {/* Extra right padding (pr-8, not pr-4) on purpose: this
                       column is right-aligned and the next one is left-aligned,
                       so their content would otherwise sit directly against
                       each other with nothing but the column boundary between
-                      "AED 400" and "Unpaid". The padding pulls the number back
+                      "400" and "Unpaid". The padding pulls the number back
                       from that boundary to open up real breathing room. */}
-                  <th className="w-[11%] py-2 pr-8 text-right font-normal">Commission</th>
+                  <th className="w-[11%] py-2 pr-8 text-right font-normal">Commission (AED)</th>
                   <th className="w-[9%] py-2 pr-4 font-normal">Status</th>
                   <th className="w-[21%] py-2 pr-1 font-normal"></th>
                 </tr>
@@ -716,12 +716,12 @@ function StaffCommissionView({
                     </td>
                     <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{staff.totalCarsSold}</td>
                     {showFinancialColumns && <>
-                      <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{formatAed(getStaffFinancialSummary(staff).soldFor)}</td>
-                      <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{formatAed(getStaffFinancialSummary(staff).expenses)}</td>
-                      <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{formatAed(getStaffFinancialSummary(staff).netProfit)}</td>
+                      <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{formatNumber(getStaffFinancialSummary(staff).soldFor)}</td>
+                      <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{formatNumber(getStaffFinancialSummary(staff).expenses)}</td>
+                      <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{formatNumber(getStaffFinancialSummary(staff).netProfit)}</td>
                     </>}
-                    {!hideProfit && !showFinancialColumns && <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{formatAed(staff.totalProfit)}</td>}
-                    <td className="py-3 pr-8 text-right tabular-nums text-gold">{formatAed(staff.totalCommission)}</td>
+                    {!hideProfit && !showFinancialColumns && <td className="py-3 pr-4 text-right tabular-nums text-text-muted">{formatNumber(staff.totalProfit)}</td>}
+                    <td className="py-3 pr-8 text-right tabular-nums text-gold">{formatNumber(staff.totalCommission)}</td>
                     <td className="py-3 pr-4">
                       {staff.totalCarsSold === 0 && staff.paidAt === null ? (
                         <span className="inline-flex whitespace-nowrap rounded-full bg-surface-2 px-2 py-0.5 text-[0.72rem] text-text-faint">
