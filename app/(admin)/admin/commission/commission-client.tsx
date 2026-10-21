@@ -386,9 +386,9 @@ export default function CommissionClient({
   const pageTitle = isStaffSelfViewer ? "My Commission" : "Commission";
 
   const pageDesc = isAgentViewer
-    ? "Track your 2% commission and download statement invoices for your closed deals."
+    ? "Track your 2% commission for your closed deals."
     : isPurchaserViewer
-    ? "Track your earnings and download statement invoices for your closed deals (10% of profit per car)."
+    ? "Track your earnings for your closed deals (10% of profit per car)."
     : "Review agent, purchaser, and developer commission in one place.";
 
   return (
@@ -1011,7 +1011,7 @@ function StaffDetailModal({
 
         {/* Footer */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-4">
-          {staff.totalCommission > 0 ? (
+          {canPay && staff.totalCommission > 0 ? (
             <Button variant="outline" onClick={() => downloadStaffInvoicePdf(staff)} size="sm">
               <Download className="h-4 w-4" /> Download Invoice (PDF)
             </Button>

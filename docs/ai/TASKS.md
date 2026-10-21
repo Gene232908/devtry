@@ -1,5 +1,11 @@
 # TASKS.md
 
+- [x] 2026-10-22 Restrict Download Invoice (PDF) to Super Admin / Owner (`app/(admin)/admin/commission/commission-client.tsx`):
+  - Hid the "Download Invoice (PDF)" button in the commission details modal from Customer Service (`call_center`) and Purchaser staff self-views (`canPay = false`).
+  - Preserved invoice downloading privileges exclusively for Super Admin / Owner accounts (`canPay = true`).
+  - Updated Customer Service and Purchaser commission page descriptions to remove invoice download references.
+  - Verified with Vitest unit tests (22/22 passing), TypeScript (`npx tsc --noEmit`), and ESLint (`npm run lint`) (0 errors/warnings). Pushed to `devtry` on branch `final`.
+
 - [x] 2026-10-22 Admin Tables, Inventory Cards & Expenses Modal Currency Cleanup (`app/(admin)/admin/expenses/expenses-client.tsx`, `app/(admin)/admin/inventory/inventory-client.tsx`, `components/admin/InventoryTable.tsx`, `components/admin/MobileInventoryList.tsx`, `app/(admin)/admin/commission/commission-client.tsx`, `components/admin/leads-table/index.tsx`, `components/admin/leads-table/row.tsx`):
   - Cleaned up redundant "AED" currency labels across Inventory KPI cards, Vehicle Expenses breakdown modal, tables, and commission views so rows and cards display clean digits (`formatNumber`), reserving currency indicator for column headers (`(AED)`) and final totals.
   - Updated `app/(admin)/admin/inventory/inventory-client.tsx`: Summary cards now specify `(AED)` in labels (`Capital tied up (AED)`, `Profit from sales (AED)`, `Total commission (14%) (AED)`, `Call Centre commission (2%) (AED)`, etc.) and display numbers only via `formatNumber`.
