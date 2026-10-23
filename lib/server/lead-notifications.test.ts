@@ -63,8 +63,8 @@ describe("lead notification SMTP configuration", () => {
     expect(text).not.toContain("Not provided");
   });
 
-  it("formats arrival notification text with vehicle, purchaser, and time", () => {
-    const text = formatCustomerArrivalText({
+  it("formats arrival notification text with vehicle, purchaser, time, and inquiry type", () => {
+    const textValuation = formatCustomerArrivalText({
       leadId: "lead-123",
       customerName: "Mohammed Al Hashimi",
       vehicle: "2026 Jetour T2 Luxury",
@@ -74,13 +74,29 @@ describe("lead notification SMTP configuration", () => {
       inquiryType: "valuation",
     });
 
-    expect(text).toContain("Customer Name: Mohammed Al Hashimi");
-    expect(text).toContain("Vehicle: 2026 Jetour T2 Luxury");
-    expect(text).toContain("Assigned Purchaser: Purchaser John");
-    expect(text).toContain("Confirmed By: Agent Sarah");
-    expect(text).toContain("Arrival Time: 20 Oct 2026, 17:30 (UAE)");
+    expect(textValuation).toContain("Inquiry Type: Valuation Lead");
+    expect(textValuation).toContain("Customer Name: Mohammed Al Hashimi");
+    expect(textValuation).toContain("Vehicle: 2026 Jetour T2 Luxury");
+    expect(textValuation).toContain("Assigned Purchaser: Purchaser John");
+    expect(textValuation).toContain("Confirmed By: Agent Sarah");
+    expect(textValuation).toContain("Arrival Time: 20 Oct 2026, 17:30 (UAE)");
+    expect(textValuation).toContain("/admin/leads/lead-123");
 
-    const html = formatCustomerArrivalHtml({
+    const textScrap = formatCustomerArrivalText({
+      leadId: "lead-789",
+      customerName: "Rashid Salem",
+      vehicle: "2018 Toyota Corolla",
+      purchaserName: "Purchaser Ali",
+      confirmedByName: "Agent Sarah",
+      arrivedAt: "23 Oct 2026, 12:00 (UAE)",
+      inquiryType: "scrap",
+    });
+
+    expect(textScrap).toContain("[Scrap Inquiry]");
+    expect(textScrap).toContain("Inquiry Type: Scrap Inquiry");
+    expect(textScrap).toContain("/admin/leads/lead-789?origin=scrap");
+
+    const htmlValuation = formatCustomerArrivalHtml({
       leadId: "lead-123",
       customerName: "Mohammed Al Hashimi",
       vehicle: "2026 Jetour T2 Luxury",
@@ -90,10 +106,25 @@ describe("lead notification SMTP configuration", () => {
       inquiryType: "valuation",
     });
 
-    expect(html).toContain("Mohammed Al Hashimi");
-    expect(html).toContain("2026 Jetour T2 Luxury");
-    expect(html).toContain("Purchaser John");
-    expect(html).toContain("/admin/leads/lead-123");
+    expect(htmlValuation).toContain("Valuation Lead");
+    expect(htmlValuation).toContain("Mohammed Al Hashimi");
+    expect(htmlValuation).toContain("2026 Jetour T2 Luxury");
+    expect(htmlValuation).toContain("Purchaser John");
+    expect(htmlValuation).toContain("/admin/leads/lead-123");
+
+    const htmlScrap = formatCustomerArrivalHtml({
+      leadId: "lead-789",
+      customerName: "Rashid Salem",
+      vehicle: "2018 Toyota Corolla",
+      purchaserName: "Purchaser Ali",
+      confirmedByName: "Agent Sarah",
+      arrivedAt: "23 Oct 2026, 12:00 (UAE)",
+      inquiryType: "scrap",
+    });
+
+    expect(htmlScrap).toContain("Scrap / Salvage Inquiry");
+    expect(htmlScrap).toContain("Scrap Inquiry (Salvage Vehicle)");
+    expect(htmlScrap).toContain("/admin/leads/lead-789?origin=scrap");
   });
 
   it("formats arrival reversal approval request notification for Sir Nash", () => {
@@ -105,13 +136,16 @@ describe("lead notification SMTP configuration", () => {
       requesterRole: "call_center",
       reason: "Customer rescheduled to tomorrow; clicked arrival by mistake",
       requestedAt: "22 Oct 2026, 01:45 (UAE)",
+      inquiryType: "scrap",
     });
 
-    expect(text).toContain("Arrival Reversal Approval Request");
+    expect(text).toContain("Arrival Reversal Approval Request [Scrap Inquiry]");
+    expect(text).toContain("Inquiry Type: Scrap Inquiry");
     expect(text).toContain("Agent1 (Customer Service (Call Centre))");
     expect(text).toContain("Sultan Al Qasimi");
     expect(text).toContain("2024 Nissan Patrol");
     expect(text).toContain("Customer rescheduled to tomorrow");
+    expect(text).toContain("/admin/leads/lead-456?origin=scrap");
 
     const html = formatArrivalReversalHtml({
       leadId: "lead-456",
@@ -121,9 +155,11 @@ describe("lead notification SMTP configuration", () => {
       requesterRole: "call_center",
       reason: "Customer rescheduled to tomorrow; clicked arrival by mistake",
       requestedAt: "22 Oct 2026, 01:45 (UAE)",
+      inquiryType: "valuation",
     });
 
     expect(html).toContain("Customer Arrival Reversal Request");
+    expect(html).toContain("Valuation Lead");
     expect(html).toContain("Agent1");
     expect(html).toContain("Customer Service (Call Centre)");
     expect(html).toContain("Sultan Al Qasimi");

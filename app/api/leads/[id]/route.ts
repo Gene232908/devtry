@@ -463,6 +463,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       leadId: id,
       customerName: current.full_name || "Valuation Customer",
       vehicle: carVehicle,
+      inquiryType: current.inquiry_type ?? "valuation",
       requesterName,
       requesterRole,
       reason: reasonText,
