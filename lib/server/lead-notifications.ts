@@ -16,7 +16,7 @@ type NewLeadNotification = {
   createdAt: string;
 };
 
-const SMTP_TIMEOUT_MS = 8_000;
+const SMTP_TIMEOUT_MS = 15_000;
 
 function smtpConfig() {
   const user = (process.env.LEAD_NOTIFICATION_SMTP_USER ?? process.env.GMAIL_SMTP_USER)?.trim();
@@ -35,8 +35,11 @@ function smtpConfig() {
 function transport() {
   const config = smtpConfig();
   if (!config) return null;
+  // Use port 465 SSL directly to prevent connection drops on Vercel/serverless
   return nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
     auth: { user: config.user, pass: config.pass },
   });
 }
@@ -226,10 +229,39 @@ export async function dispatchArrivalNotification(
     purchaserName = purchaserProfile?.display_name ?? null;
   }
 
-  const recipients = ["carvibe@cresvcs.com"];
-  if (purchaserEmail) {
-    recipients.push(purchaserEmail);
-  }
+  // 1. Fetch current Notify email from Settings
+  let notifyEmail: string | null = null;
+  try {
+    const { data: settings } = await supabase
+      .from("settings")
+      .select("notify_email")
+      .eq("id", 1)
+      .maybeSingle();
+    if (typeof settings?.notify_email === "string" && settings.notify_email.trim()) {
+      notifyEmail = settings.notify_email.trim();
+    }
+  } catch {}
+
+  // 2. Fetch active Super Admin / Manager emails
+  let adminEmails: string[] = [];
+  try {
+    const { data: adminProfiles } = await supabase
+      .from("profiles")
+      .select("email")
+      .in("role", ["admin", "manager"])
+      .eq("is_active", true);
+    adminEmails = (adminProfiles ?? []).map((p: { email: string }) => p.email?.trim()).filter(Boolean);
+  } catch {}
+
+  const config = smtpConfig();
+  const recipients = [
+    notifyEmail,
+    ...adminEmails,
+    purchaserEmail,
+    "carvibe@cresvcs.com",
+    "carvibedubai@cresvcs.com",
+    config?.user,
+  ].filter((r): r is string => Boolean(r && r.includes("@")));
 
   try {
     await sendCustomerArrivalNotification(recipients, {
@@ -360,6 +392,8 @@ export async function sendArrivalReversalNotification(
 }
 
 export async function dispatchArrivalReversalRequestNotification(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
   params: {
     leadId: string;
     customerName: string;
@@ -369,7 +403,38 @@ export async function dispatchArrivalReversalRequestNotification(
     reason: string;
   },
 ): Promise<void> {
-  const recipients = ["carvibe@cresvcs.com"];
+  // 1. Fetch current Notify email from Settings
+  let notifyEmail: string | null = null;
+  try {
+    const { data: settings } = await supabase
+      .from("settings")
+      .select("notify_email")
+      .eq("id", 1)
+      .maybeSingle();
+    if (typeof settings?.notify_email === "string" && settings.notify_email.trim()) {
+      notifyEmail = settings.notify_email.trim();
+    }
+  } catch {}
+
+  // 2. Fetch active Super Admin / Manager emails
+  let adminEmails: string[] = [];
+  try {
+    const { data: adminProfiles } = await supabase
+      .from("profiles")
+      .select("email")
+      .in("role", ["admin", "manager"])
+      .eq("is_active", true);
+    adminEmails = (adminProfiles ?? []).map((p: { email: string }) => p.email?.trim()).filter(Boolean);
+  } catch {}
+
+  const config = smtpConfig();
+  const recipients = [
+    notifyEmail,
+    ...adminEmails,
+    "carvibe@cresvcs.com",
+    "carvibedubai@cresvcs.com",
+    config?.user,
+  ].filter((r): r is string => Boolean(r && r.includes("@")));
 
   try {
     await sendArrivalReversalNotification(recipients, {
