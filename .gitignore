@@ -72,3 +72,40 @@ next-env.d.ts
 # raw local image dumps/backups
 /public/images/WhatsApp Image *.jpeg
 /public/images/old/
+
+# env files of any kind (only the placeholder template is committed)
+.env
+.env.*
+!.env.example
+
+# keys / certificates
+*.key
+*.p12
+*.pfx
+
+# database dumps and backups (supabase/migrations/*.sql stay tracked)
+*.dump
+*.sql.gz
+*.backup
+/backups/
+supabase/.temp/
+supabase/.branches/
+
+# logs, temp, editor and OS leftovers
+*.log
+devlog.txt
+*.bak
+*.orig
+*.tmp
+*.swp
+Thumbs.db
+desktop.ini
+
+# archives
+*.zip
+*.tar
+*.tar.gz
+
+# confidential client and third-party documents (kept locally, never committed)
+/docs/transcript/
+/docs/Inspection Report*.pdf
