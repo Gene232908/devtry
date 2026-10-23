@@ -9,6 +9,7 @@ import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { ROLE_LABELS, type StaffIdentity } from "@/lib/auth/permissions";
 import { useLeads } from "@/lib/admin/leads-store";
 import { ManualLeadDialog } from "@/components/admin/ManualLeadDialog";
+import { ReversalRequestBell } from "@/components/admin/ReversalRequestBell";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -87,6 +88,9 @@ export function Topbar({ onMenuClick, identity }: Props) {
             <span className="tracking-wide"><span className="hidden xs:inline">Add </span>Lead</span>
           </button>
         )}
+
+        {/* Super Admin / Manager only: pending arrival reversal requests */}
+        <ReversalRequestBell identity={identity} />
 
         <div className="relative">
           <button

@@ -25,6 +25,7 @@ import {
   formatStaffErrorDate,
   type StaffErrorRecord,
 } from "@/lib/admin/staff-errors";
+import { REVERSAL_REQUESTS_CHANGED_EVENT } from "@/components/admin/ReversalRequestBell";
 
 const STAFF_PAGE_SIZE = 10;
 const INCIDENT_PAGE_SIZE = 10;
@@ -122,6 +123,8 @@ export function StaffErrorReport() {
       });
       if (res.ok) {
         await loadAccurateData();
+        // Let the Topbar reversal-request bell drop the resolved request at once.
+        window.dispatchEvent(new Event(REVERSAL_REQUESTS_CHANGED_EVENT));
       }
     } catch (err) {
       console.error("Failed to resolve arrival reversal:", err);

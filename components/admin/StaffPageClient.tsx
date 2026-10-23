@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Users, AlertTriangle } from "lucide-react";
 import { StaffAccounts } from "@/components/admin/StaffAccounts";
@@ -24,6 +24,12 @@ export function StaffPageClient({ viewer, initialStaff, canManageStaff }: Props)
   const [activeTab, setActiveTab] = useState<TabId>(
     tabParam === "report" ? "report" : "accounts"
   );
+
+  // The Topbar reversal-request bell links to ?tab=report; follow it even when
+  // this page is already open on the accounts tab.
+  useEffect(() => {
+    if (tabParam === "report") setActiveTab("report");
+  }, [tabParam]);
 
   function handleTabChange(tab: TabId) {
     setActiveTab(tab);
