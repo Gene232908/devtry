@@ -4,6 +4,18 @@ This is the factual source for reports.
 
 Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
+## 2026-10-23
+
+### Completed
+
+- Arrival & Reversal Notification Inquiry Type Indicator (Scrap vs Valuation):
+  - Added clear visual tags and badges indicating whether a customer arrival is from a **Scrap Inquiry** (`[Scrap Inquiry]` / `🔴 Scrap Inquiry (Salvage Vehicle)`) or a regular **Valuation Lead** (`[Valuation Lead]` / `🔵 Valuation Lead`) across both email subjects and HTML/plain-text bodies.
+  - Linked email action buttons directly to `/admin/leads/[id]?origin=scrap` for Scrap Inquiries or `/admin/leads/[id]` for Valuation Leads.
+  - Extended arrival reversal approval requests to also identify inquiry type in email alerts for Sir Nash.
+  - Fixed Vercel serverless unawaited execution by `await`ing email dispatch and using direct port 465 SSL.
+  - Pushed all commits to both `final` and `main` branches on `carvibe025/carvibedubaii` and `devtry`.
+  - Verified: `npx vitest run lib/server/lead-notifications.test.ts` (5/5 passed), `npm run lint` (0 errors), `npx tsc --noEmit` (0 errors), and full test suite (41/41 test files, 315 tests passing).
+
 ## 2026-10-21
  
 ### Completed
