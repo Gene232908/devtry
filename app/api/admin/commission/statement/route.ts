@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/server/require-admin";
 import { COMMISSION_RATE } from "@/lib/admin/inventory";
 import { formatMonth } from "@/lib/admin/commission";
 import { brand } from "@/config/brand";
@@ -60,6 +61,14 @@ function esc(v: string): string {
 }
 
 export async function GET(req: NextRequest) {
+  // Commission data is owner-only, same as /api/admin/commission. Middleware
+  // only proves the caller is signed in, and the query below runs with the
+  // service-role client (RLS bypassed), so the role check has to happen here.
+  const auth = await requireAdmin();
+  if (!auth.ok) {
+    return NextResponse.json({ ok: false, error: { message: auth.message } }, { status: auth.status });
+  }
+
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ ok: false, error: { message: "Database is not configured." } }, { status: 503 });
   }
