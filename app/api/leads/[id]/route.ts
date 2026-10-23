@@ -459,10 +459,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     });
 
     const carVehicle = [current.year, current.make, current.model, current.trim].filter(Boolean).join(" ");
-    void dispatchArrivalReversalRequestNotification({
+    await dispatchArrivalReversalRequestNotification(supabase, {
       leadId: id,
       customerName: current.full_name || "Valuation Customer",
       vehicle: carVehicle,
+      inquiryType: current.inquiry_type ?? "valuation",
       requesterName,
       requesterRole,
       reason: reasonText,
@@ -547,7 +548,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   if (update.arrival_status === "arrived") {
     const vehicle = [current.year, current.make, current.model, current.trim].filter(Boolean).join(" ");
-    void dispatchArrivalNotification(supabase, {
+    await dispatchArrivalNotification(supabase, {
       leadId: id,
       customerName: current.full_name,
       vehicle,
