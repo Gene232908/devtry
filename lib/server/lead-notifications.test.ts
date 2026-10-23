@@ -166,3 +166,58 @@ describe("lead notification SMTP configuration", () => {
     expect(html).toContain("/admin/leads/lead-456");
   });
 });
+
+describe("HTML email escaping", () => {
+  const injected = `<a href="https://evil.example">Click here</a>`;
+
+  it("renders a customer name containing HTML as text in the arrival email", () => {
+    const html = formatCustomerArrivalHtml({
+      leadId: "lead-1",
+      customerName: injected,
+      vehicle: "2024 <b>Nissan</b> Patrol",
+      purchaserName: "Purchaser John",
+      confirmedByName: "Agent Sarah",
+      arrivedAt: "20 Oct 2026, 17:30 (UAE)",
+      inquiryType: "valuation",
+    });
+
+    expect(html).not.toContain(injected);
+    expect(html).not.toContain("<b>Nissan</b>");
+    expect(html).toContain("&lt;a href=&quot;https://evil.example&quot;&gt;Click here&lt;/a&gt;");
+    // The real admin button is still a link
+    expect(html).toContain('<a href="https://carvibedubai.com/admin/leads/lead-1"');
+  });
+
+  it("renders a staff reason and customer name containing HTML as text in the reversal email", () => {
+    const html = formatArrivalReversalHtml({
+      leadId: "lead-2",
+      customerName: injected,
+      vehicle: "2024 Nissan Patrol",
+      requesterName: "Agent1",
+      requesterRole: "call_center",
+      reason: `Wrong customer <img src=x onerror=alert(1)>`,
+      requestedAt: "22 Oct 2026, 01:45 (UAE)",
+      inquiryType: "valuation",
+    });
+
+    expect(html).not.toContain(injected);
+    expect(html).not.toContain("<img");
+    expect(html).toContain("Wrong customer &lt;img src=x onerror=alert(1)&gt;");
+  });
+
+  it("keeps ordinary names readable (apostrophes and ampersands still display correctly)", () => {
+    const html = formatCustomerArrivalHtml({
+      leadId: "lead-3",
+      customerName: "Sean O'Brien & Sons",
+      vehicle: "2023 Toyota Land Cruiser",
+      purchaserName: null,
+      confirmedByName: "Agent Sarah",
+      arrivedAt: "20 Oct 2026, 17:30 (UAE)",
+      inquiryType: "valuation",
+    });
+
+    expect(html).toContain("Sean O&#39;Brien &amp; Sons");
+    expect(html).toContain("2023 Toyota Land Cruiser");
+    expect(html).toContain("Pending / In queue");
+  });
+});

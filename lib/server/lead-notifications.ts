@@ -54,6 +54,20 @@ function withTimeout<T>(task: Promise<T>): Promise<T> {
   });
 }
 
+/**
+ * Escapes text placed into the HTML emails. Customer names come from the public
+ * form and reasons are typed by staff, so without this a name like
+ * `<a href="...">Click here</a>` would render as a real link in the owner's inbox.
+ */
+function escapeHtml(value: string | null | undefined): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function formatVehicle(lead: NewLeadNotification): string {
   return [lead.year, lead.make, lead.model, lead.trim].filter(Boolean).join(" ");
 }
@@ -170,23 +184,23 @@ export function formatCustomerArrivalHtml(data: CustomerArrivalNotification): st
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #a1a1aa;">Customer Name:</td>
-            <td style="padding: 8px 0; color: #ffffff; font-weight: 600;">${data.customerName}</td>
+            <td style="padding: 8px 0; color: #ffffff; font-weight: 600;">${escapeHtml(data.customerName)}</td>
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #a1a1aa;">Vehicle:</td>
-            <td style="padding: 8px 0; color: #ffffff; font-weight: 600;">${data.vehicle || "Not specified"}</td>
+            <td style="padding: 8px 0; color: #ffffff; font-weight: 600;">${escapeHtml(data.vehicle || "Not specified")}</td>
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #a1a1aa;">Assigned Purchaser:</td>
-            <td style="padding: 8px 0; color: #d4af37; font-weight: 600;">${data.purchaserName || "Pending / In queue"}</td>
+            <td style="padding: 8px 0; color: #d4af37; font-weight: 600;">${escapeHtml(data.purchaserName || "Pending / In queue")}</td>
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #a1a1aa;">Confirmed By:</td>
-            <td style="padding: 8px 0; color: #ffffff;">${data.confirmedByName}</td>
+            <td style="padding: 8px 0; color: #ffffff;">${escapeHtml(data.confirmedByName)}</td>
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #a1a1aa;">Arrival Time:</td>
-            <td style="padding: 8px 0; color: #ffffff;">${data.arrivedAt}</td>
+            <td style="padding: 8px 0; color: #ffffff;">${escapeHtml(data.arrivedAt)}</td>
           </tr>
         </table>
         <div style="text-align: center; margin-top: 24px;">
@@ -370,28 +384,28 @@ export function formatArrivalReversalHtml(data: ArrivalReversalNotification): st
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #a1a1aa;">Staff Member:</td>
-            <td style="padding: 8px 0; color: #ffffff; font-weight: 600;">${data.requesterName}</td>
+            <td style="padding: 8px 0; color: #ffffff; font-weight: 600;">${escapeHtml(data.requesterName)}</td>
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #a1a1aa;">Staff Role:</td>
-            <td style="padding: 8px 0; color: #f59e0b; font-weight: 600;">${roleLabel}</td>
+            <td style="padding: 8px 0; color: #f59e0b; font-weight: 600;">${escapeHtml(roleLabel)}</td>
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #a1a1aa;">Customer:</td>
-            <td style="padding: 8px 0; color: #ffffff; font-weight: 600;">${data.customerName}</td>
+            <td style="padding: 8px 0; color: #ffffff; font-weight: 600;">${escapeHtml(data.customerName)}</td>
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #a1a1aa;">Vehicle:</td>
-            <td style="padding: 8px 0; color: #ffffff;">${data.vehicle || "Not specified"}</td>
+            <td style="padding: 8px 0; color: #ffffff;">${escapeHtml(data.vehicle || "Not specified")}</td>
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #a1a1aa;">Request Time:</td>
-            <td style="padding: 8px 0; color: #ffffff;">${data.requestedAt}</td>
+            <td style="padding: 8px 0; color: #ffffff;">${escapeHtml(data.requestedAt)}</td>
           </tr>
         </table>
         <div style="margin: 16px 0; padding: 14px 16px; background: #18181b; border-left: 3px solid #f59e0b; border-radius: 6px;">
           <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: #f59e0b; margin-bottom: 4px;">Stated Reason</div>
-          <div style="color: #f4f4f5; font-style: italic;">&ldquo;${data.reason}&rdquo;</div>
+          <div style="color: #f4f4f5; font-style: italic;">&ldquo;${escapeHtml(data.reason)}&rdquo;</div>
         </div>
         <div style="text-align: center; margin-top: 24px;">
           <a href="${adminUrl}" style="background: #f59e0b; color: #000000; font-weight: 600; padding: 12px 24px; border-radius: 9999px; text-decoration: none; display: inline-block;">Review &amp; Approve in Admin</a>
