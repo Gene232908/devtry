@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
   X,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
@@ -28,7 +29,13 @@ import {
 const STAFF_PAGE_SIZE = 10;
 const INCIDENT_PAGE_SIZE = 10;
 
+type ReportView = "requests" | "frequency";
+
 export function StaffErrorReport() {
+  // Only one of the two tables is shown at a time so the page does not turn
+  // into one long scroll as the number of agents grows. Requests is the default
+  // because that is where pending reversals wait for Approve / Decline.
+  const [activeView, setActiveView] = useState<ReportView>("requests");
   const [records, setRecords] = useState<StaffErrorRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPeriod, setSelectedPeriod] = useState<"all" | "this_month" | "last_30_days">("all");
@@ -87,6 +94,12 @@ export function StaffErrorReport() {
       status: selectedStatus,
     });
   }, [records, searchQuery, selectedPeriod, selectedAgent, selectedStatus]);
+
+  // Badge on the Requests toggle, so pending reviews are visible from either view
+  const pendingCount = useMemo(
+    () => records.filter((r) => r.status === "pending_approval").length,
+    [records]
+  );
 
   // Handle direct reversal approval or decline from Sir Nash
   async function handleResolveReversal(
@@ -269,8 +282,84 @@ export function StaffErrorReport() {
         </Card>
       </div>
 
+      {/* ─── View Toggle: one table at a time ─── */}
+      <div
+        role="tablist"
+        aria-label="Report view"
+        className="flex flex-wrap items-center gap-1 p-1 bg-surface-2/60 border border-border/80 rounded-xl max-w-fit"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeView === "requests"}
+          onClick={() => setActiveView("requests")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all",
+            activeView === "requests"
+              ? "bg-gold text-bg font-semibold shadow-sm"
+              : "text-text-muted hover:text-text hover:bg-surface-2/50"
+          )}
+        >
+          <ClipboardList className="w-4 h-4" />
+          <span>Reversal Requests</span>
+          {pendingCount > 0 && (
+            <span
+              className={cn(
+                "ml-1 px-1.5 rounded-full text-[10px] font-mono",
+                activeView === "requests"
+                  ? "bg-bg/25 text-bg font-bold"
+                  : "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+              )}
+              title={`${pendingCount} pending review`}
+            >
+              {pendingCount}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeView === "frequency"}
+          onClick={() => setActiveView("frequency")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all",
+            activeView === "frequency"
+              ? "bg-gold text-bg font-semibold shadow-sm"
+              : "text-text-muted hover:text-text hover:bg-surface-2/50"
+          )}
+        >
+          <Users className="w-4 h-4" />
+          <span>Staff Reversal Frequency</span>
+          <span
+            className={cn(
+              "ml-1 px-1.5 rounded-full text-[10px] font-mono",
+              activeView === "frequency"
+                ? "bg-bg/25 text-bg font-bold"
+                : "bg-surface text-text-muted border border-border/60"
+            )}
+          >
+            {metrics.agentBreakdown.length}
+          </span>
+        </button>
+      </div>
+
       {/* ─── Per-Agent Frequency (Professional List View with Max 10 Pagination) ─── */}
-      {metrics.agentBreakdown.length > 0 && (
+      {activeView === "frequency" && metrics.agentBreakdown.length === 0 && (
+        <Card className="p-10 text-center bg-surface/60 border border-border/80">
+          <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
+          <div className="mt-2 text-sm font-medium text-text">
+            {isLoading ? "Loading staff frequency..." : "No Staff Reversals Recorded"}
+          </div>
+          {!isLoading && (
+            <p className="mt-1 text-[11px] text-text-muted">
+              No staff member has an arrival reversal or turn-off on record yet.
+            </p>
+          )}
+        </Card>
+      )}
+
+      {activeView === "frequency" && metrics.agentBreakdown.length > 0 && (
         <Card className="overflow-hidden bg-surface/60 border border-border/80">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border-b border-border/50 bg-surface/30">
             <div>
@@ -396,6 +485,9 @@ export function StaffErrorReport() {
                                 setSelectedAgent("all");
                               } else {
                                 setSelectedAgent(stat.agentName);
+                                // The incident table lives in the other view now,
+                                // so jump there to show the filtered result.
+                                setActiveView("requests");
                               }
                               setIncidentPage(1);
                             }}
@@ -431,6 +523,8 @@ export function StaffErrorReport() {
         </Card>
       )}
 
+      {activeView === "requests" && (
+      <>
       {/* ─── Search & Filter Toolbar ─── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface/50 p-3 rounded-lg border border-border/60">
         <div className="flex flex-wrap items-center gap-2 flex-1">
@@ -682,6 +776,8 @@ export function StaffErrorReport() {
           </div>
         )}
       </Card>
+      </>
+      )}
     </div>
   );
 }
