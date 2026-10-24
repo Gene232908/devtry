@@ -166,6 +166,7 @@ export function ValuationForm({ registerCapture, mode = "valuation", verificatio
               makes={makes}
               specifications={specifications}
               setField={form.setField}
+              setMultipleFields={form.setMultipleFields}
               mode={mode}
             />
           )}

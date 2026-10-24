@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { RadioGroup } from "@/components/ui/Radio";
 import { Select } from "@/components/ui/Select";
 import { EMIRATES, OPTION_LEVELS } from "@/config/vehicles";
@@ -17,8 +18,12 @@ type Props = {
 };
 
 export function StepTrimLocation({ values, errors, makes, setField, mode = "valuation" }: Props) {
-  // Trims come from the admin catalog, narrowed to the selected make + model.
-  const trimOptions = trimsFor(makes, values.make, values.model).map((t) => ({ label: t, value: t }));
+  // Trims come from the admin catalog, narrowed to the selected make + model, sorted A-Z.
+  const trimOptions = useMemo(() => {
+    return trimsFor(makes, values.make, values.model)
+      .map((t) => ({ label: t, value: t }))
+      .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }));
+  }, [makes, values.make, values.model]);
 
   return (
     <div className="flex flex-col gap-5 border-b border-border pb-7">
@@ -32,6 +37,8 @@ export function StepTrimLocation({ values, errors, makes, setField, mode = "valu
             onChange={(v) => setField("trim", v)}
             disabled={!values.model}
             error={errors.trim}
+            searchable={trimOptions.length > 5}
+            searchPlaceholder="Search trims..."
           />
           {values.model && !errors.trim ? (
             <p className="mt-1.5 text-[0.72rem] font-light text-text-faint">

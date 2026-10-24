@@ -127,6 +127,26 @@ export function useValuationForm(mode: ValuationModalMode, verificationMode: Pub
     }
   }, []);
 
+  const setMultipleFields = useCallback((patch: Partial<ValuationFormValues>) => {
+    submissionIdRef.current = null;
+    captureRevisionRef.current += 1;
+    const current = valuesRef.current;
+    const next = { ...current, ...patch };
+    valuesRef.current = next;
+    setValues(next);
+    setErrors((e) => {
+      let hasChange = false;
+      const copy = { ...e };
+      for (const k of Object.keys(patch) as Array<keyof ValuationFormValues>) {
+        if (copy[k] !== undefined) {
+          delete copy[k];
+          hasChange = true;
+        }
+      }
+      return hasChange ? copy : e;
+    });
+  }, []);
+
   const validatePhoneField = useCallback(() => {
     const phone = valuesRef.current.whatsapp;
     if (!phone.trim()) return;
@@ -477,6 +497,7 @@ export function useValuationForm(mode: ValuationModalMode, verificationMode: Pub
     submitError,
     phoneVerification,
     setField,
+    setMultipleFields,
     validatePhoneField,
     submit,
     validateStep,

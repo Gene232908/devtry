@@ -1,9 +1,16 @@
 "use client";
 
+import { useMemo } from "react";
 import { Select } from "@/components/ui/Select";
 import { Input } from "@/components/ui/Input";
 import { YEARS } from "@/config/vehicles";
-import { type CatalogMake, type CatalogSpecification, modelsFor } from "@/lib/use-vehicle-catalog";
+import {
+  type CatalogMake,
+  type CatalogSpecification,
+  allModelsWithMake,
+  findMakeForModel,
+  modelsFor,
+} from "@/lib/use-vehicle-catalog";
 import { ValuationFormValues, FormErrors } from "./form.types";
 import type { ValuationModalMode } from "../open-valuation-modal";
 
@@ -14,14 +21,61 @@ type Props = {
   makes: CatalogMake[];
   specifications: CatalogSpecification[];
   setField: <K extends keyof ValuationFormValues>(key: K, value: ValuationFormValues[K]) => void;
+  setMultipleFields?: (patch: Partial<ValuationFormValues>) => void;
   mode?: ValuationModalMode;
 };
 
-export function StepCarDetails({ values, errors, makes, specifications, setField, mode = "valuation" }: Props) {
-  const modelOptions = modelsFor(makes, values.make).map((model) => ({
-    label: model.name,
-    value: model.name,
-  }));
+export function StepCarDetails({
+  values,
+  errors,
+  makes,
+  specifications,
+  setField,
+  setMultipleFields,
+  mode = "valuation",
+}: Props) {
+  const allModels = useMemo(() => allModelsWithMake(makes), [makes]);
+
+  const makeOptions = useMemo(
+    () =>
+      makes
+        .map((m) => ({ label: m.name, value: m.name }))
+        .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" })),
+    [makes],
+  );
+
+  const modelOptions = useMemo(() => {
+    if (values.make) {
+      return modelsFor(makes, values.make)
+        .map((model) => ({
+          label: model.name,
+          value: model.name,
+          description: values.make,
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }));
+    }
+    // Cross-brand catalog search: lets visitors search or select any model directly
+    return allModels.map((item) => ({
+      label: item.modelName,
+      value: item.modelName,
+      description: item.makeName,
+    }));
+  }, [makes, values.make, allModels]);
+
+  const handleModelChange = (modelName: string) => {
+    const parentMake = findMakeForModel(makes, modelName);
+    if (parentMake && parentMake !== values.make) {
+      if (setMultipleFields) {
+        setMultipleFields({ make: parentMake, model: modelName, trim: "" });
+      } else {
+        setField("make", parentMake);
+        setField("model", modelName);
+        setField("trim", "");
+      }
+    } else {
+      setField("model", modelName);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-4 border-b border-border pb-7">
@@ -37,19 +91,26 @@ export function StepCarDetails({ values, errors, makes, specifications, setField
         <Select
           label="Make"
           placeholder="Select make"
-          options={makes.map((m) => ({ label: m.name, value: m.name }))}
+          options={makeOptions}
           value={values.make}
           onChange={(v) => setField("make", v)}
           error={errors.make}
+          searchable
+          searchPlaceholder="Search makes (e.g. Porsche, Toyota)..."
         />
         <Select
           label="Model"
-          placeholder={values.make ? "Select model" : "Select make first"}
+          placeholder={values.make ? "Select model" : "Search or select model"}
           options={modelOptions}
           value={values.model}
-          onChange={(v) => setField("model", v)}
-          disabled={!values.make}
+          onChange={handleModelChange}
           error={errors.model}
+          searchable
+          searchPlaceholder={
+            values.make
+              ? `Search ${values.make} models...`
+              : "Search all models (e.g. Patrol, 911)..."
+          }
         />
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

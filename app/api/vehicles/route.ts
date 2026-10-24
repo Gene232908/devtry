@@ -40,8 +40,8 @@ export async function GET() {
             .is("archived_at", null)
         : supabase.from("car_makes").select("id, name, display_order")
       )
-        .order("display_order")
-        .order("name"),
+        .order("name", { ascending: true })
+        .limit(5000),
       (withArchiveFilter
         ? supabase
             .from("car_models")
@@ -49,8 +49,8 @@ export async function GET() {
             .is("archived_at", null)
         : supabase.from("car_models").select("id, make_id, name, display_order")
       )
-        .order("display_order")
-        .order("name"),
+        .order("name", { ascending: true })
+        .limit(5000),
       (withArchiveFilter
         ? supabase
             .from("car_trims")
@@ -58,13 +58,14 @@ export async function GET() {
             .is("archived_at", null)
         : supabase.from("car_trims").select("id, model_id, name, display_order")
       )
-        .order("display_order")
-        .order("name"),
+        .order("name", { ascending: true })
+        .limit(5000),
       supabase
         .from("vehicle_specifications")
         .select("id, name, display_order")
         .order("display_order")
-        .order("name"),
+        .order("name")
+        .limit(100),
     ]);
   let [makesRes, modelsRes, trimsRes, specificationsRes] =
     await readCatalog(true);
@@ -109,21 +110,48 @@ export async function GET() {
     ? []
     : ((specificationsRes.data ?? []) as DbSpecification[]);
 
-  // Nested rather than three flat lists: every consumer needs trims in the
-  // context of their model, and the model in the context of its make.
-  const data = makes.map((make) => ({
-    id: make.id,
-    name: make.name,
-    models: models
-      .filter((model) => model.make_id === make.id)
-      .map((model) => ({
-        id: model.id,
-        name: model.name,
-        trims: trims
-          .filter((trim) => trim.model_id === model.id)
-          .map((trim) => ({ id: trim.id, name: trim.name })),
-      })),
-  }));
+  // Nested and strictly alphabetized A-Z:
+  // Every make is alphabetical, every model under a make is alphabetical,
+  // and every trim under a model is alphabetical.
+  const data = makes
+    .map((make) => {
+      const makeModels = models
+        .filter((model) => model.make_id === make.id)
+        .map((model) => {
+          const modelTrims = trims
+            .filter((trim) => trim.model_id === model.id)
+            .map((trim) => ({ id: trim.id, name: trim.name }))
+            .sort((a, b) =>
+              a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+            );
+          return {
+            id: model.id,
+            name: model.name,
+            trims: modelTrims,
+          };
+        })
+        .sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+        );
 
-  return NextResponse.json({ ok: true, data: { makes: data, specifications } });
+      return {
+        id: make.id,
+        name: make.name,
+        models: makeModels,
+      };
+    })
+    .sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    );
+
+  return NextResponse.json(
+    { ok: true, data: { makes: data, specifications } },
+    {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    },
+  );
 }

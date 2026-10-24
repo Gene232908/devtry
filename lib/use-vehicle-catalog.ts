@@ -28,16 +28,24 @@ const FALLBACK_SPECIFICATIONS: CatalogSpecification[] = [
   { id: "european", name: "European Specs" },
 ];
 
-/** The hardcoded config, reshaped to match the live payload. */
+/** The hardcoded config, reshaped and alphabetized to match the live payload. */
 const FALLBACK: CatalogMake[] = MAKES.map((make) => ({
   name: make.name,
-  models: make.models.map((model) => ({ name: model, trims: getTrims(model) })),
-}));
+  models: make.models
+    .map((model) => ({ name: model, trims: getTrims(model) }))
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })),
+})).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
 
 type ApiTrim = { id: string; name: string };
 type ApiModel = { id: string; name: string; trims?: ApiTrim[] };
 type ApiMake = { id: string; name: string; models: ApiModel[] };
 type ApiSpecification = { id: string; name: string };
+
+export type ModelWithMake = {
+  modelName: string;
+  makeName: string;
+  trims: string[];
+};
 
 export function useVehicleCatalog() {
   const [makes, setMakes] = useState<CatalogMake[]>(FALLBACK);
@@ -67,19 +75,25 @@ export function useVehicleCatalog() {
         }
 
         const live = (body.data.makes as ApiMake[])
-          // A make with no models cannot be chosen usefully, so it is dropped
-          // rather than shown as a dead end in the dropdown.
-          .filter((make) => make.models.length > 0)
+          // A make with no models cannot be chosen usefully on the public form
+          .filter((make) => Array.isArray(make.models) && make.models.length > 0)
           .map((make) => ({
             name: make.name,
-            models: make.models.map((model) => ({
-              name: model.name,
-              // Live catalog data is authoritative. Do not offer a generic
-              // trim here: it would look selectable but fail server-side
-              // validation because it is not actually in Vehicle Catalog.
-              trims: model.trims?.map((trim) => trim.name) ?? [],
-            })),
-          }));
+            models: make.models
+              .map((model) => {
+                const liveTrims = Array.isArray(model.trims)
+                  ? model.trims.map((trim) => trim.name).filter(Boolean)
+                  : [];
+                return {
+                  name: model.name,
+                  // If a model was newly added in super admin without specific trims yet,
+                  // fall back to default trims so landing page visitors always have options.
+                  trims: liveTrims.length > 0 ? liveTrims : getTrims(model.name),
+                };
+              })
+              .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })),
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
 
         // An empty catalog is treated as "not ready" rather than "no cars".
         if (!cancelled && live.length > 0) {
@@ -111,15 +125,55 @@ export function useVehicleCatalog() {
 /** Models for the selected make. Empty when nothing is selected yet. */
 export function modelsFor(makes: CatalogMake[], makeName: string): CatalogModel[] {
   if (!makeName) return [];
-  return makes.find((make) => make.name === makeName)?.models ?? [];
+  const found = makes.find((make) => make.name.toLowerCase() === makeName.toLowerCase());
+  return found?.models ?? [];
 }
 
-/** Trims for the selected make + model. Empty when either is missing. */
+/** Flattened list of every model paired with its parent make name, sorted A-Z. */
+export function allModelsWithMake(makes: CatalogMake[]): ModelWithMake[] {
+  const list: ModelWithMake[] = [];
+  const seen = new Set<string>();
+  for (const make of makes) {
+    for (const model of make.models) {
+      const key = `${model.name.toLowerCase()}|${make.name.toLowerCase()}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        list.push({
+          modelName: model.name,
+          makeName: make.name,
+          trims: model.trims,
+        });
+      }
+    }
+  }
+  return list.sort((a, b) =>
+    a.modelName.localeCompare(b.modelName, undefined, { sensitivity: "base" }),
+  );
+}
+
+/** Finds the parent make for a given model name. */
+export function findMakeForModel(makes: CatalogMake[], modelName: string): string | null {
+  if (!modelName) return null;
+  const q = modelName.trim().toLowerCase();
+  for (const make of makes) {
+    if (make.models.some((m) => m.name.toLowerCase() === q)) {
+      return make.name;
+    }
+  }
+  return null;
+}
+
+/** Trims for the selected make + model. Empty when model is missing. */
 export function trimsFor(makes: CatalogMake[], makeName: string, modelName: string): string[] {
   if (!modelName) return [];
-  const models = modelsFor(makes, makeName);
-  const model = models.find((m) => m.name === modelName);
-  // Falls back by model name across every make so a lead that was captured
-  // before its make was renamed still resolves to a usable trim list.
-  return model?.trims ?? getTrims(modelName);
+  const models = makeName ? modelsFor(makes, makeName) : makes.flatMap((m) => m.models);
+  const model = models.find((m) => m.name.toLowerCase() === modelName.toLowerCase());
+  if (model?.trims && model.trims.length > 0) {
+    return model.trims;
+  }
+  const fallback = getTrims(modelName);
+  if (fallback && fallback.length > 0) {
+    return fallback;
+  }
+  return ["Standard", "Mid", "Top of the Range"];
 }

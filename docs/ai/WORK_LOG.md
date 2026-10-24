@@ -4,6 +4,18 @@ This is the factual source for reports.
 
 Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
+## 2026-10-24
+
+### Completed
+
+- Vehicle Catalog Alphabetical Ordering, Dropdown Search Bar & Model Auto-Make Selection:
+  - Alphabetical Catalog Sorting (A to Z): Ordered makes, models, and trims alphabetically in `app/api/vehicles/route.ts` and `lib/use-vehicle-catalog.ts`, removing arbitrary `display_order` sorting so all 145+ makes and models appear in predictable, alphabetical order.
+  - In-Dropdown Search Bar: Enhanced `Select.tsx` with a sticky search input, search icon, clear button, and real-time filtering across label, hint, and description.
+  - Cross-Brand Model Search & Auto-Make: Allowed visitors to search and select models directly without having to pick a Make first; selecting any model automatically populates its parent Make and unlocks its trims.
+  - Trim Fallback: Fixed `trimsFor` in `lib/use-vehicle-catalog.ts` so newly inserted models without custom trims in `car_trims` safely fallback to standard trims (`getTrims(modelName)`) rather than rendering empty "No options".
+  - Cache Invalidation: Added `Cache-Control: no-store, no-cache, must-revalidate` headers to `/api/vehicles`.
+  - Verification: Added 5 unit tests in `lib/use-vehicle-catalog.test.ts`. Passed 43 test suites (329 tests), `npx tsc --noEmit` (0 errors), and `npm run lint` (0 errors).
+
 ## 2026-10-23
 
 ### Completed
