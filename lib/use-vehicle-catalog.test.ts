@@ -74,4 +74,19 @@ describe("use-vehicle-catalog helpers", () => {
     expect(taycanTrims.length).toBeGreaterThan(0);
     expect(taycanTrims).toEqual(["Standard", "Mid", "Top of the Range"]);
   });
+
+  it("handles brands with fallback models correctly", () => {
+    const brandWithFallback: CatalogMake = {
+      name: "Volvo",
+      models: [
+        { name: "Volvo (All Models)", trims: ["Standard", "Mid", "Top of the Range"] },
+        { name: "Standard", trims: ["Standard", "Mid", "Top of the Range"] },
+      ],
+    };
+    expect(findMakeForModel([brandWithFallback], "Volvo (All Models)")).toBe("Volvo");
+    expect(modelsFor([brandWithFallback], "Volvo").map((m) => m.name)).toEqual([
+      "Volvo (All Models)",
+      "Standard",
+    ]);
+  });
 });

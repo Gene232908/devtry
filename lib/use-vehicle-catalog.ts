@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MAKES, getTrims } from "@/config/vehicles";
+import { MAKES, getTrims, TRIM_FALLBACK } from "@/config/vehicles";
 
 // The make / model / trim catalog the valuation form is built from.
 //
@@ -75,24 +75,37 @@ export function useVehicleCatalog() {
         }
 
         const live = (body.data.makes as ApiMake[])
-          // A make with no models cannot be chosen usefully on the public form
-          .filter((make) => Array.isArray(make.models) && make.models.length > 0)
-          .map((make) => ({
-            name: make.name,
-            models: make.models
-              .map((model) => {
-                const liveTrims = Array.isArray(model.trims)
-                  ? model.trims.map((trim) => trim.name).filter(Boolean)
-                  : [];
-                return {
-                  name: model.name,
-                  // If a model was newly added in super admin without specific trims yet,
-                  // fall back to default trims so landing page visitors always have options.
-                  trims: liveTrims.length > 0 ? liveTrims : getTrims(model.name),
-                };
-              })
-              .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })),
-          }))
+          .map((make) => {
+            const rawModels = Array.isArray(make.models) ? make.models : [];
+            const hasCustomModels = rawModels.length > 0;
+            const models = hasCustomModels
+              ? rawModels.map((model) => {
+                  const liveTrims = Array.isArray(model.trims)
+                    ? model.trims.map((trim) => trim.name).filter(Boolean)
+                    : [];
+                  return {
+                    name: model.name,
+                    // If a model was newly added in super admin without specific trims yet,
+                    // fall back to default trims so landing page visitors always have options.
+                    trims: liveTrims.length > 0 ? liveTrims : getTrims(model.name),
+                  };
+                })
+              : [
+                  {
+                    name: `${make.name} (All Models)`,
+                    trims: TRIM_FALLBACK,
+                  },
+                  {
+                    name: "Standard",
+                    trims: TRIM_FALLBACK,
+                  },
+                ];
+
+            return {
+              name: make.name,
+              models: models.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })),
+            };
+          })
           .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
 
         // An empty catalog is treated as "not ready" rather than "no cars".
