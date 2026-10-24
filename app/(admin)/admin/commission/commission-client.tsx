@@ -472,7 +472,7 @@ export default function CommissionClient({
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gold">Payout summary</p>
                 <p className="mt-1 text-sm text-text-muted">Current unpaid amount across the commission categories shown below.</p>
               </div>
-              <p className="tabular-nums text-2xl font-semibold text-gold">{formatAed(selectedStaffOutstanding + (showsDeveloperCommission ? devOutstanding : 0))}</p>
+              <p className="tabular-nums text-2xl font-semibold text-gold">{formatNumber(selectedStaffOutstanding + (showsDeveloperCommission ? devOutstanding : 0))}</p>
             </div>
             <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-text-muted">
               <span>Staff commissions: <strong className="text-text">{formatNumber(selectedStaffOutstanding)}</strong></span>
@@ -653,7 +653,7 @@ function StaffCommissionView({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Card className="border-gold/40 p-4">
           <p className="text-fluid--1 text-text-faint">Staff Commission Outstanding</p>
-          <p className="mt-1.5 tabular-nums text-fluid-1 text-gold">{formatAed(totalOutstanding)}</p>
+          <p className="mt-1.5 tabular-nums text-fluid-1 text-gold">{formatNumber(totalOutstanding)}</p>
         </Card>
         <Card className="p-4">
           <p className="text-fluid--1 text-text-faint">{isStaffSelf ? "Unpaid Sales" : "Staff Accounts"}</p>

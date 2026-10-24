@@ -8,6 +8,10 @@ Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
 ### Completed
 
+- Commission Tab Summary & Outstanding Cards Currency Cleanup:
+  - Removed "AED " currency prefix from the `Payout summary` top card and the `Staff Commission Outstanding` card in `app/(admin)/admin/commission/commission-client.tsx`, using `formatNumber` instead of `formatAed` to display clean numbers only.
+  - Verification: Vitest (43 test files, 330 tests passing), TypeScript (`npx tsc --noEmit` with 0 errors), and ESLint (`npm run lint` with 0 errors).
+
 - Vehicle Catalog Model Alphabetical Ordering (A to Z) in Super Admin & Dropdowns:
   - Alphabetized models under each make in `components/admin/CatalogModelList.tsx` and `app/(admin)/admin/catalog/page.tsx` before pagination slicing, ensuring models are always strictly sorted A-Z.
   - Alphabetized trims inside each model in `CatalogModelRow` and `AdminCatalogPage`.
