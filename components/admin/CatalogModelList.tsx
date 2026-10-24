@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { ChevronDown, ChevronRight, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import {
@@ -37,10 +38,16 @@ export function CatalogModelList({
   onArchive: (target: PendingCatalogArchive) => void;
   busy: string | null;
 }) {
+  const sortedModels = useMemo(() => {
+    return [...make.models].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    );
+  }, [make.models]);
+
   return (
     <>
       <ul className="flex flex-col gap-2">
-        {make.models
+        {sortedModels
           .slice(
             (page - 1) * CATALOG_MODELS_PER_PAGE,
             page * CATALOG_MODELS_PER_PAGE,
@@ -62,7 +69,7 @@ export function CatalogModelList({
       </ul>
       <CatalogPagination
         page={page}
-        totalItems={make.models.length}
+        totalItems={sortedModels.length}
         onPage={onPage}
       />
     </>
@@ -90,7 +97,13 @@ function CatalogModelRow({
   onAddTrim: () => void;
   onArchive: (target: PendingCatalogArchive) => void;
 }) {
-  const duplicate = model.trims.find(
+  const sortedTrims = useMemo(() => {
+    return [...model.trims].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    );
+  }, [model.trims]);
+
+  const duplicate = sortedTrims.find(
     (trim) => normalized(trim.name) === normalized(trimDraft),
   );
   return (
@@ -132,14 +145,14 @@ function CatalogModelRow({
       </div>
       {open && (
         <div className="border-t border-border px-3 py-3 animate-fade-in">
-          {model.trims.length === 0 ? (
+          {sortedTrims.length === 0 ? (
             <p className="mb-3 text-fluid--1 text-text-faint">
               No trims set. The form offers Standard / Mid / Top of the Range
               instead.
             </p>
           ) : (
             <ul className="mb-3 flex flex-wrap gap-1.5">
-              {model.trims.map((trim) => (
+              {sortedTrims.map((trim) => (
                 <li
                   key={trim.id}
                   className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-3 py-1 text-[0.78rem] text-text-muted"

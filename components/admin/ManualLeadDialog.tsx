@@ -58,7 +58,10 @@ export function ManualLeadDialog({ open, onClose, onCreated }: Props) {
   const [message, setMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
 
   const modelOptions = useMemo(
-    () => modelsFor(makes, draft.make).map((model) => ({ label: model.name, value: model.name })),
+    () =>
+      modelsFor(makes, draft.make)
+        .map((model) => ({ label: model.name, value: model.name }))
+        .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" })),
     [makes, draft.make],
   );
   const trimOptions = useMemo(

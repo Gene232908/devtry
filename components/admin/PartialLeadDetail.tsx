@@ -99,7 +99,10 @@ export function PartialLeadDetail({ partial }: { partial: PartialLead }) {
 
   const makeOptions = useMemo(() => makes.map((make) => ({ label: make.name, value: make.name })), [makes]);
   const modelOptions = useMemo(
-    () => modelsFor(makes, deal.make).map((model) => ({ label: model.name, value: model.name })),
+    () =>
+      modelsFor(makes, deal.make)
+        .map((model) => ({ label: model.name, value: model.name }))
+        .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" })),
     [makes, deal.make],
   );
   const trimOptions = useMemo(

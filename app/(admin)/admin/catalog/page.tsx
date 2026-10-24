@@ -66,7 +66,17 @@ export default function AdminCatalogPage() {
         setError(json?.error?.message ?? "Couldn't load the vehicle catalog.");
         return;
       }
-      setMakes(json.data.makes as Make[]);
+      const loadedMakes = ((json.data.makes as Make[]) ?? [])
+        .map((make) => ({
+          ...make,
+          models: [...make.models].sort((a, b) =>
+            a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+          ),
+        }))
+        .sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+        );
+      setMakes(loadedMakes);
     } catch {
       setError("Network error while loading the catalog.");
     } finally {
@@ -173,10 +183,14 @@ export default function AdminCatalogPage() {
       "Couldn't add that make.",
     );
     if (result) {
-      setMakes((current) => [
-        ...current,
-        { id: result.make.id, name: result.make.name, models: [] },
-      ]);
+      setMakes((current) =>
+        [
+          ...current,
+          { id: result.make.id, name: result.make.name, models: [] },
+        ].sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+        ),
+      );
       setSelectedMakeId(result.make.id);
       setNewMakeName("");
     }
@@ -201,22 +215,26 @@ export default function AdminCatalogPage() {
       "Couldn't add that model.",
     );
     if (result) {
+      const newModel = { id: result.model.id, name: result.model.name, trims: [] };
+      let targetPage = 1;
+
       setMakes((current) =>
-        current.map((make) =>
-          make.id === selected.id
-            ? {
-                ...make,
-                models: [
-                  ...make.models,
-                  { id: result.model.id, name: result.model.name, trims: [] },
-                ],
-              }
-            : make,
-        ),
+        current.map((make) => {
+          if (make.id !== selected.id) return make;
+          const updatedModels = [...make.models, newModel].sort((a, b) =>
+            a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+          );
+          const newIndex = updatedModels.findIndex((m) => m.id === result.model.id);
+          if (newIndex >= 0) {
+            targetPage = Math.floor(newIndex / CATALOG_MODELS_PER_PAGE) + 1;
+          }
+          return {
+            ...make,
+            models: updatedModels,
+          };
+        }),
       );
-      setModelPage(
-        Math.ceil((selected.models.length + 1) / CATALOG_MODELS_PER_PAGE),
-      );
+      setModelPage(targetPage);
       setNewModelName("");
     }
     setBusy(null);
@@ -255,7 +273,9 @@ export default function AdminCatalogPage() {
                   trims: [
                     ...model.trims,
                     { id: result.trim.id, name: result.trim.name },
-                  ],
+                  ].sort((a, b) =>
+                    a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+                  ),
                 }
               : model,
           ),
