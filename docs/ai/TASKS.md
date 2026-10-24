@@ -1,5 +1,10 @@
 # TASKS.md
 
+- [x] 2026-10-24 Super Admin 1-Click Customer Arrival Confirmation (`components/admin/LeadArrivalCard.tsx`):
+  - Removed Phone Verification Modal for Super Admin: Super Admins can now toggle and confirm customer arrival directly with a single click, completely bypassing the phone number input requirement.
+  - Retained Staff Phone Anti-Cheat Verification: Customer Service and normal staff accounts still require verifying the customer's phone number before arrival confirmation can be saved.
+  - Verification: Vitest (43 test files, 330 tests passing), TypeScript (`npx tsc --noEmit` with 0 errors), and ESLint (`npm run lint` with 0 errors).
+
 - [x] 2026-10-24 Vehicle Catalog Alphabetical Ordering, Dropdown Search Bar & Model Auto-Make Selection (`components/ui/Select.tsx`, `app/api/vehicles/route.ts`, `lib/use-vehicle-catalog.ts`, `components/public/valuation-form/step-car-details.tsx`, `components/public/valuation-form/step-trim-location.tsx`, `components/public/valuation-form/index.tsx`, `components/public/valuation-form/use-valuation-form.ts`, `lib/use-vehicle-catalog.test.ts`):
   - Alphabetical Ordering (A to Z): Ordered makes, models, and trims strictly alphabetically (A-Z) in `app/api/vehicles/route.ts` and `lib/use-vehicle-catalog.ts`, replacing the old arbitrary `display_order` sorting so all brands (e.g. Abarth, BMW, Nissan, Porsche, Toyota) and their models appear in predictable, user-friendly order.
   - In-Dropdown Search Bar: Enhanced `components/ui/Select.tsx` with a responsive luxury search bar (sticky header, search icon, clear button, and real-time filtering across label, hint, and description) automatically enabled for lists >= 7 items or when specified.

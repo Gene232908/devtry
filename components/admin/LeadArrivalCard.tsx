@@ -126,10 +126,15 @@ export function LeadArrivalCard({
 
   function handleToggleClick() {
     if (!isArrived) {
-      // Attempting to turn ON arrival status: requires phone number verification
-      setPhoneInput("");
-      setPhoneError(null);
-      setPhoneModalOpen(true);
+      if (isSuperAdmin) {
+        // Super Admin (Sir Nash) can confirm arrival directly without entering the customer's phone number
+        void onConfirmArrival();
+      } else {
+        // Customer Service / staff requires phone number verification to confirm arrival
+        setPhoneInput("");
+        setPhoneError(null);
+        setPhoneModalOpen(true);
+      }
     } else {
       // Attempting to turn OFF arrival status:
       if (isSuperAdmin) {
@@ -241,7 +246,9 @@ export function LeadArrivalCard({
                   ? isSuperAdmin
                     ? "Click to turn off customer arrival"
                     : "Click to request arrival reversal from Sir Nash"
-                  : "Click to verify and confirm customer arrival"
+                  : isSuperAdmin
+                    ? "Click to confirm customer arrival directly (Super Admin)"
+                    : "Click to verify and confirm customer arrival"
               }
               className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-45 ${
                 isArrived ? "bg-emerald-500" : "bg-zinc-700"

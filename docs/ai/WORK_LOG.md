@@ -8,6 +8,11 @@ Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
 ### Completed
 
+- Super Admin 1-Click Customer Arrival Confirmation:
+  - Removed Phone Verification Modal for Super Admin: Super Admins can now toggle and confirm customer arrival directly with a single click, completely bypassing the phone number input requirement.
+  - Retained Staff Phone Anti-Cheat Verification: Customer Service and normal staff accounts still require verifying the customer's phone number before arrival confirmation can be saved.
+  - Verification: Vitest (43 test files, 330 tests passing), TypeScript (`npx tsc --noEmit` with 0 errors), and ESLint (`npm run lint` with 0 errors).
+
 - Vehicle Catalog Alphabetical Ordering, Dropdown Search Bar & Model Auto-Make Selection:
   - Alphabetical Catalog Sorting (A to Z): Ordered makes, models, and trims alphabetically in `app/api/vehicles/route.ts` and `lib/use-vehicle-catalog.ts`, removing arbitrary `display_order` sorting so all 145+ makes and models appear in predictable, alphabetical order.
   - In-Dropdown Search Bar: Enhanced `Select.tsx` with a sticky search input, search icon, clear button, and real-time filtering across label, hint, and description.
