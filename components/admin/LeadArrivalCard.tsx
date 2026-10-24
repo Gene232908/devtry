@@ -138,9 +138,9 @@ export function LeadArrivalCard({
     } else {
       // Attempting to turn OFF arrival status:
       if (isSuperAdmin) {
-        // Super Admin (Sir Nash) can turn off with confirmation
-        setAdminReason("");
-        setSuperAdminRevertModalOpen(true);
+        // Super Admin (Sir Nash): direct 1-click turn off, NO modal, NO reason prompt
+        setPendingRequest(null);
+        void onRevertArrival?.("Turned off by Super Admin");
       } else {
         // Customer Service cannot toggle off directly; must request with reason for Sir Nash
         setReversalReason("");
