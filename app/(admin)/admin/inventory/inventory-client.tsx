@@ -6,7 +6,7 @@ import { Search, ShieldAlert, X } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { SellCarDialog } from "@/components/admin/SellCarDialog";
-import { formatAed, formatNumber } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import { formatUaeMonth, uaeMonthKey } from "@/lib/uae-time";
 import {
   INVENTORY_FILTER_OPTIONS,
@@ -314,7 +314,7 @@ export default function InventoryClient({
         <Summary label="Profit from sales" value={formatNumber(summary.profit)} />
         <Summary
           label={isPurchaser ? "Outstanding purchaser commission (10%)" : "Total commission (14%)"}
-          value={formatAed(summary.totalCommission)}
+          value={formatNumber(summary.totalCommission)}
           accent
         />
       </div>

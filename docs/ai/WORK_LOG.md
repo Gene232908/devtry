@@ -8,6 +8,10 @@ Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
 ### Completed
 
+- Inventory Total Commission Summary Card Currency Cleanup:
+  - Removed "AED " currency prefix from the `Total commission (14%)` / `Outstanding purchaser commission (10%)` summary card in `app/(admin)/admin/inventory/inventory-client.tsx`, using `formatNumber` instead of `formatAed` so it displays clean digits only, matching all other inventory KPI cards.
+  - Verification: Vitest (43 test files, 330 tests passing), TypeScript (`npx tsc --noEmit` with 0 errors), and ESLint (`npm run lint` with 0 errors).
+
 - Super Admin 1-Click Customer Arrival Confirmation:
   - Removed Phone Verification Modal for Super Admin: Super Admins can now toggle and confirm customer arrival directly with a single click, completely bypassing the phone number input requirement.
   - Retained Staff Phone Anti-Cheat Verification: Customer Service and normal staff accounts still require verifying the customer's phone number before arrival confirmation can be saved.
