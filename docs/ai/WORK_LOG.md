@@ -8,6 +8,13 @@ Update it after meaningful completed work. Do not invent hours, tests, or dates.
 
 ### Completed
 
+- Vehicle Catalog Model Alphabetical Ordering (A to Z) in Super Admin & Dropdowns:
+  - Alphabetized models under each make in `components/admin/CatalogModelList.tsx` and `app/(admin)/admin/catalog/page.tsx` before pagination slicing, ensuring models are always strictly sorted A-Z.
+  - Alphabetized trims inside each model in `CatalogModelRow` and `AdminCatalogPage`.
+  - When a new model is added via `addModel()` in `AdminCatalogPage`, sorted the models array immediately and computed the target page dynamically so newly added models are displayed on their correct alphabetical page immediately.
+  - Added explicit alphabetical sort for model dropdown options in `components/admin/ManualLeadDialog.tsx` and `components/admin/PartialLeadDetail.tsx`.
+  - Verification: Vitest (43 test files, 330 tests passing), TypeScript (`npx tsc --noEmit` with 0 errors), and ESLint (`npm run lint` with 0 errors).
+
 - Inventory Total Commission Summary Card Currency Cleanup:
   - Removed "AED " currency prefix from the `Total commission (14%)` / `Outstanding purchaser commission (10%)` summary card in `app/(admin)/admin/inventory/inventory-client.tsx`, using `formatNumber` instead of `formatAed` so it displays clean digits only, matching all other inventory KPI cards.
   - Verification: Vitest (43 test files, 330 tests passing), TypeScript (`npx tsc --noEmit` with 0 errors), and ESLint (`npm run lint` with 0 errors).
